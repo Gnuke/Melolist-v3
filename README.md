@@ -59,3 +59,12 @@ JavaScript
   1. 음성을 통한 음악 검색
   2. 추가 예정
   3. 추가 예정
+
+--------
+
+### git 전략
+
+  1. 로컬 dev에서 작업 후 origin/dev로 푸시
+  2. GitHub에서 PR을 통해 main에 병합
+  3. 로컬 main을 git pull origin main으로 최신화
+  4. 필요하면 dev도 main 기준으로 업데이트 (merge or rebase)
