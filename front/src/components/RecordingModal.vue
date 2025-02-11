@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
 
 /* 일시정지 버튼 스타일 */
 .control-button.pause {
-  background-color: #007bff; /* 파란색 */
+  background-color: #1acc22; /* 초록색 */
 }
 
 /* 정지 버튼 스타일 */

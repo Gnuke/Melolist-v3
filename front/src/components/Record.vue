@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue';
 import RecordingModal from './RecordingModal.vue';
 import WaveSurfer from 'wavesurfer.js';
+import AcrCloudRecognizer from "./AcrCloudRecognizer.vue";
 
 const isRecording = ref(false);
 const audioStream = ref(null);
@@ -150,8 +151,8 @@ onBeforeUnmount(() => {
         <div class="time-display">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
-      </div>
 
+      </div>
       <div class="audio-controls">
         <button class="play-button" @click="togglePlay">
           <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
@@ -166,10 +167,18 @@ onBeforeUnmount(() => {
               step="0.01"
               v-model.number="volume"
               @input="setVolume(volume)"
+              :style="{
+            background: 'linear-gradient(to right, #007bff ' + (volume * 100) + '%, #ced4da ' + (volume * 100) + '%)'
+        }"
           />
         </div>
       </div>
+      <AcrCloudRecognizer v-if="recordedAudio" :recordedAudio="recordedAudio" />
     </div>
+    <div v-else>
+      <h2>버튼을 눌러 녹음을 시작해주세요.</h2>
+    </div>
+
   </div>
 </template>
 
@@ -202,7 +211,6 @@ button {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-bottom: 40px;
 }
 
 /* Record button styles */
@@ -231,11 +239,11 @@ button {
 
 /* Audio player styles */
 .audio-player {
-  margin-top: 40px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 500px;
 }
 
 /* Audio title styles */
@@ -250,8 +258,8 @@ button {
 /* Waveform & Time Container Styles */
 .waveform-time-container {
   position: relative;
-  width: 600px; /* 웨이브폼 너비 설정 */
-  margin-bottom: 20px;
+  width: 300px; /* 웨이브폼 너비 설정 */
+  height: 160px;
 }
 
 /* Waveform Styles */
@@ -267,6 +275,7 @@ button {
   right: 0;
   color: #6c757d;
   font-size: 1.1em;
+  margin-top: 10px;
 }
 
 /* WaveSurfer 래퍼 요소 스타일 (::v-deep 제거) */
@@ -288,31 +297,26 @@ button {
 .audio-controls {
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  width: 100%;
-  padding: 30px 0;
+  justify-content: space-between;
+  width: 300px;
+  padding: 10px 0;
   border-top: 1px solid #e9ecef;
-  margin-top: 20px;
 }
 
 /* Play/Pause button styles */
 .play-button {
-  background-color: #007bff;
+  background-color: #16be1d;
   color: white;
   border-radius: 12px;
-  padding: 15px 25px;
-  font-size: 1.1em;
+  padding: 12px 17px;
+  font-size: 1.0em;
   transition: background-color 0.3s ease, transform 0.3s ease;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .play-button:hover {
-  background-color: #0069d9;
+  background-color: #1acc22;
   transform: scale(1.05);
-}
-
-.play-button i {
-  margin-right: 10px;
 }
 
 /* Volume control styles */
@@ -327,10 +331,10 @@ button {
 }
 
 .volume-control input[type="range"] {
-  width: 150px;
-  height: 6px;
+  width: 100px;
+  height: 5px;
   border-radius: 5px;
-  background: #ced4da;
+  background: linear-gradient(to right, #007bff {{ volume * 100 }}%, #ced4da {{ volume * 100 }}%);
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -339,8 +343,8 @@ button {
 .volume-control input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #007bff;
   cursor: pointer;
