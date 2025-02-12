@@ -1,5 +1,6 @@
 <script setup>
-  import { defineProps } from 'vue';
+  import { defineProps, ref } from 'vue';
+  import SearchResultsList from "./SearchResultsList.vue";
 
   const props = defineProps({
     recordedAudio: {
@@ -8,8 +9,7 @@
     },
   });
 
-  const apiKey = import.meta.env.VITE_ACRCLOUD_API_KEY;
-  const apiSecret = import.meta.env.VITE_ACRCLOUD_API_SECRET;
+  const recognitionResults = ref([]);
 
   const searchRequest = async () => {
     try {
@@ -17,32 +17,53 @@
       const response = await fetch(props.recordedAudio);
       const blob = await response.blob();
 
-      // Blob 정보 확인 (선택 사항)
-      // console.log('Blob Data:', blob);
-      // console.log('Blob Size:', blob.size);
-      //console.log('Blob Type:', blob.type);
+      // 2. Blob을 ArrayBuffer로 변환
+      const buffer = await blob.arrayBuffer();
 
-      // 2. ForData 생성 및 Blob 데이터 추가
-      const formData = new FormData();
-      formData.append('file', blob, 'recorded_audio.mp3');
+      // 3. ArrayBuffer 인코딩
+      const audioBase64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 
-      // 3. ACRCloud API 설정
-      const host = 'identify-ap-southeast-1.acrcloud.com';
+      // 4. 백엔드 API 호출
+      const searchResults = await fetch('http://localhost:3000/acrcloud', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          audio: audioBase64
+        }) // Base64로 인코딩한 오디오 데이터
+      });
 
-      const timestamp = Math.floor(Date.now() / 1000 );
-      const stringToSign = `POST\n/v1/identify\n${apiKey}\n${timestamp}`;
+      if (!searchResults.ok){
+        throw new Error('응답 결과 실패');
+      }
 
+      const data = await searchResults.json();
+      console.log('검색 결과 : ' + JSON.stringify(data, null, 2));
+
+      // 5. 검색 결과 저장 및 표시
+      if (data && data.status.code === 0 && data.metadata && data.metadata.music) {
+        recognitionResults.value = data.metadata.music;
+      } else {
+        recognitionResults.value = []; // 검색 결과가 없을 경우 빈 배열로 설정
+      }
     } catch (error) {
-      console.error('Error fetching Blob data:', error);
+      console.error('Recognizer -> 서버에 요청 실패 : ', error);
     }
   };
 </script>
 
 <template>
-  <button @click="searchRequest" class="search-button">
-    <i class="fas fa-search search-icon"></i>
-    <span>검색</span>
-  </button>
+  <div>
+    <button @click="searchRequest" class="search-button">
+      <i class="fas fa-search search-icon"></i>
+      <span>검색</span>
+    </button>
+  </div>
+  <div>
+    <!-- SearchResultsList 컴포넌트 사용 -->
+    <SearchResultsList :results="recognitionResults" />
+  </div>
 </template>
 
 <style scoped>
