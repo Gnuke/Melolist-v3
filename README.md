@@ -8,7 +8,13 @@
 
 ### 💡 프로젝트 소개
 
-음성을 이용한 음악 검색 프로젝트입니다.
+다양한 음성 입력 방식을 통해 간편하게 음악 정보를 검색하는 프로젝트입니다.
+
+**Background:**
+
+이 프로젝트는 원래 사용자가 직접 노래를 부르거나 흥얼거림으로써 음악을 찾는 기능을 구현하는 것을 목표로 시작되었습니다. 하지만 초기 개발 단계에서는 AcrCloud API를 사용하여 실제 음악을 녹음하여 검색하는 기능이 먼저 구현되었습니다. 이는 AcrCloud API의 간편한 사용법과 빠른 개발 속도 때문이었습니다.
+
+이후, 사용자가 직접 참여하는 방식의 음악 검색 기능을 강화하기 위해 SoundHound API를 활용하여 원래 기획했던 사용자가 직접 노래를 부르거나 흥얼거리는 멜로디로 음악을 검색하는 기능을 추가하게 되었습니다. 이를 통해 사용자는 더욱 다양한 방식으로 음악을 찾을 수 있게 되었습니다.
 
 -------
 
@@ -69,16 +75,18 @@
 
 ### 🛠️ 기술 스택
 
-| 항목       | 기술/라이브러리   | 버전      | 설명                                                                                                |
+| 항목       | 기술/라이브러리   | 버전      | 설명                                                                                      |
 |----------|---------------|---------|----------------------------------------------------------------------------------------------------|
-| **Frontend** | Vue.js        | v3.5.13 | 사용자 인터페이스 및 웹 애플리케이션 구축                                                                      |
-|          | Wavesurfer.js | v7.9.0  | 오디오 시각화 및 조작                                                                                      |
-| **Backend**  | Express.js    | v4.21.2 | Node.js 기반 웹 애플리케이션 프레임워크                                                                         |
-|          | Axios         | v1.7.9  | HTTP 요청 라이브러리                                                                                       |
-|          | CORS          | v2.8.5  | Cross-Origin Resource Sharing 활성화
-|          | form-data     | v4.0.1  | `multipart/form-data` 형식으로 녹음된 데이터를 전송하기 위한 라이브러리                                                     |
-| **Dev Tools**| Nodemon       | v3.1.9  | 파일 변경 감지 시 서버 자동 재시작                                                                           |
-|          | dotenv        | v16.3.1 | 환경 변수 관리                                                                                          |
+| **Frontend** | Vue.js        | v3.5.13 | 사용자 인터페이스 및 웹 애플리케이션 구축                                                       |
+|          | Wavesurfer.js | v7.9.0  | 오디오 시각화 및 조작                                                                              |
+|          | @vueuse/core         | v10.x (예시) | Vue Composition API를 위한 유틸리티 함수 모음 (탭 기능 구현에 사용)                     |
+| **Backend**  | Express.js    | v4.21.2 | Node.js 기반 웹 애플리케이션 프레임워크                                                         |
+|          | Axios         | v1.7.9  | HTTP 요청 라이브러리                                                                               |
+|          | CORS          | v2.8.5  | Cross-Origin Resource Sharing 활성화                                                               |
+|          | form-data     | v4.0.1  | `multipart/form-data` 형식으로 녹음된 데이터를 전송하기 위한 라이브러리                              |
+|          | AcrCloud API   | v1      | 실제 음악 녹음 검색 기능 제공                                                                      |
+| **Dev Tools**| Nodemon       | v3.1.9  | 파일 변경 감지 시 서버 자동 재시작                                                              |
+|          | dotenv        | v16.3.1 | 환경 변수 관리                                                                                      |
 
 -------
 
@@ -90,12 +98,27 @@
 
 --------
 
+### ⚙️ 설치 방법
+
+1.  Node.js 및 npm (또는 yarn) 설치
+
+2.  프로젝트 디렉토리로 이동
+
+3.  의존성 설치
+
+```bash
+npm install
+# 또는
+yarn install
+```
+--------
+
 ### 🌱 git 전략
 
-  **1.** 로컬 dev에서 작업 후 origin/dev로 푸시
+1. 로컬 dev에서 작업 후 origin/dev로 푸시
   
-  **2.** GitHub에서 PR을 통해 main에 병합
+2. GitHub에서 PR을 통해 main에 병합
   
-  **3.** 로컬 main을 git pull origin main으로 최신화
-  
-  **4.** 필요하면 dev도 main 기준으로 업데이트 (merge or rebase)
+3. 로컬 main을 git pull origin main으로 최신화
+
+4. 필요하면 dev도 main 기준으로 업데이트 (merge or rebase)
