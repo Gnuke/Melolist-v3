@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount, defineProps, defineEmits } from 'vue';
 
 const props = defineProps({
   audioStream: MediaStream,
+  selectedRecognizer: String,
 });
 
 const emit = defineEmits(['stop', 'close', 'save']);
@@ -116,6 +117,7 @@ onMounted(async () => {
 
     // MediaRecorder 설정 (녹음 데이터 저장)
     mediaRecorder.value = new MediaRecorder(props.audioStream);
+
     mediaRecorder.value.ondataavailable = (event) => {
       if (event.data.size > 0) {
         audioChunks.value.push(event.data);
@@ -135,7 +137,9 @@ const stopRecording = () => {
   if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
     mediaRecorder.value.stop();
     mediaRecorder.value.onstop = () => {
-      const audioBlob = new Blob(audioChunks.value, { type: 'audio/mp3' });
+      const audioBlob = new Blob(audioChunks.value, {
+        type: 'audio/mp3',
+      });
       emit('save', audioBlob); // Record.vue로 오디오 파일 전달
       emit('stop');
       emit('close');

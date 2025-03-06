@@ -10,8 +10,9 @@
   });
 
   const recognitionResults = ref([]);
+  const noResultMessage = ref('');
 
-  const searchRequest = async () => {
+  const searchRequestForAcrCloud = async () => {
     try {
       // 1. Blob URL을 이용하여 Blob 객체 가져오기
       const response = await fetch(props.recordedAudio);
@@ -24,7 +25,7 @@
       const audioBase64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 
       // 4. 백엔드 API 호출
-      const searchResults = await fetch('http://localhost:3000/acrcloud', {
+      const searchResults = await fetch('http://localhost:3000/fingerprints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -41,32 +42,43 @@
       const data = await searchResults.json();
       console.log('검색 결과 : ' + JSON.stringify(data, null, 2));
 
-      // 5. 검색 결과 저장 및 표시
+      // 5. 검색 결과 파싱
       if (data && data.status.code === 0 && data.metadata && data.metadata.music) {
         recognitionResults.value = data.metadata.music;
-      } else {
+        noResultMessage.value = ''; // 검색 결과가 있을 경우 noResultMessage 초기화
+      } else if (data && data.status.msg === "No result") {
+        recognitionResults.value = [];
+        noResultMessage.value = "일치하는 음악을 찾을 수 없습니다."; // 메시지 설정
+      }  else {
         recognitionResults.value = []; // 검색 결과가 없을 경우 빈 배열로 설정
+        noResultMessage.value = ''; // 기본적으로 메시지 초기화
       }
     } catch (error) {
       console.error('Recognizer -> 서버에 요청 실패 : ', error);
+      recognitionResults.value = []; // 에러 발생 시 빈 배열로 설정
+      noResultMessage.value = ''; // 에러 발생 시 메시지 초기화
     }
   };
 </script>
 
 <template>
-  <div>
-    <button @click="searchRequest" class="search-button">
+  <div class="search-button-container">
+    <button @click="searchRequestForAcrCloud" class="search-button">
       <i class="fas fa-search search-icon"></i>
       <span>검색</span>
     </button>
   </div>
   <div>
     <!-- SearchResultsList 컴포넌트 사용 -->
-    <SearchResultsList :results="recognitionResults" />
+    <SearchResultsList :results="recognitionResults" :noResultMessage="noResultMessage" searchType="fingerprint"/>
   </div>
 </template>
 
 <style scoped>
+.search-button-container {
+  margin-bottom: 40px;
+}
+
 .search-button {
   padding: 10px 20px;
   background-color: white; /* 배경색을 흰색으로 변경 */

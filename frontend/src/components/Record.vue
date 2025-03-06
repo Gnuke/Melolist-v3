@@ -2,7 +2,8 @@
 import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue';
 import RecordingModal from './RecordingModal.vue';
 import WaveSurfer from 'wavesurfer.js';
-import AcrCloudRecognizer from "./AcrCloudRecognizer.vue";
+import FingerprintRecognizer from "./recognizers/FingerprintRecognizer.vue";
+import HummingRecognizer from "./recognizers/HummingRecognizer.vue";
 
 const isRecording = ref(false);
 const audioStream = ref(null);
@@ -17,6 +18,22 @@ const volume = ref(1);
 
 const recordingTime = ref(0); // 녹음 시간 (Number 타입)
 let intervalId = null;
+
+// 현재 선택된 Recognizer 유형
+const selectedRecognizer = ref('fingerprint'); // 문자열로 Recognizer 유형 관리
+
+// Recognizer 유형 변경 함수
+const setRecognizer = (type) => {
+  selectedRecognizer.value = type;
+  console.log("선택 : " + selectedRecognizer.value);
+
+  // 탭이 변경되면 녹음 데이터 초기화
+  recordedAudio.value = null;
+  if (wavesurfer) {
+    wavesurfer.destroy();
+    wavesurfer = null;
+  }
+};
 
 const startRecording = async () => {
   try {
@@ -42,11 +59,20 @@ const startRecording = async () => {
   }
 };
 
-const stopRecording = () => {
+const stopRecording = (recognizerType) => {
   isRecording.value = false;
 
   // 녹음 종료 시 인터벌 정리
   clearInterval(intervalId);
+
+  // 여기에서 recognizerType에 따라 처리 로직 분기
+  if (recognizerType === 'humming') {
+    // Humming 관련 로직
+    console.log('humming 탭에서 녹음 중지');
+  } else if (recognizerType === 'fingerprint') {
+    // AcrCloud 관련 로직
+    console.log('fingerprint 탭에서 녹음 중지');
+  }
 };
 
 const handleSave = (audioBlob) => {
@@ -128,6 +154,21 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="record-container">
+    <div class="tab-container">
+      <button
+          :class="{ 'tab-button': true, 'active': selectedRecognizer === 'fingerprint' }"
+          @click="setRecognizer('fingerprint')"
+      >
+        <i class="fa-solid fa-headphones-simple"></i> 음악찾기
+      </button>
+      <button
+          :class="{ 'tab-button': true, 'active': selectedRecognizer === 'humming' }"
+          @click="setRecognizer('humming')"
+      >
+        <i class="fa-solid fa-microphone-lines"></i> 내가 부르기
+      </button>
+      <!-- 다른 Recognizer에 대한 버튼 추가 가능 -->
+    </div>
     <div class="record-button-container">
       <button class="record-button" @click="startRecording">
         <i class="fas fa-microphone"></i>
@@ -138,6 +179,7 @@ onBeforeUnmount(() => {
         v-if="isRecording"
         :audioStream="audioStream"
         :recordingTime="recordingTime"
+        :selectedRecognizer="selectedRecognizer"
         @stop="stopRecording"
         @save="handleSave"
     />
@@ -173,7 +215,12 @@ onBeforeUnmount(() => {
           />
         </div>
       </div>
-      <AcrCloudRecognizer v-if="recordedAudio" :recordedAudio="recordedAudio" />
+      <!-- AcrCloudRecognizer 컴포넌트 -->
+      <FingerprintRecognizer v-if="selectedRecognizer === 'fingerprint' &&
+      recordedAudio" :recordedAudio="recordedAudio" />
+      <!-- SoundHoundRecognizer 컴포넌트 -->
+      <HummingRecognizer v-else-if="selectedRecognizer === 'humming' &&
+      recordedAudio" :recordedAudio="recordedAudio" />
     </div>
     <div v-else>
       <h2>버튼을 눌러 녹음을 시작해주세요.</h2>
@@ -243,7 +290,8 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 500px;
+  min-height: 500px;
+  overflow:auto;
 }
 
 /* Audio title styles */
@@ -349,5 +397,56 @@ button {
   background: #007bff;
   cursor: pointer;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 탭 컨테이너 스타일 */
+.tab-container {
+  display: flex;
+  width: 100%;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
+  overflow: hidden;
+}
+
+/* 탭 버튼 스타일 */
+.tab-button {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  background-color: #fff;
+  color: #495057;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  text-align: center;
+  display: flex; /* 아이콘과 텍스트를 세로로 가운데 정렬하기 위해 추가 */
+  align-items: center; /* 세로 가운데 정렬 */
+  justify-content: center; /* 가로 가운데 정렬 */
+}
+
+.tab-button:hover {
+  background-color: #e9ecef;
+}
+
+/* 탭 버튼 아이콘 스타일 */
+.tab-button i {
+  margin-right: 8px; /* 아이콘과 텍스트 사이 간격 */
+  font-size: 1.2rem; /* 아이콘 크기 조정 */
+}
+
+/* 선택된 탭 버튼 스타일 */
+.tab-button.active {
+  background-color: #F5F5DC;
+  color: #000080;
+  font-weight: 600; /* 폰트 굵게 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 그림자 효과 추가 */
+}
+
+/* 탭 버튼 호버 효과 */
+.tab-button:hover {
+  background-color: #E8E8D8; /* 호버 시 배경색 약간 밝게 */
 }
 </style>
