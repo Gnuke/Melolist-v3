@@ -53,7 +53,6 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
 - **Back-end**
   - Node.js 서버 구축
   - 음악 검색 요청 API 구현 (ACRCloud API 사용)
-
 - **Front-end**
   - 검색 결과 목록 출력 UI 구현 (ACRCloud 데이터 사용)
 
