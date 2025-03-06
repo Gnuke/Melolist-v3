@@ -15,8 +15,7 @@ Melolist는 다양한 음성 입력 방식을 통해 간편하게 음악 정보�
 초기 개발 단계에서는 **AcrCloud API**를 이용한 **Fingerprint 기반 음악 검색** 기능을 먼저 구현하였습니다.  
 이후 사용자가 직접 노래를 부르거나 흥얼거리는 방식으로 음악을 찾을 수 있도록 **Humming 기반 검색 기능**을 추가하였습니다.
 
-Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어려움이 많아, **AcrCloud의 두 개의 프로젝트**를 활용하여  
-Fingerprint 검색과 Humming 검색을 분리하는 방식으로 개발을 진행하였습니다.
+Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어려움이 많아, **AcrCloud의 두 개의 프로젝트**를 활용하여 Fingerprint 검색과 Humming 검색을 분리하는 방식으로 개발을 진행하였습니다.
 
 -------
 
