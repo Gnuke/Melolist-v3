@@ -65,6 +65,12 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
   - 기존 Fingerprint 기반 검색과 Humming 검색을 분리
 - **Front-end**
   - 검색 결과 데이터 시각화 개선
+ 
+#### 🗓️ 03월 07일
+- **Back-end**
+  - 검색결과 확인을 위한 Youtube Metadata 요청 구현
+- **Front-end**
+  - 사용자 UI 개선
   </p>
 </details>
 
@@ -104,6 +110,8 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
   - 실제 음악을 녹음하여 검색하는 기능
 - 🎤 **Humming 기반 멜로디 검색** (AcrCloud API)
   - 사용자가 직접 노래를 부르거나 흥얼거려 음악을 찾는 기능
+- 🦻 **검색 데이터 기반 Youtube 링크 제공** (AcrCloud Metadata API)
+  - 응답 받은 데이터를 쿼리로 이용, 메타데이터 요청을 통해 Youtube 링크 제공
 - ➕ 추가 예정
 
 --------
