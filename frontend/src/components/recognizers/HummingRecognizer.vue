@@ -11,6 +11,7 @@ const props = defineProps({
 
 const recognitionResults = ref([]);
 const noResultMessage = ref('');
+const lowScoreMessage = ref(''); // 낮은 점수에 대한 메시지
 const minScore = 50; // 최소 일치율
 
 const searchRequestForHumming = async () => {
@@ -46,13 +47,25 @@ const searchRequestForHumming = async () => {
     // 5. 검색 결과 파싱
     if (data && data.status.code === 0 && data.metadata && data.metadata.humming) {
       recognitionResults.value = data.metadata.humming.filter(result => result.score * 100 >= minScore); // 일치율 필터링
+
+      // 최소 점수 이상의 결과가 없으면 최고 점수 결과를 포함
+      if (recognitionResults.value.length === 0 && data.metadata.humming.length > 0) {
+        const highestScoreResult = data.metadata.humming.reduce((prev, current) => (prev.score > current.score) ? prev : current);
+        recognitionResults.value = [highestScoreResult];
+
+        // 낮은 점수에 대한 메시지 설정
+        lowScoreMessage.value = "일치율이 낮지만, 가장 유사한 결과를 보여드립니다.";
+      }
+
       noResultMessage.value = ''; // 검색 결과가 있을 경우 noResultMessage 초기화
     } else if (data && data.status.msg === "No result") {
       recognitionResults.value = [];
       noResultMessage.value = "일치하는 음악을 찾을 수 없습니다."; // 메시지 설정
+      lowScoreMessage.value = ''; // 초기화
     } else {
       recognitionResults.value = []; // 검색 결과가 없을 경우 빈 배열로 설정
       noResultMessage.value = ''; // 기본적으로 메시지 초기화
+      lowScoreMessage.value = ''; // 초기화
     }
   } catch (error) {
     console.error('Recognizer -> 서버에 요청 실패 : ', error);
@@ -71,7 +84,7 @@ const searchRequestForHumming = async () => {
   </div>
   <div>
     <!-- SearchResultsList 컴포넌트 사용 -->
-    <SearchResultsList :results="recognitionResults" :noResultMessage="noResultMessage" searchType="humming"/>
+    <SearchResultsList :results="recognitionResults" :noResultMessage="noResultMessage" :lowScoreMessage="lowScoreMessage" searchType="humming"/>
   </div>
 </template>
 
