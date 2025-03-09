@@ -95,22 +95,8 @@ tbody tr:nth-child(even) {
 }
 
 @media (prefers-color-scheme: dark) {
-  table {
-    background-color: #222;
-    color: black; /* 텍스트 검은색 */
-  }
-
-  th {
-    background-color: #444;
-    color: black;
-  }
-
-  tbody tr:nth-child(even) {
-    background-color: #333;
-  }
-
-  .low-score-message {
-    color: black;
+  table, th, td, .low-score-message {
+    color: black !important; /* 텍스트 검은색 */
   }
 }
 
