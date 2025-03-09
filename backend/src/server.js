@@ -11,8 +11,22 @@ if (process.env.NODE_ENV !== 'production') {
     dotenv.config();
 }
 
-// CORS 활성화 (개발 환경에서는 모든 도메인 허용, 프로덕션에서는 특정 도메인만 허용하도록 vercel.json에 설정 권장)
-app.use(cors());
+if (process.env.NODE_ENV === 'development') {
+    app.use(cors());
+} else {
+    app.use((req, res, next) => {
+        res.header("Access-Control-Allow-Origin", "https://melolist-xi.vercel.app");
+        res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+        if (req.method === "OPTIONS") {
+            res.sendStatus(200);
+        } else {
+            next();
+        }
+    });
+}
+
 app.use(express.json({ limit: '5mb' }));
 
 // Fingerprint API 엔드포인트
