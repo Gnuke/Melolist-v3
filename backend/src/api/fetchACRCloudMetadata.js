@@ -1,14 +1,16 @@
+// src/api/fetchACRCloudMetadata.js
+
 import axios from 'axios';
 
 const fetchACRCloudMetadata = async (query, metadataApiKey) => {
     try {
-        // if (process.env.NODE_ENV !== 'production') {  // 삭제
-        try {
-            console.log("metadata query : " + JSON.stringify(query));
-        } catch (e) {
-            console.error("metadata query 로깅 실패", e);
+        if (process.env.NODE_ENV !== 'production') {
+            try {
+                console.log("metadata query : " + JSON.stringify(query));
+            } catch (e) {
+                console.error("metadata query 로깅 실패", e);
+            }
         }
-        // } // 삭제
 
         const host = 'eu-api-v2.acrcloud.com';
         const endpoint = '/api/external-metadata/tracks';
@@ -26,7 +28,8 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
             method: 'get',
             url: apiUrl,
             params: {
-                query: requestQuery, // 객체를 그대로 전달
+                track: query.track,
+                artist: query.artists ? query.artists.join(',') : undefined,
                 format: 'json',
                 platforms: 'youtube'
             },
@@ -37,13 +40,13 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
 
         const response = await axios(config);
 
-        // if (process.env.NODE_ENV !== 'production') { // 삭제
-        try {
-            console.log('ACRCloud Metadata API 요청 성공:', JSON.stringify(response.data, null, 2));
-        } catch (e) {
-            console.error("ACRCloud Metadata API 요청 성공 로깅 실패", e);
+        if (process.env.NODE_ENV !== 'production') {
+            try {
+                console.log('ACRCloud Metadata API 요청 성공:', JSON.stringify(response.data, null, 2));
+            } catch (e) {
+                console.error("ACRCloud Metadata API 요청 성공 로깅 실패", e);
+            }
         }
-        // } // 삭제
 
         // 구조 분해 할당 사용
         const { data: responseData } = response;
@@ -63,15 +66,15 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
                     url: youtubeUrl
                 };
             } else {
-                // if (process.env.NODE_ENV !== 'production') { // 삭제
-                console.log("유튜브 정보가 없습니다.");
-                // } // 삭제
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log("유튜브 정보가 없습니다.");
+                }
                 return null;
             }
         } else {
-            // if (process.env.NODE_ENV !== 'production') { // 삭제
-            console.log("검색 결과가 없습니다.");
-            // } // 삭제
+            if (process.env.NODE_ENV !== 'production') {
+                console.log("검색 결과가 없습니다.");
+            }
             return null;
         }
     } catch (error) {
