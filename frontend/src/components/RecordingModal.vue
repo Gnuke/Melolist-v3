@@ -2,8 +2,14 @@
 import { ref, onMounted, onBeforeUnmount, defineProps, defineEmits } from 'vue';
 
 const props = defineProps({
-  audioStream: MediaStream,
-  selectedRecognizer: String,
+  audioStream: {
+    type: MediaStream,
+    required: true,
+  },
+  selectedRecognizer: {
+    type: String,
+    required: true,
+  },
 });
 
 const emit = defineEmits(['stop', 'close', 'save']);
@@ -135,6 +141,9 @@ onMounted(async () => {
 
 const stopRecording = () => {
   if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
+    // 이전 이벤트 리스너 제거
+    mediaRecorder.value.onstop = null;
+
     mediaRecorder.value.stop();
     mediaRecorder.value.onstop = () => {
       const audioBlob = new Blob(audioChunks.value, {
@@ -161,13 +170,35 @@ const togglePause = () => {
       cancelAnimationFrame(animationFrameId); // draw() 중단
 
       // 현재 파형 데이터 저장
-      if (analyser && canvasRef.value) { // analyser 및 canvas가 있는지 확인
+      if (savedWaveformData.value && analyser && canvasRef.value) {
         const canvas = canvasRef.value;
         const ctx = canvas.getContext('2d');
         const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyser.getByteTimeDomainData(dataArray);
-        savedWaveformData.value = new Uint8Array(dataArray);
+
+        ctx.fillStyle = '#222'; // 배경색 변경
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'white'; // 파형 색상 변경
+        ctx.beginPath();
+
+        const sliceWidth = canvas.width / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const v = savedWaveformData.value[i] / 128.0;
+          const y = (v * canvas.height) / 2;
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+          x += sliceWidth;
+        }
+
+        ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.stroke();
       }
     } else {
       // 녹음 재개 시

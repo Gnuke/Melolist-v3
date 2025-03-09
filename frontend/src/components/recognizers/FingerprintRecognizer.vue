@@ -2,6 +2,8 @@
   import { defineProps, ref } from 'vue';
   import SearchResultsList from "./SearchResultsList.vue";
 
+  const apiUrl = import.meta.env.VITE_API_BASE_URL + '/fingerprints';
+
   const props = defineProps({
     recordedAudio: {
       type: String,
@@ -25,7 +27,7 @@
       const audioBase64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 
       // 4. 백엔드 API 호출
-      const searchResults = await fetch('http://localhost:3000/fingerprints', {
+      const searchResults = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -40,7 +42,10 @@
       }
 
       const data = await searchResults.json();
-      console.log('검색 결과 : ' + JSON.stringify(data, null, 2));
+      // 개발 환경에서만 로그 출력
+      if (import.meta.env.MODE === 'development') {
+        console.log('검색 결과 : ' + JSON.stringify(data, null, 2));
+      }
 
       // 5. 검색 결과 파싱
       if (data && data.status.code === 0 && data.metadata && data.metadata.music) {

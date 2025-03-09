@@ -25,7 +25,6 @@ const selectedRecognizer = ref('fingerprint'); // 문자열로 Recognizer 유형
 // Recognizer 유형 변경 함수
 const setRecognizer = (type) => {
   selectedRecognizer.value = type;
-  console.log("선택 : " + selectedRecognizer.value);
 
   // 탭이 변경되면 녹음 데이터 초기화
   recordedAudio.value = null;
