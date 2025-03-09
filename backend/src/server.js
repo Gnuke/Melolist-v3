@@ -53,4 +53,12 @@ app.post('/api/humming', async (req, res) => { // API 경로 변경
     }
 });
 
+// 개발 환경에서만 서버 실행
+if (process.env.NODE_ENV === 'development') {
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+        console.log(`Server listening on port ${port}`);
+    });
+}
+
 export default app;
