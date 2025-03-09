@@ -242,11 +242,11 @@ button {
 .record-container {
   font-family: "Noto Sans KR", sans-serif;
   max-width: 800px;
-  margin: 50px auto;
-  padding: 50px;
+  margin: 20px auto; /* Adjust margin for smaller screens */
+  padding: 20px; /* Adjust padding for smaller screens */
   background-color: #f8f9fa;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border-radius: 15px; /* Slightly smaller border-radius for smaller screens */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); /* Less shadow for smaller screens */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -257,6 +257,7 @@ button {
   width: 100%;
   display: flex;
   justify-content: center;
+  margin-bottom: 20px; /* Add some margin below the button */
 }
 
 /* Record button styles */
@@ -264,19 +265,19 @@ button {
   background-color: #dc3545;
   color: white;
   border-radius: 50%;
-  width: 80px;
-  height: 80px;
-  font-size: 32px;
+  width: 60px; /* Smaller button for smaller screens */
+  height: 60px; /* Smaller button for smaller screens */
+  font-size: 24px; /* Smaller font for smaller screens */
   transition: transform 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2); /* Less shadow for smaller screens */
 }
 
 .record-button:hover {
   background-color: #c82333;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .record-button i {
@@ -289,15 +290,16 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 500px;
-  overflow:auto;
+  min-height: auto; /* Adjust min-height for smaller screens */
+  overflow: auto;
+  margin-top: 20px; /* Add some spacing */
 }
 
 /* Audio title styles */
 .audio-title {
   color: #495057;
-  font-size: 2em;
-  margin-bottom: 20px;
+  font-size: 1.5em; /* Smaller title for smaller screens */
+  margin-bottom: 10px;
   font-weight: 500;
   letter-spacing: -0.05em;
 }
@@ -305,14 +307,14 @@ button {
 /* Waveform & Time Container Styles */
 .waveform-time-container {
   position: relative;
-  width: 300px; /* 웨이브폼 너비 설정 */
-  height: 160px;
+  width: 100%; /* Full width on smaller screens */
+  max-width: 300px; /* Limit width on larger screens */
+  height: 100px; /* Adjust height for smaller screens */
 }
 
 /* Waveform Styles */
 .waveform {
-  height: 60px;
-  /* 필요한 경우 웨이브폼 색상 등 추가 스타일 지정 */
+  height: 40px; /* Adjust waveform height */
 }
 
 /* Time Display Styles */
@@ -321,23 +323,29 @@ button {
   bottom: 0;
   right: 0;
   color: #6c757d;
-  font-size: 1.1em;
-  margin-top: 10px;
+  font-size: 0.9em; /* Smaller font size */
+  margin-top: 5px;
 }
 
 /* WaveSurfer 래퍼 요소 스타일 (::v-deep 제거) */
 .waveform-container :deep(div.wrapper) {
-  /* 원하는 스타일 적용 */
   position: relative;
-  overflow: hidden; /* 필요한 경우 */
-  border: 1px solid #ccc; /* 예시: 테두리 추가 */
-  border-radius: 5px; /* 예시: 둥근 모서리 */
+  overflow: hidden;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
 /* WaveSurfer 재생 헤드 스타일 (세로선) */
-.waveform-container :deep(div.wrapper .wavesurfer-cursor) {
-  height: 30px !important;
+.record-container .waveform-time-container :deep(div.wrapper .wavesurfer-cursor) {
+  height: 20px !important; /* Shorter cursor for smaller waveform */
   border-left: 2px solid #ff5e57 !important;
+}
+
+/* Media Query for smaller screens */
+@media (max-width: 767px) {
+  .record-container .waveform-time-container :deep(div.wrapper .wavesurfer-cursor) {
+    height: 15px !important; /* 더 작은 재생 헤드 높이 */
+  }
 }
 
 /* 오디오 컨트롤 */
@@ -345,20 +353,22 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 300px;
+  width: 100%;
+  max-width: 300px; /* Limit width for larger screens */
   padding: 10px 0;
   border-top: 1px solid #e9ecef;
+  margin-top: 10px;
 }
 
 /* Play/Pause button styles */
 .play-button {
   background-color: #16be1d;
   color: white;
-  border-radius: 12px;
-  padding: 12px 17px;
-  font-size: 1.0em;
+  border-radius: 10px; /* Slightly smaller */
+  padding: 8px 12px; /* Adjust padding */
+  font-size: 0.9em; /* Smaller font size */
   transition: background-color 0.3s ease, transform 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
 .play-button:hover {
@@ -373,14 +383,15 @@ button {
 }
 
 .volume-control i {
-  margin-right: 10px;
+  margin-right: 5px;
   color: #868e96;
+  font-size: 0.8em; /* Adjust icon size */
 }
 
 .volume-control input[type="range"] {
-  width: 100px;
-  height: 5px;
-  border-radius: 5px;
+  width: 80px; /* Smaller width */
+  height: 4px;
+  border-radius: 4px;
   background: linear-gradient(to right, #007bff {{ volume * 100 }}%, #ced4da {{ volume * 100 }}%);
   outline: none;
   -webkit-appearance: none;
@@ -390,12 +401,12 @@ button {
 .volume-control input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: #007bff;
   cursor: pointer;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* 탭 컨테이너 스타일 */
@@ -405,25 +416,25 @@ button {
   background-color: #f8f9fa;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  margin-bottom: 30px;
+  margin-bottom: 20px; /* Less margin */
   overflow: hidden;
 }
 
 /* 탭 버튼 스타일 */
 .tab-button {
   flex: 1;
-  padding: 14px 20px;
+  padding: 10px 15px; /* Adjust padding */
   border: none;
   background-color: #fff;
   color: #495057;
-  font-size: 1.1rem;
+  font-size: 0.9rem; /* Smaller font size */
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
   text-align: center;
-  display: flex; /* 아이콘과 텍스트를 세로로 가운데 정렬하기 위해 추가 */
-  align-items: center; /* 세로 가운데 정렬 */
-  justify-content: center; /* 가로 가운데 정렬 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tab-button:hover {
@@ -432,20 +443,83 @@ button {
 
 /* 탭 버튼 아이콘 스타일 */
 .tab-button i {
-  margin-right: 8px; /* 아이콘과 텍스트 사이 간격 */
-  font-size: 1.2rem; /* 아이콘 크기 조정 */
+  margin-right: 5px;
+  font-size: 1rem; /* Smaller icon size */
 }
 
 /* 선택된 탭 버튼 스타일 */
 .tab-button.active {
   background-color: #F5F5DC;
   color: #000080;
-  font-weight: 600; /* 폰트 굵게 */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 그림자 효과 추가 */
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Adjust shadow */
 }
 
 /* 탭 버튼 호버 효과 */
 .tab-button:hover {
-  background-color: #E8E8D8; /* 호버 시 배경색 약간 밝게 */
+  background-color: #E8E8D8;
+}
+
+/* Media Query for larger screens */
+@media (min-width: 768px) {
+  .record-container {
+    margin: 50px auto;
+    padding: 50px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  }
+
+  .record-button {
+    width: 80px;
+    height: 80px;
+    font-size: 32px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .audio-title {
+    font-size: 2em;
+    margin-bottom: 20px;
+  }
+
+  .waveform-time-container {
+    width: 300px;
+    height: 160px;
+  }
+
+  .waveform {
+    height: 60px;
+  }
+
+  .time-display {
+    font-size: 1.1em;
+    margin-top: 10px;
+  }
+
+  .play-button {
+    padding: 12px 17px;
+    font-size: 1.0em;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+
+  .volume-control i {
+    font-size: 1em;
+  }
+
+  .volume-control input[type="range"] {
+    width: 100px;
+  }
+
+  .tab-container {
+    margin-bottom: 30px;
+  }
+
+  .tab-button {
+    padding: 14px 20px;
+    font-size: 1.1rem;
+  }
+
+  .tab-button i {
+    font-size: 1.2rem;
+  }
 }
 </style>
