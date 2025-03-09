@@ -2,7 +2,7 @@
   import { defineProps, ref } from 'vue';
   import SearchResultsList from "./SearchResultsList.vue";
 
-  const apiUrl = import.meta.env.VITE_API_BASE_URL + '/fingerprints';
+  const apiUrl = import.meta.env.VITE_API_BASE_URL + '/api/fingerprints';
 
   const props = defineProps({
     recordedAudio: {

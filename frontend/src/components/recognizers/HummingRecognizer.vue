@@ -2,7 +2,7 @@
 import { defineProps, ref } from 'vue';
 import SearchResultsList from "./SearchResultsList.vue";
 
-const apiUrl = import.meta.env.VITE_API_BASE_URL + '/humming';
+const apiUrl = import.meta.env.VITE_API_BASE_URL + '/api/humming';
 
 const props = defineProps({
   recordedAudio: {
