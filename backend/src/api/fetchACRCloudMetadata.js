@@ -1,5 +1,4 @@
 // src/api/fetchACRCloudMetadata.js
-
 import axios from 'axios';
 
 const fetchACRCloudMetadata = async (query, metadataApiKey) => {
@@ -28,8 +27,7 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
             method: 'get',
             url: apiUrl,
             params: {
-                track: query.track,
-                artist: query.artists ? query.artists.join(',') : undefined,
+                query: JSON.stringify(requestQuery), // JSON 문자열로 변환
                 format: 'json',
                 platforms: 'youtube'
             },

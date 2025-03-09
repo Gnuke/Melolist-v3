@@ -28,7 +28,6 @@ const searchRequestForHumming = async () => {
     // 3. ArrayBuffer 인코딩
     const audioBase64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 
-    console.log("aa + " + import.meta.env.VITE_API_BASE_URL);
     // 4. 백엔드 API 호출
     const searchResults = await fetch(apiUrl, {
       method: 'POST',

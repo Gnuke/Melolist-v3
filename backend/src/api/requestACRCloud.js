@@ -66,9 +66,19 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
             if (data.metadata[recognitionType] && data.metadata[recognitionType].length > 0) {
                 for (const result of data.metadata[recognitionType]) {
                     try {
-                        const query = recognitionType === 'music'
-                            ? JSON.stringify({ track: result.title, artists: result.artists.map(artist => artist.name) })
-                            : JSON.stringify({ track: result.title });
+                        let query = {};
+                        if (recognitionType === 'music') {
+                            // music인 경우: 곡 제목과 아티스트 정보를 JSON 형식으로 구성
+                            query = {
+                                track: result.title,
+                                artists: result.artists.map(artist => artist.name) // 아티스트 이름을 배열로 추출
+                            };
+                        } else if (recognitionType === 'humming') {
+                            // humming인 경우: 곡 제목만 JSON 형식으로 구성
+                            query = {
+                                track: result.title
+                            };
+                        }
 
                         // 각 recognitionType에 맞는 API 키를 환경 변수에서 가져옴
                         const metadataApiKey = process.env[`METADATA_API_KEY_${recognitionType.toUpperCase()}`];
