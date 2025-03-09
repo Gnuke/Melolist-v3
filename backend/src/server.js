@@ -1,23 +1,26 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv' // .env 파일 로드
+import dotenv from 'dotenv'; // .env 파일 로드 (개발 환경에서만 사용)
 import { searchMusicWithFingerprint } from './api/fingerprint.js';
 import { searchMusicWithHumming } from "./api/humming.js";
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-dotenv.config(); //.env 파일 로드
+// 개발 환경에서만 dotenv 사용
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config();
+}
 
-app.use(cors()); // CORS 활성화 (개발 환경에서만 사용)
-app.use(express.json({ limit: '5mb' })); // JSON 파싱 미들웨어 추가, 요청 크기 제한 설정
+// CORS 활성화 (개발 환경에서는 모든 도메인 허용, 프로덕션에서는 특정 도메인만 허용하도록 vercel.json에 설정 권장)
+app.use(cors());
+app.use(express.json({ limit: '5mb' }));
 
 // Fingerprint API 엔드포인트
-app.post('/fingerprints', async (req, res) => {
+app.post('/api/fingerprints', async (req, res) => { // API 경로 변경
     try {
-        const audioBase64 = req.body.audio; // 클라이언트에서 Base64 인코딩된 오디오 데이터 받기
-        const acrResponse = await searchMusicWithFingerprint(audioBase64); // ACRCloud API 호출 함수 사용
-        res.json(acrResponse); // ACRCloud API 응답을 클라이언트로 전달
+        const audioBase64 = req.body.audio;
+        const acrResponse = await searchMusicWithFingerprint(audioBase64);
+        res.json(acrResponse);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'ACRCloud API 요청 실패' });
@@ -25,9 +28,9 @@ app.post('/fingerprints', async (req, res) => {
 });
 
 // Humming API 엔드포인트
-app.post('/humming', async (req, res) => {
+app.post('/api/humming', async (req, res) => { // API 경로 변경
     try {
-        const audioBase64 = req.body.audio; // 클라이언트에서 Base64 인코딩된 오디오 데이터 받기
+        const audioBase64 = req.body.audio;
         const acrResponse = await searchMusicWithHumming(audioBase64);
         res.json(acrResponse);
     } catch (error) {
@@ -36,6 +39,4 @@ app.post('/humming', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-});
+export default app;

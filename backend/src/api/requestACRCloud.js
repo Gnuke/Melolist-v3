@@ -66,19 +66,9 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
             if (data.metadata[recognitionType] && data.metadata[recognitionType].length > 0) {
                 for (const result of data.metadata[recognitionType]) {
                     try {
-                        let query = {};
-                        if (recognitionType === 'music') {
-                            // music인 경우: 곡 제목과 아티스트 정보를 JSON 형식으로 구성
-                            query = {
-                                track: result.title,
-                                artists: result.artists.map(artist => artist.name) // 아티스트 이름을 배열로 추출
-                            };
-                        } else if (recognitionType === 'humming') {
-                            // humming인 경우: 곡 제목만 JSON 형식으로 구성
-                            query = {
-                                track: result.title
-                            };
-                        }
+                        const query = recognitionType === 'music'
+                            ? { track: result.title, artists: result.artists.map(artist => artist.name) }
+                            : { track: result.title };
 
                         // 각 recognitionType에 맞는 API 키를 환경 변수에서 가져옴
                         const metadataApiKey = process.env[`METADATA_API_KEY_${recognitionType.toUpperCase()}`];
@@ -99,9 +89,11 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
             }
         }
 
-        console.log("================================")
-        console.log("data : " + data.toString());
-        console.log("================================")
+        if (process.env.NODE_ENV !== 'production') {
+            console.log("================================")
+            console.log("data : " + data.toString());
+            console.log("================================")
+        }
 
         return data;
     } catch (error) {

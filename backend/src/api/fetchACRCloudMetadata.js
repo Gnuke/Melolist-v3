@@ -1,9 +1,17 @@
 // src/api/fetchACRCloudMetadata.js
+
 import axios from 'axios';
 
 const fetchACRCloudMetadata = async (query, metadataApiKey) => {
-    console.log("metadata query : " + JSON.stringify(query));
     try {
+        if (process.env.NODE_ENV !== 'production') {
+            try {
+                console.log("metadata query : " + JSON.stringify(query));
+            } catch (e) {
+                console.error("metadata query 로깅 실패", e);
+            }
+        }
+
         const host = 'eu-api-v2.acrcloud.com';
         const endpoint = '/api/external-metadata/tracks';
         const apiUrl = `https://${host}${endpoint}`;
@@ -20,7 +28,7 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
             method: 'get',
             url: apiUrl,
             params: {
-                query: JSON.stringify(requestQuery), // JSON 문자열로 변환
+                query: requestQuery, // 객체를 그대로 전달
                 format: 'json',
                 platforms: 'youtube'
             },
@@ -30,14 +38,21 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
         };
 
         const response = await axios(config);
-        console.log('ACRCloud Metadata API 요청 성공:', JSON.stringify(response.data, null, 2));
+
+        if (process.env.NODE_ENV !== 'production') {
+            try {
+                console.log('ACRCloud Metadata API 요청 성공:', JSON.stringify(response.data, null, 2));
+            } catch (e) {
+                console.error("ACRCloud Metadata API 요청 성공 로깅 실패", e);
+            }
+        }
 
         // 구조 분해 할당 사용
         const { data: responseData } = response;
         if (responseData && responseData.data && responseData.data.length > 0) {
             const [metadata] = responseData.data;
 
-            if (metadata.external_metadata && metadata.external_metadata.youtube && metadata.external_metadata.youtube.length > 0) {
+            if (metadata?.external_metadata?.youtube?.[0]?.link) {
                 // YouTube URL 추출
                 let youtubeUrl = metadata.external_metadata.youtube[0].link;
 
@@ -50,16 +65,20 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
                     url: youtubeUrl
                 };
             } else {
-                console.log("유튜브 정보가 없습니다.");
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log("유튜브 정보가 없습니다.");
+                }
                 return null;
             }
         } else {
-            console.log("검색 결과가 없습니다.");
+            if (process.env.NODE_ENV !== 'production') {
+                console.log("검색 결과가 없습니다.");
+            }
             return null;
         }
     } catch (error) {
         console.error('ACRCloud Metadata API 요청 실패:', error);
-        return null;
+        throw error; // 오류를 다시 던짐
     }
 };
 

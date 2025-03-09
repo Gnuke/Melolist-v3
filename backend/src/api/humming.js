@@ -1,4 +1,3 @@
-// src/api/humming.js
 import { fileURLToPath } from 'url';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -7,7 +6,10 @@ import { requestACRCloud } from './requestACRCloud.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// 개발 환경에서만 dotenv 사용
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+}
 
 async function searchMusicWithHumming(audioBase64) {
     try {
