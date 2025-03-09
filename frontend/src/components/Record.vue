@@ -522,4 +522,35 @@ button {
     font-size: 1.2rem;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  .record-container, .tab-container {
+    background-color: #333; /* 다크 모드 배경 */
+    color: black; /* 텍스트 검은색 */
+  }
+
+  .tab-button {
+    background-color: #444;
+    color: black;
+  }
+
+  .tab-button.active {
+    background-color: #666;
+    color: black;
+  }
+
+  .play-button, .record-button {
+    background-color: #222;
+    color: black;
+  }
+
+  .play-button:hover, .record-button:hover {
+    background-color: #333;
+  }
+
+  .audio-title, .time-display {
+    color: black;
+  }
+}
+
 </style>
