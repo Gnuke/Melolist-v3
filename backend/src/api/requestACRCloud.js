@@ -69,7 +69,7 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
                 const metadataPromises = data.metadata[recognitionType].map(async result => {
                     try {
                         let query = { track: result.title };
-                        console.log("query : " + query);
+                        console.log("query : " + JSON.stringify(query));
                         if (recognitionType === 'music') {
                             query.artists = result.artists.map(artist => artist.name);
                         }
