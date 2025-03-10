@@ -17,6 +17,10 @@ const props = defineProps({
   searchType:{ // 'fingerprint' or 'humming'
     type: String,
     default: 'fingerprint',
+  },
+  isLoading: {
+    type: Boolean,
+    default: false,
   }
 });
 
@@ -30,6 +34,10 @@ const getArtistName = (artists) => {
 </script>
 
 <template>
+  <div v-if="isLoading">
+    <!-- 로딩 스피너 표시 -->
+    <i class="fas fa-spinner fa-spin"></i>
+  </div>
   <div v-if="props.results.length > 0">
     <h3>검색 결과</h3>
     <p v-if="lowScoreMessage" class="low-score-message">{{ lowScoreMessage }}</p>
@@ -99,5 +107,4 @@ tbody tr:nth-child(even) {
     color: black !important; /* 텍스트 검은색 */
   }
 }
-
 </style>

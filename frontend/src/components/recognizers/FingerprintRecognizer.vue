@@ -13,8 +13,10 @@
 
   const recognitionResults = ref([]);
   const noResultMessage = ref('');
+  const isLoading = ref(false); // 로딩 상태 추가
 
   const searchRequestForAcrCloud = async () => {
+    isLoading.value = true; // 요청 시작 시 로딩 상태 true
     try {
       // 1. Blob URL을 이용하여 Blob 객체 가져오기
       const response = await fetch(props.recordedAudio);
@@ -62,20 +64,23 @@
       console.error('Recognizer -> 서버에 요청 실패 : ', error);
       recognitionResults.value = []; // 에러 발생 시 빈 배열로 설정
       noResultMessage.value = ''; // 에러 발생 시 메시지 초기화
+    } finally {
+      isLoading.value = false; // 요청 완료 시 로딩 상태 false
     }
   };
 </script>
 
 <template>
   <div class="search-button-container">
-    <button @click="searchRequestForAcrCloud" class="search-button">
-      <i class="fas fa-search search-icon"></i>
-      <span>검색</span>
+    <button @click="searchRequestForAcrCloud" class="search-button"
+            :disabled="isLoading"> <!-- 로딩 중 버튼 비활성화 -->
+      <i class="fas fa-search search-icon"></i>  <!-- 로딩 중 아이콘 회전 -->
+      <span>{{ isLoading ? '검색 중...' : '검색' }}</span> <!-- 로딩 상태에 따라 텍스트 변경 -->
     </button>
   </div>
   <div>
     <!-- SearchResultsList 컴포넌트 사용 -->
-    <SearchResultsList :results="recognitionResults" :noResultMessage="noResultMessage" searchType="fingerprint"/>
+    <SearchResultsList :results="recognitionResults" :noResultMessage="noResultMessage" :isLoading="isLoading" searchType="fingerprint"/>
   </div>
 </template>
 
@@ -103,5 +108,14 @@
 
 .search-icon {
   margin-right: 8px;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -158,13 +158,13 @@ onBeforeUnmount(() => {
           :class="{ 'tab-button': true, 'active': selectedRecognizer === 'fingerprint' }"
           @click="setRecognizer('fingerprint')"
       >
-        <i class="fa-solid fa-headphones-simple"></i> 음악찾기
+        <i class="fa-solid fa-headphones-simple"></i> 음악 찾기
       </button>
       <button
           :class="{ 'tab-button': true, 'active': selectedRecognizer === 'humming' }"
           @click="setRecognizer('humming')"
       >
-        <i class="fa-solid fa-microphone-lines"></i> 내가 부르기
+        <i class="fa-solid fa-microphone-lines"></i> 직접 부르기
       </button>
       <!-- 다른 Recognizer에 대한 버튼 추가 가능 -->
     </div>
@@ -192,7 +192,6 @@ onBeforeUnmount(() => {
         <div class="time-display">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
-
       </div>
       <div class="audio-controls">
         <button class="play-button" @click="togglePlay">
@@ -241,7 +240,7 @@ button {
 /* Main container styles */
 .record-container {
   font-family: "Noto Sans KR", sans-serif;
-  max-width: 800px;
+  max-width: 400px;
   margin: 20px auto; /* Adjust margin for smaller screens */
   padding: 20px; /* Adjust padding for smaller screens */
   background-color: #f8f9fa;
@@ -257,7 +256,7 @@ button {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-bottom: 20px; /* Add some margin below the button */
+  margin-top: 30px;
 }
 
 /* Record button styles */
@@ -290,9 +289,8 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: auto; /* Adjust min-height for smaller screens */
+  min-height: 300px; /* Adjust min-height for smaller screens */
   overflow: auto;
-  margin-top: 20px; /* Add some spacing */
 }
 
 /* Audio title styles */
@@ -309,12 +307,13 @@ button {
   position: relative;
   width: 100%; /* Full width on smaller screens */
   max-width: 300px; /* Limit width on larger screens */
-  height: 100px; /* Adjust height for smaller screens */
+  min-height: 150px;
+  height: auto; /* Adjust height for smaller screens */
 }
 
 /* Waveform Styles */
 .waveform {
-  height: 40px; /* Adjust waveform height */
+  height: 128px; /* Adjust waveform height */
 }
 
 /* Time Display Styles */
@@ -358,6 +357,7 @@ button {
   padding: 10px 0;
   border-top: 1px solid #e9ecef;
   margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 /* Play/Pause button styles */
@@ -388,16 +388,6 @@ button {
   font-size: 0.8em; /* Adjust icon size */
 }
 
-.volume-control input[type="range"] {
-  width: 80px; /* Smaller width */
-  height: 4px;
-  border-radius: 4px;
-  background: linear-gradient(to right, #007bff {{ volume * 100 }}%, #ced4da {{ volume * 100 }}%);
-  outline: none;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
 .volume-control input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -416,7 +406,6 @@ button {
   background-color: #f8f9fa;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px; /* Less margin */
   overflow: hidden;
 }
 
@@ -509,10 +498,6 @@ button {
     width: 100px;
   }
 
-  .tab-container {
-    margin-bottom: 30px;
-  }
-
   .tab-button {
     padding: 14px 20px;
     font-size: 1.1rem;
@@ -528,5 +513,4 @@ button {
     color: black !important; /* 텍스트 검은색 */
   }
 }
-
 </style>
