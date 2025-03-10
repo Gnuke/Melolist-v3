@@ -15,7 +15,7 @@ app.use(express.json({ limit: '5mb' }));
 
 // CORS 설정 - Vercel 환경에서도 동작하도록 수정
 app.use(cors({
-    origin: ['https://melolist-xi.vercel.app', 'http://localhost:3000'],
+    origin: ['https://melolist-xi.vercel.app', 'http://localhost:3000', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));

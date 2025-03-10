@@ -12,7 +12,7 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
 
         const requestQuery = {
             track: query.track,
-            ...(query.artists && {artist: query.artists}) // query.artists가 존재할 때만 artist 속성 추가
+            ...(query.artists && { artists: query.artists })
         };
 
         console.log("=============================================");
@@ -41,7 +41,7 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
         const { data: responseData } = response;
         const youtubeUrl = responseData?.data?.[0]?.external_metadata?.youtube?.[0]?.link;
         
-        console.log("응답 데이터: " + JSON.stringify(response));
+        console.log("응답 데이터: " + JSON.stringify(response.data));
 
         if (youtubeUrl) {
             let transformedYoutubeUrl = youtubeUrl.replace(/music\.youtube\.com/, "youtube.com"); // 정규식 사용

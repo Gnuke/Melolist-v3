@@ -65,8 +65,11 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
 
             // 각 인식 결과에 대해 Metadata API 호출
             if (data.metadata[recognitionType] && data.metadata[recognitionType].length > 0) {
+
                 // 1. Promise 배열 생성
-                const metadataPromises = data.metadata[recognitionType].map(async result => {
+                const metadataPromises = data.metadata[recognitionType]
+                    .filter(result => result.score >= 0.5) // score 조건 추가
+                    .map(async result => {
                     try {
                         let query = { track: result.title };
                         if (recognitionType === 'music') {
