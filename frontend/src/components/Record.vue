@@ -251,6 +251,22 @@ button {
   align-items: center;
 }
 
+/* v-else 블록 내 h2 태그 스타일 */
+.record-container > div > h2 { /* record-container의 자식인 div의 자식인 h2 */
+  width: 100%; /* 컨테이너 너비에 맞춤 */
+  word-wrap: break-word; /* 단어 단위로 줄 바꿈 */
+  overflow-wrap: break-word; /* 긴 단어 또는 URL을 줄 바꿈 (최신 표준) */
+  text-align: center; /* 텍스트 가운데 정렬 (선택 사항) */
+  font-size: 1.2rem; /* 폰트 사이즈 조절 (선택 사항) */
+}
+
+/* 작은 화면을 위한 미디어 쿼리 */
+@media (max-width: 470px) {
+  .record-container > div > h2 {
+    font-size: 1rem; /* 더 작은 화면에서 폰트 사이즈 조절 */
+  }
+}
+
 /* Record button container */
 .record-button-container {
   width: 100%;
