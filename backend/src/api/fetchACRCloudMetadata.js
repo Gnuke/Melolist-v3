@@ -15,6 +15,8 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
             ...(query.artists && {artist: query.artists}) // query.artists가 존재할 때만 artist 속성 추가
         };
 
+        console.log("requestQuery 내용 : " + JSON.stringify(requestQuery));
+
         const response = await axios.get(apiUrl, {
             params: {
                 query: JSON.stringify(requestQuery), // JSON 문자열로 변환
@@ -36,9 +38,12 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
 
         const { data: responseData } = response;
         const youtubeUrl = responseData?.data?.[0]?.external_metadata?.youtube?.[0]?.link;
+        
+        console.log("응답 데이터: " + JSON.stringify(response));
 
         if (youtubeUrl) {
             let transformedYoutubeUrl = youtubeUrl.replace(/music\.youtube\.com/, "youtube.com"); // 정규식 사용
+            console.log("변환된 유튜브 URL: " + transformedYoutubeUrl);
             return {
                 url: transformedYoutubeUrl
             };
