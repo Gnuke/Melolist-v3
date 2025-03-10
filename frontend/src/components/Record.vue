@@ -267,6 +267,12 @@ button {
   }
 }
 
+@media (max-width: 348px) {
+  .record-container > div > h2 {
+    font-size: 0.9rem; /* 더 작은 화면에서 폰트 사이즈 조절 */
+  }
+}
+
 /* Record button container */
 .record-button-container {
   width: 100%;
@@ -521,6 +527,13 @@ button {
 
   .tab-button i {
     font-size: 1.2rem;
+  }
+}
+
+/* 미디어 쿼리 수정 */
+@media (max-width: 348px) {
+  .tab-button {
+    font-size: 0.8rem; /* 더 작은 화면에서 폰트 사이즈 조절 */
   }
 }
 
