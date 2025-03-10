@@ -69,9 +69,9 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
                 const metadataPromises = data.metadata[recognitionType].map(async result => {
                     try {
                         let query = { track: result.title };
-                        console.log("query : " + JSON.stringify(query));
                         if (recognitionType === 'music') {
                             query.artists = result.artists.map(artist => artist.name);
+                            console.log("query : " + JSON.stringify(query));
                         }
 
                         // 각 recognitionType에 맞는 API 키를 환경 변수에서 가져옴
