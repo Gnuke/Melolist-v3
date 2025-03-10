@@ -8,14 +8,15 @@
 
 ### 💡 프로젝트 소개
 
-Melolist는 다양한 음성 입력 방식을 통해 간편하게 음악 정보를 검색하는 프로젝트입니다.
+Melolist는 다양한 방식을 통해 간편하게 음악 정보를 검색하는 프로젝트입니다.
+정확한 음악 정보가 기억나지 않을 때 그 음악에 대한 정보를 찾을 수 있는 방법이 없을까 고민하다가 Melolist를 개발하게 되었습니다.
 
 **Background:**
 
 초기 개발 단계에서는 **AcrCloud API**를 이용한 **Fingerprint 기반 음악 검색** 기능을 먼저 구현하였습니다.  
 이후 사용자가 직접 노래를 부르거나 흥얼거리는 방식으로 음악을 찾을 수 있도록 **Humming 기반 검색 기능**을 추가하였습니다.
 
-Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어려움이 많아, **AcrCloud의 두 개의 프로젝트**를 활용하여 Fingerprint 검색과 Humming 검색을 분리하는 방식으로 개발을 진행하였습니다.
+AcrCloud API의 Fingerprint 검색 기능과 Custom Recognizer 기능을 각각 활용하여 실제 음악 검색과 허밍 검색을 독립적으로 구현함으로써, 각 검색 방식에 최적화된 응답 속도와 정확도를 확보했습니다.
 
 -------
 
@@ -24,23 +25,9 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
 <details>
   <summary>🗓️ 개발 기간 (상세)</summary>
   <p>
-  
-#### 🗓️ 2025년 01월 26일 (개발 시작)
-- 원격 저장소 연결
-- Local Vue 프로젝트 생성
-- 환경설정 & 테스트
-
-#### 🗓️ 01월 27일
-- `front` 브랜치 생성
-- `.gitignore` 추가
-- Git 전략 정리
+    
+#### 🗓️ 01월 27일 (개발 시작)
 - 가용 API 조사
-
-#### 📆 01월 28일 ~ 02월 03일
-- 설 연휴
-
-#### 📆 02월 04일 ~ 09일
-- 개인사정
 
 #### 🗓️ 02월 10일
 - 녹음 UI 구현
@@ -56,9 +43,6 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
 - **Front-end**
   - 검색 결과 목록 출력 UI 구현 (ACRCloud 데이터 사용)
 
-#### 📆 02월 13일 ~ 03월 05일
-  - **면접 및 취업 준비로 개발 중단**
-
 #### 🗓️ 03월 06일
 - **Back-end**
   - AcrCloud API를 이용한 Humming 기반 검색 기능 추가
@@ -71,6 +55,10 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
   - 검색결과 확인을 위한 Youtube Metadata 요청 구현
 - **Front-end**
   - 사용자 UI 개선
+ 
+#### 🗓️ 03월 10일
+- Vercel을 사용하여 프론트엔드 및 백엔드 프로젝트 배포 완료 [https://melolist-xi.vercel.app]
+
   </p>
 </details>
 
@@ -84,7 +72,7 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
 | **IDE**         | IntelliJ IDEA         |
 | **패키지 매니저** | npm (v10.9.2)                       |
 | **빌드 도구**    | Vite (v6.0.5)                      |
-| **실행 환경**    | Node.js (v22.13.1)        |
+| **런타임 환경**    | Node.js (v22.13.1)        |
 
 -------
 
@@ -94,13 +82,16 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
 |----------|---------------|---------|---------------------------------------------------|
 | **Frontend** | Vue.js        | v3.5.13 | 사용자 인터페이스 및 웹 애플리케이션 구축                           |
 |          | Wavesurfer.js | v7.9.0  | 오디오 시각화 및 조작                                      |
+|          | @vitejs/plugin-vue | v5.2.1 | Vue Single File Components 지원을 위한 Vite 플러그인             |
+|          | vite        | v6.0.5  | 프론트엔드 빌드 도구                                        |
+|          | @fortawesome/fontawesome-free| v6.7.2 | 웹 페이지에 폰트 기반 아이콘을 쉽게 추가할 수 있는 라이브러리        |
 | **Backend**  | Express.js    | v4.21.2 | Node.js 기반 웹 애플리케이션 프레임워크                         |
 |          | Axios         | v1.7.9  | HTTP 요청 라이브러리                                     |
 |          | CORS          | v2.8.5  | Cross-Origin Resource Sharing 활성화                 |
-|          | form-data     | v4.0.1  | `multipart/form-data` 형식으로 녹음된 데이터를 전송하기 위한 라이브러리 |
-|          | AcrCloud API   | v1      | 실제 음악 녹음 검색 기능 및 허밍 검색 기능 제공                      |
+|          | form-data     | v4.0.2  | `multipart/form-data` 형식으로 데이터 전송                   |
+|          | dotenv        | v16.4.7 | 환경 변수 관리                                          |
 | **Dev Tools**| Nodemon       | v3.1.9  | 파일 변경 감지 시 서버 자동 재시작                              |
-|          | dotenv        | v16.3.1 | 환경 변수 관리                                          |
+| **API**| AcrCloud API       | -  | 음악 Fingerprint 및 Humming 기반 검색 기능 제공, Youtube Metadata API 연동                              |
 
 -------
 
@@ -117,7 +108,7 @@ Humming으로 검색 시 Houndify API를 사용하려 했으나 예상보다 어
 --------
 
 ### 🔧 개발 도구
-**패키지 관리** : npm-check
+**코드 퀄리티 관리** : npm-check
 
 --------
 
@@ -138,7 +129,7 @@ yarn install
 
 ### 🌱 git 전략
 
-1. 로컬 dev에서 작업 후 origin/dev로 푸시
+1. 로컬 dev에서 작업 후 dev 브랜치에 푸시
   
 2. GitHub에서 PR을 통해 main에 병합
   
