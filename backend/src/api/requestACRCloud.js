@@ -11,14 +11,14 @@ const generateAcrCloudSignature = (stringToSign, apiSecret) => {
 // 중복 제거 함수
 const removeDuplicateResults = (results) => {
     const uniqueResults = [];
-    const seen = new Set();
+    const seen = {}; // Set 대신 object 사용
 
     for (const result of results) {
         const key = `${result.title}-${result.artists?.[0]?.name || 'unknown'}-${result.score}`;
 
-        if (!seen.has(key)) {
+        if (!seen[key]) { // object의 key 존재 여부 확인은 Set보다 빠름
             uniqueResults.push(result);
-            seen.add(key);
+            seen[key] = true; // key를 object에 추가
         }
     }
 
@@ -62,22 +62,15 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
         // 데이터 중복 제거
         if (data && data.status.code === 0 && data.metadata && data.metadata[recognitionType]) {
             data.metadata[recognitionType] = removeDuplicateResults(data.metadata[recognitionType]);
+
             // 각 인식 결과에 대해 Metadata API 호출
             if (data.metadata[recognitionType] && data.metadata[recognitionType].length > 0) {
-                for (const result of data.metadata[recognitionType]) {
+                // 1. Promise 배열 생성
+                const metadataPromises = data.metadata[recognitionType].map(async result => {
                     try {
-                        let query = {};
+                        let query = { track: result.title };
                         if (recognitionType === 'music') {
-                            // music인 경우: 곡 제목과 아티스트 정보를 JSON 형식으로 구성
-                            query = {
-                                track: result.title,
-                                artists: result.artists.map(artist => artist.name) // 아티스트 이름을 배열로 추출
-                            };
-                        } else if (recognitionType === 'humming') {
-                            // humming인 경우: 곡 제목만 JSON 형식으로 구성
-                            query = {
-                                track: result.title
-                            };
+                            query.artists = result.artists.map(artist => artist.name);
                         }
 
                         // 각 recognitionType에 맞는 API 키를 환경 변수에서 가져옴
@@ -95,14 +88,22 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
                         console.error("Metadata API 호출 실패:", error);
                         // 에러 처리 (계속 진행)
                     }
+                });
+
+                // 2. 모든 Promise가 완료될 때까지 기다림
+                try {
+                    await Promise.all(metadataPromises);
+                } catch (error) {
+                    console.error("Promise.all 에러:", error);
+                    throw new Error("Metadata API 호출 중 에러 발생"); // 상위 함수로 에러를 던짐
                 }
             }
         }
 
         if (process.env.NODE_ENV !== 'production') {
-            console.log("================================")
-            console.log("data : " + data.toString());
-            console.log("================================")
+            console.log("================================");
+            console.log("data : ", data);
+            console.log("================================");
         }
 
         return data;
