@@ -2,17 +2,21 @@ import axios from 'axios';
 
 const fetchACRCloudMetadata = async (query, metadataApiKey) => {
     try {
-        if (process.env.NODE_ENV !== 'production') {
-            console.log("metadata query :", query);
-        }
-
         const host = 'eu-api-v2.acrcloud.com';
         const endpoint = '/api/external-metadata/tracks';
         const apiUrl = `https://${host}${endpoint}`;
 
+        const cleanQuery = (query) => {
+            return query.replace(/\(.*?\)/g, "");
+        };
+
         const requestQuery = {
-            track: query.track,
-            ...(query.artists && { artists: query.artists })
+            track: cleanQuery(query.track),
+            ...(query.artists && {
+                artists: query.artists.flatMap(artistString =>
+                    artistString.split(',').map(artist => cleanQuery(artist.trim()))
+                )[0] // 배열의 첫 번째 요소만 선택
+            })
         };
 
         console.log("=============================================");
@@ -21,7 +25,7 @@ const fetchACRCloudMetadata = async (query, metadataApiKey) => {
 
         const response = await axios.get(apiUrl, {
             params: {
-                query: JSON.stringify(requestQuery), // JSON 문자열로 변환
+                query: JSON.stringify(requestQuery), // 인코딩된 쿼리 전달
                 format: 'json',
                 platforms: 'youtube'
             },

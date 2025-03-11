@@ -63,54 +63,56 @@ async function requestACRCloud(audioBase64, apiKey, apiSecret, recognitionType =
         if (data && data.status.code === 0 && data.metadata && data.metadata[recognitionType]) {
             data.metadata[recognitionType] = removeDuplicateResults(data.metadata[recognitionType]);
 
+            // 메타데이터 요청 개수 제한
+            const maxMetadataRequests = 3;
+            const metadataResults = data.metadata[recognitionType].slice(0, maxMetadataRequests);
+
             // 각 인식 결과에 대해 Metadata API 호출
             if (data.metadata[recognitionType] && data.metadata[recognitionType].length > 0) {
-
                 // 1. Promise 배열 생성
-                const metadataPromises = data.metadata[recognitionType]
-                    .filter(result => result.score >= 0.5) // score 조건 추가
+                const metadataPromises = metadataResults
+                    .filter(result => result.score > 0.5) // score 조건 추가
                     .map(async result => {
-                    try {
-                        let query = { track: result.title };
-                        if (recognitionType === 'music') {
-                            query.artists = result.artists.map(artist => artist.name);
-                            console.log("query : " + JSON.stringify(query));
+                        try {
+                            let query = { track: result.title };
+                            if (recognitionType === 'music') {
+                                query.artists = result.artists.map(artist => artist.name);
+                            }
+
+                            // 각 recognitionType에 맞는 API 키를 환경 변수에서 가져옴
+                            const metadataApiKey = process.env[`METADATA_API_KEY_${recognitionType.toUpperCase()}`];
+
+                            // ACRCloud Metadata API 호출 (fetchACRCloudMetadata에 query와 apiKey 전달)
+                            const metadata = await fetchACRCloudMetadata(query, metadataApiKey);
+
+                            // Metadata API 응답이 유효한 경우, 결과 객체에 추가
+                            if (metadata) {
+                                // YouTube URL 추가
+                                result.youtube_url = metadata.url;
+                            }
+                        } catch (error) {
+                            console.error("Metadata API 호출 실패:", error);
+                            // 에러 처리 (계속 진행)
                         }
-
-                        // 각 recognitionType에 맞는 API 키를 환경 변수에서 가져옴
-                        const metadataApiKey = process.env[`METADATA_API_KEY_${recognitionType.toUpperCase()}`];
-
-                        // ACRCloud Metadata API 호출 (fetchACRCloudMetadata에 query와 apiKey 전달)
-                        const metadata = await fetchACRCloudMetadata(query, metadataApiKey);
-
-                        // Metadata API 응답이 유효한 경우, 결과 객체에 추가
-                        if (metadata) {
-                            // YouTube URL 추가
-                            result.youtube_url = metadata.url;
-                        }
-                    } catch (error) {
-                        console.error("Metadata API 호출 실패:", error);
-                        // 에러 처리 (계속 진행)
-                    }
-                });
+                    });
 
                 // 2. 모든 Promise가 완료될 때까지 기다림
                 try {
+                    console.log(`총 ${metadataPromises.length}개의 Metadata API 요청`);
                     await Promise.all(metadataPromises);
                 } catch (error) {
                     console.error("Promise.all 에러:", error);
                     throw new Error("Metadata API 호출 중 에러 발생"); // 상위 함수로 에러를 던짐
                 }
+
+                return metadataResults;
             }
         }
 
-        if (process.env.NODE_ENV !== 'production') {
-            console.log("================================");
-            console.log("data : ", data);
-            console.log("================================");
-        }
+        // metadataResults가 없는 경우 빈 배열 반환
+        console.log("클라이언트에 반환하는 데이터 : 빈 배열");
+        return [];
 
-        return data;
     } catch (error) {
         console.error(error);
         throw new Error('ACRCloud API 요청 실패');
