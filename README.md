@@ -59,6 +59,9 @@ AcrCloud API의 Fingerprint 검색 기능과 Custom Recognizer 기능을 각각 
 #### 🗓️ 03월 10일
 - Vercel을 사용하여 프론트엔드 및 백엔드 프로젝트 배포 완료 [https://melolist-xi.vercel.app]
 
+#### 🗓️ 03월 11일 ~ 진행 중
+- 사용자 UI 및 성능 최적화
+
   </p>
 </details>
 
