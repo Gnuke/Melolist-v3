@@ -240,7 +240,7 @@ button {
 /* Main container styles */
 .record-container {
   font-family: "Noto Sans KR", sans-serif;
-  max-width: 400px;
+  max-width: 600px;
   margin: 20px auto; /* Adjust margin for smaller screens */
   padding: 20px; /* Adjust padding for smaller screens */
   background-color: #f8f9fa;

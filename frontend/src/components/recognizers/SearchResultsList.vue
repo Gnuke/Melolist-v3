@@ -75,7 +75,7 @@ const getArtistName = (artists) => {
 <style scoped>
 table {
   width: 100%;
-  min-width: 400px;
+  min-width: 430px;
   border-collapse: collapse;
   margin-bottom: 20px;
 }
@@ -97,10 +97,17 @@ tbody tr:nth-child(even) {
 }
 
 /* 제목, 아티스트, 앨범 셀에 적용할 스타일 */
-td:nth-child(1), /* 제목 */
+td:nth-child(1) { /* 제목 */
+  max-width: 150px; /* 적절한 최대 너비 설정 (조정 필요) */
+  /* white-space: nowrap; 텍스트를 한 줄에 표시 (제거) */
+  overflow: hidden; /* 내용이 넘치면 숨김 */
+  text-overflow: ellipsis; /* 넘치는 텍스트에 줄임표 표시 */
+  word-break: break-all; /* 긴 단어가 셀 너비를 넘어갈 경우 강제로 줄바꿈 */
+}
+
 td:nth-child(2), /* 아티스트 */
 td:nth-child(3)  /* 앨범 */ {
-  max-width: 150px; /* 적절한 최대 너비 설정 (조정 필요) */
+  max-width: 100px; /* 적절한 최대 너비 설정 (조정 필요) */
   white-space: nowrap; /* 텍스트를 한 줄에 표시 */
   overflow: hidden; /* 내용이 넘치면 숨김 */
   text-overflow: ellipsis; /* 넘치는 텍스트에 줄임표 표시 */
