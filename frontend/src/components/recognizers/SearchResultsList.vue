@@ -96,9 +96,11 @@ tbody tr:nth-child(even) {
   background-color: #f9f9f9;
 }
 
-/* 제목 셀에 적용할 스타일 */
-td:first-child {
-  max-width: 200px; /* 적절한 최대 너비 설정 */
+/* 제목, 아티스트, 앨범 셀에 적용할 스타일 */
+td:nth-child(1), /* 제목 */
+td:nth-child(2), /* 아티스트 */
+td:nth-child(3)  /* 앨범 */ {
+  max-width: 150px; /* 적절한 최대 너비 설정 (조정 필요) */
   white-space: nowrap; /* 텍스트를 한 줄에 표시 */
   overflow: hidden; /* 내용이 넘치면 숨김 */
   text-overflow: ellipsis; /* 넘치는 텍스트에 줄임표 표시 */
