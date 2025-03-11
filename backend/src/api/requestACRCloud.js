@@ -11,10 +11,10 @@ const generateAcrCloudSignature = (stringToSign, apiSecret) => {
 // 중복 제거 함수
 const removeDuplicateResults = (results) => {
     const uniqueResults = [];
-    const seen = {}; // Set 대신 object 사용
+    const seen = {}; // Set 대신 object 사용, JavaScript 객체(Object)의 키(key)는 중복될 수 없다.
 
     for (const result of results) {
-        const key = `${result.title}-${result.artists?.[0]?.name || 'unknown'}-${result.score}`;
+        const key = `${result.title}-${result.artists?.[0]?.name || 'unknown'}`;
 
         if (!seen[key]) { // object의 key 존재 여부 확인은 Set보다 빠름
             uniqueResults.push(result);
