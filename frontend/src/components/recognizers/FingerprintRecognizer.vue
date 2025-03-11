@@ -50,10 +50,10 @@
       }
 
       // 5. 검색 결과 파싱
-      if (data && data.status.code === 0 && data.metadata && data.metadata.music) {
-        recognitionResults.value = data.metadata.music;
+      if (data && data.length > 0) {
+        recognitionResults.value = data;
         noResultMessage.value = ''; // 검색 결과가 있을 경우 noResultMessage 초기화
-      } else if (data && data.status.msg === "No result") {
+      } else if (data && data.length === 0) {
         recognitionResults.value = [];
         noResultMessage.value = "일치하는 음악을 찾을 수 없습니다."; // 메시지 설정
       }  else {

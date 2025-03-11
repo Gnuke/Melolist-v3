@@ -52,12 +52,15 @@ const searchRequestForHumming = async () => {
     }
 
     // 5. 검색 결과 파싱
-    if (data && data.status.code === 0 && data.metadata && data.metadata.humming) {
-      recognitionResults.value = data.metadata.humming.filter(result => result.score * 100 >= minScore); // 일치율 필터링
+    if (data && data.length > 0) {
+      recognitionResults.value = data.map(result => ({
+        ...result,
+        score: result.score || 0
+      })).filter(result => result.score * 100 >= minScore); // 일치율 필터링
 
       // 최소 점수 이상의 결과가 없으면 최고 점수 결과를 포함
-      if (recognitionResults.value.length === 0 && data.metadata.humming.length > 0) {
-        const highestScoreResult = data.metadata.humming.reduce((prev, current) => (prev.score > current.score) ? prev : current);
+      if (recognitionResults.value.length === 0 && data.length > 0) {
+        const highestScoreResult = data.reduce((prev, current) => (prev.score > current.score) ? prev : current);
         recognitionResults.value = [highestScoreResult];
 
         // 낮은 점수에 대한 메시지 설정
@@ -65,7 +68,7 @@ const searchRequestForHumming = async () => {
       }
 
       noResultMessage.value = ''; // 검색 결과가 있을 경우 noResultMessage 초기화
-    } else if (data && data.status.msg === "No result") {
+    } else if (data && data.length === 0) {
       recognitionResults.value = [];
       noResultMessage.value = "일치하는 음악을 찾을 수 없습니다."; // 메시지 설정
       lowScoreMessage.value = ''; // 초기화

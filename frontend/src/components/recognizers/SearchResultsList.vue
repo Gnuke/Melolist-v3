@@ -96,6 +96,14 @@ tbody tr:nth-child(even) {
   background-color: #f9f9f9;
 }
 
+/* 제목 셀에 적용할 스타일 */
+td:first-child {
+  max-width: 200px; /* 적절한 최대 너비 설정 */
+  white-space: nowrap; /* 텍스트를 한 줄에 표시 */
+  overflow: hidden; /* 내용이 넘치면 숨김 */
+  text-overflow: ellipsis; /* 넘치는 텍스트에 줄임표 표시 */
+}
+
 .low-score-message {
   color: orange;
   font-style: italic;
