@@ -7,15 +7,15 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare; prisma generate"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
-    "@prisma/client": "^6.19.0",
+    "@prisma/client": "^6.19.2",
     "form-data": "^4.0.5",
     "mysql2": "^3.16.1",
     "nuxt": "^4.2.2",
-    "prisma": "6.19.0",
+    "prisma": "^6.19.0",
     "vue": "^3.5.26",
     "vue-router": "^4.6.4",
     "wavesurfer.js": "^7.12.1"

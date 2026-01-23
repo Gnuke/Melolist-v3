@@ -27,6 +27,8 @@ export default defineEventHandler(async (event) => {
       console.error('Google OAuth 설정이 없습니다.')
       return sendRedirect(event, '/auth/login?error=config_error')
     }
+
+    const redirectUri = `https://melolist-v2.vercel.app/api/auth/google/callback`
     
     // 3. Authorization Code를 Access Token으로 교환
     const tokenResponse = await $fetch<{
@@ -47,7 +49,7 @@ export default defineEventHandler(async (event) => {
         client_id: clientId,
         client_secret: clientSecret,
         code: code,
-        redirect_uri: 'http://localhost:3000/api/auth/google/callback'
+        redirect_uri: redirectUri,
       }).toString()
     })
     
