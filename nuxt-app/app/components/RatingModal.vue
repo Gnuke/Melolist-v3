@@ -23,7 +23,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
-const isVisible = ref(true);
+const isVisible = ref(false);
 
 const checkCondition = () => {
   const isRated = localStorage.getItem('music_is_rated') === 'true';
