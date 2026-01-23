@@ -1,141 +1,183 @@
-# 🎵 Melolist
+# 🎤 Dev 개요
 
-### 🧑‍💻 개발자 소개
-
-안녕하세요. 개발자 정진욱입니다.
+교육 간 제출용 프로젝트
 
 -------
 
-### 💡 프로젝트 소개
+## 💿 실행방법 (임시)
 
-Melolist는 다양한 방식을 통해 간편하게 음악 정보를 검색하는 프로젝트입니다.
-정확한 음악 정보가 기억나지 않을 때 그 음악에 대한 정보를 찾을 수 있는 방법이 없을까 고민하다가 Melolist를 개발하게 되었습니다.
+#### 1. 프로젝트 클론
+- git clone
 
-**Background:**
+- cd Melolist
 
-초기 개발 단계에서는 **AcrCloud API**를 이용한 **Fingerprint 기반 음악 검색** 기능을 먼저 구현하였습니다.  
-이후 사용자가 직접 노래를 부르거나 흥얼거리는 방식으로 음악을 찾을 수 있도록 **Humming 기반 검색 기능**을 추가하였습니다.
+#### 2. Nuxt 애플리케이션 디렉토리로 이동
+- cd nuxt-app
 
-AcrCloud API의 Fingerprint 검색 기능과 Custom Recognizer 기능을 각각 활용하여 실제 음악 검색과 허밍 검색을 독립적으로 구현함으로써, 각 검색 방식에 최적화된 응답 속도와 정확도를 확보했습니다.
+#### 3. 의존성 설치
+- npm install
 
--------
+#### 4. 개발 서버 실행
+- npm run dev
 
-### ⏱️ 개발 기간
+--------
 
-<details>
-  <summary>🗓️ 개발 기간 (상세)</summary>
-  <p>
-    
-#### 🗓️ 01월 27일 (개발 시작)
-- 가용 API 조사
+# 🤝 Branch & PR 정책
 
-#### 🗓️ 02월 10일
-- 녹음 UI 구현
+### 브랜치 구조
 
-#### 🗓️ 02월 11일
-- 디렉토리 구조 리팩토링
-- Git 브랜치 병합 후 재생성
+- `main`: 운영(배포) / 최종 릴리즈 브랜치
+- `dev`: 통합 브랜치
+- `feature/*`: 개인 작업 브랜치
 
-#### 📆 02월 12일
-- **Back-end**
-  - Node.js 서버 구축
-  - 음악 검색 요청 API 구현 (ACRCloud API 사용)
-- **Front-end**
-  - 검색 결과 목록 출력 UI 구현 (ACRCloud 데이터 사용)
+###  협업 규칙
 
-#### 🗓️ 03월 06일
-- **Back-end**
-  - AcrCloud API를 이용한 Humming 기반 검색 기능 추가
-  - 기존 Fingerprint 기반 검색과 Humming 검색을 분리
-- **Front-end**
-  - 검색 결과 데이터 시각화 개선
- 
-#### 🗓️ 03월 07일
-- **Back-end**
-  - 검색결과 확인을 위한 Youtube Metadata 요청 구현
-- **Front-end**
-  - 사용자 UI 개선
- 
-#### 🗓️ 03월 10일
-- Vercel을 사용하여 프론트엔드 및 백엔드 프로젝트 배포 완료 [https://melolist-xi.vercel.app]
+- `main`: 배포/제출용 안정 브랜치 (직접 push 금지, PR로만 병합)
+- `dev`: 팀 개발 브랜치
+- 기능 단위 개발 시 개인 브랜치(`feature/*`) 생성 권장
 
-#### 🗓️ 03월 11일 ~ 진행 중
-- 사용자 UI 및 성능 최적화
+### 작업 흐름
 
-  </p>
-</details>
+1. `dev` 브랜치에서 기능 브랜치를 생성합니다.
+   ```bash
+   git checkout dev
+   git pull origin dev
+   git checkout -b feature/your-task
 
--------
+2. 기능 브랜치에서 작업 후 변경사항을 push 합니다.
 
-### 🖥 개발환경
+3. Pull Request를 생성합니다: feature/* → dev
 
-| 항목             | 내용                        |
-|-----------------|---------------------------|
-| **OS**          | Windows 10 |
-| **IDE**         | IntelliJ IDEA         |
-| **패키지 매니저** | npm (v10.9.2)                       |
-| **빌드 도구**    | Vite (v6.0.5)                      |
-| **런타임 환경**    | Node.js (v22.13.1)        |
+4. Squash 방식으로 병합(Merge)합니다.
 
--------
+--------
 
-### 🛠️ 기술 스택
+### 🏃 참여자
 
-| 항목       | 기술/라이브러리   | 버전      | 설명                                                |
-|----------|---------------|---------|---------------------------------------------------|
-| **Frontend** | Vue.js        | v3.5.13 | 사용자 인터페이스 및 웹 애플리케이션 구축                           |
-|          | Wavesurfer.js | v7.9.0  | 오디오 시각화 및 조작                                      |
-|          | @vitejs/plugin-vue | v5.2.1 | Vue Single File Components 지원을 위한 Vite 플러그인             |
-|          | vite        | v6.0.5  | 프론트엔드 빌드 도구                                        |
-|          | @fortawesome/fontawesome-free| v6.7.2 | 웹 페이지에 폰트 기반 아이콘을 쉽게 추가할 수 있는 라이브러리        |
-| **Backend**  | Express.js    | v4.21.2 | Node.js 기반 웹 애플리케이션 프레임워크                         |
-|          | Axios         | v1.7.9  | HTTP 요청 라이브러리                                     |
-|          | CORS          | v2.8.5  | Cross-Origin Resource Sharing 활성화                 |
-|          | form-data     | v4.0.2  | `multipart/form-data` 형식으로 데이터 전송                   |
-|          | dotenv        | v16.4.7 | 환경 변수 관리                                          |
-| **Dev Tools**| Nodemon       | v3.1.9  | 파일 변경 감지 시 서버 자동 재시작                              |
+- 정진욱
+- 진기성
+- 김은혜
+- 금규환
+- 이원우
+  
+--------
+
+### 📌 프로젝트 목적
+
+- 교육 간 학습한 **Vue** 와 **Nuxt.js** 숙달
+- **데이터 설계 → 인증(OAuth) → API → 배포**까지 전 과정을 경험
+- ORM(Prisma)과 MariaDB를 활용한 **관계형 데이터 모델링 및 CRUD 구현**
+
+--------
+
+### 🛠️ 기술 스택(Nuxt.js 마이그레이션 완료)                            
+
+| 구분 | 기술/라이브러리 | 버전 | 설명 |
+|---|---|---:|---|
+| **Framework** | Nuxt | ^4.2.2 | Vue 기반 풀스택 프레임워크(SSR/CSR, 파일 기반 라우팅, Nitro 서버) |
+| **UI** | Vue | ^3.5.26 | 컴포넌트 기반 UI |
+| **Routing** | vue-router | ^4.6.4 | (참고) Nuxt 라우팅의 내부 기반 |
+| **Audio** | wavesurfer.js | ^7.12.1 | 오디오 파형 시각화/재생 |
+| **Icons** | @fortawesome/fontawesome-free | ^6.7.2 | 아이콘 폰트 |
+| **Server Utils** | form-data | ^4.0.5 | 서버에서 multipart/form-data 구성(ACRCloud 요청용) |
+| **Dev** | @types/node | ^25.0.9 | Node 타입(IDE/TS 지원) |
+| **DB**   | MariaDB       |    ^12.1.2    | User data, 평가 data 저장                                          |
 | **API**| AcrCloud API       | -  | 음악 Fingerprint 및 Humming 기반 검색 기능 제공, Youtube Metadata API 연동                              |
 
 -------
 
-### ✨ 주요기능
+### 📋 주요 기능
 
-- 🎧 **Fingerprint 기반 음악 검색** (AcrCloud API)
-  - 실제 음악을 녹음하여 검색하는 기능
-- 🎤 **Humming 기반 멜로디 검색** (AcrCloud API)
-  - 사용자가 직접 노래를 부르거나 흥얼거려 음악을 찾는 기능
-- 🦻 **검색 데이터 기반 Youtube 링크 제공** (AcrCloud Metadata API)
-  - 응답 받은 데이터를 쿼리로 이용, 메타데이터 요청을 통해 Youtube 링크 제공
-- ➕ 추가 예정
+#### 1) 회원/인증
+- **비회원도 검색 및 서비스 이용 가능**
+- 단, **평가(Board) 작성/수정/삭제는 로그인 필요**
+- 인증 방식: **OAuth2 (Google, Naver)**
+- 회원가입 정책:
+  - 별도 가입 폼 없이 **OAuth 로그인 성공 시 member 레코드 자동 생성(Just-in-time 가입)**
 
---------
+#### 2) 서비스 평가(Board)
+- 앱/서비스 전반에 대한 평가 기능 제공
+- CRUD:
+  - Create/Update/Delete: 로그인 사용자만 가능
+  - Read: 비회원도 가능(선택)
+- 평가 데이터는 `board` 테이블에 저장, 작성자(`member`)와 연관
 
-### 🔧 개발 도구
-**코드 퀄리티 관리** : npm-check
+#### 3) 평가 유도 UX
+- 비회원에게도 “서비스 평가 참여” UI를 노출하여 **로그인 유도**
+- “나중에” 선택 시 일정 기간 동안 평가 UI 미노출
+  - 비회원: 쿠키/LocalStorage로 제어
+  - 회원: DB에 상태 저장
 
---------
+---
 
-### ⚙️ 설치 방법
+### 🗄️ 데이터 구조(요약)
 
-1.  Node.js 및 npm (또는 yarn) 설치
+#### member (회원)
+- OAuth 로그인 시 자동 생성
+- 사용자 식별 및 평가 작성자 관리
 
-2.  프로젝트 디렉토리로 이동
+#### board (서비스 평가)
+- 앱/서비스에 대한 평가 게시판
+- 작성자(member)와 연관, CRUD 지원
 
-3.  의존성 설치
+----
 
-```bash
-npm install
-# 또는
-yarn install
+### 🔐 권한 정책
+
+| 기능 | 비회원 | 로그인 |
+|------|--------|--------|
+음악 검색 / 결과 조회 | ✅ | ✅ |
+평가(Board) 조회 | ✅ | ✅ |
+평가(Board) 작성 | ❌ | ✅ |
+평가 수정/삭제 | ❌ | 작성자만 |
+
+---
+
+### 🚀 배포 및 운영
+
+- Nuxt 단일 애플리케이션 구조로 배포
+- 외부 API 키 및 보안 정보는 **환경변수(Vercel Environment Variables)** 로 관리
+- 로컬 개발: `.env` 사용 / 운영 환경: Vercel env 사용
+
+---
+
+### 📁 프로젝트 디렉토리 구조 (프로젝트 배포 후 재정리 예정)
+
 ```
---------
 
-### 🌱 git 전략
+Melolist
+├─ LICENSE
+├─ nuxt-app
+│  ├─ app
+│  │  ├─ app.vue
+│  │  ├─ components
+│  │  ├─ composables
+│  │  │  ├─ useAuthTest.js
+│  │  │  └─ useMusicSearch.ts
+│  │  ├─ layouts
+│  │  │  ├─ centered.vue
+│  │  │  └─ default.vue
+│  │  ├─ pages
+│  │  │  ├─ auth
+│  │  │  ├─ boards
+│  │  │  └─ index.vue
+│  │  └─ utils
+│  ├─ docs
+│  │  └─ plantuml
+│  ├─ mocks
+│  │  └─ db
+│  ├─ nuxt.config.ts
+│  ├─ server
+│  │  ├─ api
+│  │  │  ├─ auth
+│  │  │  ├─ boards
+│  │  │  ├─ fingerprints.post.ts
+│  │  │  └─ humming.post.ts
+│  │  ├─ services
+│  │  │  └─ musicsearch
+│  │  └─ utils
+│  │     └─ db.js
+│  └─ tsconfig.json
+└─ README.md
 
-1. 로컬 dev에서 작업 후 dev 브랜치에 푸시
-  
-2. GitHub에서 PR을 통해 main에 병합
-  
-3. 로컬 main을 git pull origin main으로 최신화
-
-4. 필요하면 dev도 main 기준으로 업데이트 (merge or rebase)
+```

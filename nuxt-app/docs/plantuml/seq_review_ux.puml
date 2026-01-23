@@ -1,0 +1,15 @@
+@startuml
+actor User
+participant Frontend
+participant Backend
+database MariaDB
+
+User -> Frontend : 평가 유도 노출
+User -> Frontend : "나중에" 클릭
+alt 비회원
+  Frontend -> Frontend : localStorage 저장
+else 회원
+  Frontend -> Backend : POST /review/hide (JWT)
+  Backend -> MariaDB : UPDATE wooriic_user.review_hide_until
+end
+@enduml
