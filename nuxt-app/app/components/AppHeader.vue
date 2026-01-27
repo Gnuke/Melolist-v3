@@ -37,15 +37,30 @@
 </template>
 
 <script setup>
-const { currentUser, logout } = useAuthTest();
+// 서버에서 실제 인증 상태 확인
+const { data: authData, refresh } = await useFetch('/api/auth/me');
 
-const isLoggedIn = computed(() => !!currentUser.value);
+const isLoggedIn = computed(() => authData.value?.isLoggedIn || false);
 
-function onLogout() {
-  logout();
-  // "로그인 했을 때 가정"이라면 여기서 강제 이동 안 해도 되는데,
-  // UX상 홈으로 보내는 게 자연스러움
-  navigateTo("/");
+async function onLogout() {
+  if (!confirm('로그아웃 하시겠습니까?')) return;
+  
+  try {
+    // 서버의 logout API 호출 (쿠키 삭제)
+    const response = await $fetch('/api/auth/logout', {
+      method: 'POST'
+    });
+    
+    if (response.success) {
+      // 인증 상태 새로고침
+      await refresh();
+      // 홈으로 이동
+      navigateTo("/");
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+    alert('로그아웃 중 오류가 발생했습니다.');
+  }
 }
 </script>
 
