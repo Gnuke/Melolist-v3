@@ -135,7 +135,7 @@ const handleNaverLogin = () => {
   }
   
   // Callback URL (네이버에 등록한 URL과 정확히 일치해야 함)
-  const redirectUri = 'https://melolist-v2.vercel.app'
+  const redirectUri = 'https://melolist-v2.vercel.app/api/auth/naver/callback'
 
   
   // CSRF 방지를 위한 State 생성 (랜덤 문자열)
@@ -172,7 +172,7 @@ const handleGoogleLogin = () => {
   }
 
   // Google에 등록한 Callback URL
-  const redirectUri = 'https://melolist-v2.vercel.app'
+  const redirectUri = 'https://melolist-v2.vercel.app/api/auth/google/callback'
 
   // CSRF 방지용 state
   const state =

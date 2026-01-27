@@ -66,7 +66,7 @@ const handleGoogleRegister = () => {
     return
   }
   
-  const redirectUri = 'http://localhost:3000/api/auth/google/callback'
+  const redirectUri = 'https://melolist-v2.vercel.app/api/auth/google/callback'
   const state = Math.random().toString(36).substring(2, 15) + 
                 Math.random().toString(36).substring(2, 15)
   
@@ -94,7 +94,7 @@ const handleNaverRegister = () => {
     return
   }
   
-  const redirectUri = 'http://localhost:3000/api/auth/naver/callback'
+  const redirectUri = 'https://melolist-v2.vercel.app/api/auth/naver/callback'
   const state = Math.random().toString(36).substring(2, 15) + 
                 Math.random().toString(36).substring(2, 15)
   
