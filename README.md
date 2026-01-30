@@ -168,16 +168,20 @@ Melolist
 │  ├─ mocks
 │  │  └─ db
 │  ├─ nuxt.config.ts
+│  ├─ prisma
 │  ├─ server
 │  │  ├─ api
 │  │  │  ├─ auth
 │  │  │  ├─ boards
 │  │  │  ├─ fingerprints.post.ts
 │  │  │  └─ humming.post.ts
+│  │  ├─ plugins
+│  │  │  └─ prisma.ts
 │  │  ├─ services
 │  │  │  └─ musicsearch
 │  │  └─ utils
-│  │     └─ db.js
+│  │     ├─ db.js
+│  │     └─ prisma.ts
 │  └─ tsconfig.json
 └─ README.md
 
