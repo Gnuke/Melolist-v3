@@ -173,16 +173,48 @@ DELETE /playlist
 
 기존보다 훨씬 현대적인 디자인을 목표로 한다.
 
-방향
+방향 (상용 서비스 수준 · 실제 출시 가능한 완성도)
 
-- Spotify 수준의 완성도
-- Apple Music 수준의 부드러운 인터랙션
-- 여백 중심
-- Card UI
-- Glass Effect는 최소화
-- 다크모드 기본
-- 모바일 우선
-- 반응형 디자인
+- Spotify · Notion · Apple · Linear 수준의 완성도
+- 개발자 프로토타입 느낌이 아닌 실제 서비스 느낌
+- Modern Premium UI · Dark Theme 기본
+- Glass Morphism은 최소한만 사용
+- Flat하지 않고 레이어와 깊이감(그림자·글로우·inset)
+- 여백 적극 활용 · 고급스러운 타이포그래피
+- Card UI · 모바일 우선 · 반응형
+
+## Design System (필수)
+
+컴포넌트 라이브러리 (직접 만들지 말고 조합한다)
+
+- shadcn/ui
+- Radix UI
+- Framer Motion (motion)
+- Lucide Icons
+
+Motion Design 적극 사용
+
+- Framer Motion: spring / scale / opacity / blur transition / stagger animation
+- 페이지 진입 fade
+- 마우스 hover 효과
+- 버튼 클릭 애니메이션
+- micro-interaction
+
+타이포그래피
+
+- Inter (Variable), 자체 호스팅
+
+색상
+
+- Black         #090909
+- Surface       #161616
+- Accent        #5B8CFF
+- Accent Hover  #7EA6FF
+- 빨간색(#EF4444)은 오류 또는 녹음 중에만 사용한다
+
+특수 인터랙션
+
+- 마이크 버튼은 Apple Siri 수준의 인터랙션으로 구현한다
 
 UX 개선도 함께 제안한다.
 

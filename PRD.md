@@ -79,7 +79,10 @@
 | Client State | **Zustand** | 플레이어/모달/세션 등 전역 UI 상태 |
 | HTTP | Axios | 인터셉터로 JWT 주입·401 갱신 |
 | Audio | **wavesurfer.js**(파형) + Web Audio/MediaRecorder | v2 로직 재사용 가능 |
-| 스타일 | **Tailwind + shadcn/ui** | 다크모드 기본 · 모바일 우선 · 디자인 토큰 |
+| 스타일 | **Tailwind CSS v4** + 디자인 토큰 | 다크 기본 · 모바일 우선 |
+| UI 컴포넌트 | **shadcn/ui (Radix UI)** | 접근성·조합형 프리미티브 — 직접 안 짜고 조합 |
+| 모션 | **Framer Motion (`motion`)** | spring · stagger · blur · micro-interaction |
+| 아이콘 / 타이포 | **Lucide** / **Inter Variable**(자체 호스팅) | |
 
 ### Backend
 | 구분 | 선택 | 비고 |
@@ -415,6 +418,32 @@ erDiagram
 | 접근성 | 마이크 권한 실패 메시지(v2 로직 계승), 명확한 상태 표시 |
 | 반응형 | 모바일 우선, 태블릿/데스크톱 확장 |
 | Glass Effect | 최소화(여백·카드 중심) |
+
+---
+
+### 10.1 디자인 시스템 (프리미엄 다크 UI)
+
+> 목표: **Spotify · Notion · Apple · Linear 수준의 완성도.** "개발자 프로토타입"이 아닌 실제 출시 가능한 서비스 느낌.
+
+**구성 (직접 만들지 말고 조합)**
+- **컴포넌트:** shadcn/ui(Radix UI) — 버튼·탭·카드·토스트(sonner)·스켈레톤 등은 `@/components/ui/*`로 조합. 커스텀은 꼭 필요한 것(마이크·녹음 파형)만.
+- **모션:** Framer Motion(`motion`) — 페이지 진입 fade · spring · scale · opacity · **blur transition** · **stagger**(결과 목록) · hover/tap · micro-interaction.
+- **아이콘:** Lucide. **타이포:** Inter Variable(자체 호스팅), tracking-tight.
+
+**색상 팔레트** (토큰은 `src/index.css` CSS 변수 = shadcn 전체 세트, Tailwind v4 `@theme`로 노출)
+| 역할 | 값 |
+|---|---|
+| Background (black) | `#090909` |
+| Surface (card) | `#161616` |
+| Accent | `#5B8CFF` |
+| Accent Hover | `#7EA6FF` |
+| Red | `#EF4444` — **오류 또는 녹음 중에만 사용** |
+
+**원칙**
+- Modern Premium · Dark 기본. Glass Morphism은 **최소한만**.
+- Flat이 아니라 **레이어·깊이감**(그림자·글로우·inset 하이라이트). **여백 적극 활용.**
+- **Motion Design 적극 사용** — hover 효과, 버튼 클릭 애니메이션, 페이지 진입 fade, micro-interaction.
+- **마이크 버튼 = Apple Siri 수준 인터랙션**(앰비언트 글로우·펄스 링·회전 쉰·spring) → `features/search/MicButton.tsx`.
 
 ---
 
