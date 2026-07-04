@@ -84,7 +84,8 @@
 ### Backend
 | 구분 | 선택 | 비고 |
 |---|---|---|
-| Framework | **Spring Boot** | Domain 중심 패키지 구조 |
+| Runtime | **Java 21 (LTS)** | 장기 지원 + 가상 스레드·패턴매칭. **Spring AI(M5) 대비** 최신 LTS 기준 통일 |
+| Framework | **Spring Boot 3.5** | Domain 중심 패키지 구조. LTS 계열·성숙, Spring AI 생태계 정합 |
 | Security | **Spring Security** | Supabase JWT 검증(Resource Server), Role 기반 인가 |
 | ORM | **Spring Data JPA / Hibernate** | 단일 데이터 접근 계층 |
 | 부가 | Lombok, Bean Validation | 보일러플레이트 제거·입력 검증 |

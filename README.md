@@ -1,3 +1,14 @@
+> ### 🔭 Melolist-v3 (재플랫폼 진행 중)
+> 이 프로젝트는 기존 Nuxt 앱을 **React + Spring Boot(Java 21 LTS) + Supabase**로 재플랫폼 중입니다.
+> - `backend/` — Spring Boot 3.5 · **Java 21** · Gradle ([backend/README](backend/README.md))
+> - `frontend/` — React + TypeScript (예정)
+> - `nuxt-app/` — v2, 레퍼런스로 보존
+> - 상세 요구사항: [`PRD.md`](PRD.md)
+>
+> 아래는 기존 v2(Nuxt) 문서입니다.
+
+---
+
 # 🎤 Dev 개요
 
 교육 간 제출용 프로젝트

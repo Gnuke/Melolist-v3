@@ -1,0 +1,24 @@
+# 테스트 프로파일: 시크릿/외부 의존성 없이 컨텍스트가 뜨도록 오버라이드.
+# - DB: H2 인메모리(PostgreSQL 호환 모드) + 엔티티로 스키마 자동 생성
+# - JWT: 더미 jwk-set-uri (지연 로딩이라 컨텍스트 로드 시 네트워크 호출 없음)
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost/dummy-jwks.json
+
+melolist:
+  cors:
+    allowed-origins: http://localhost:5173
