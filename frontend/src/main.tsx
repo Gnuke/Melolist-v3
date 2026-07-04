@@ -2,9 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
+import '@fontsource-variable/inter'
 import { router } from '@/routes/router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { Toaster } from '@/components/ui/sonner'
 import './index.css'
 
 // Supabase 세션을 전역 스토어에 동기화 (로그인/로그아웃/토큰갱신 반영)
@@ -21,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      <Toaster position="top-center" richColors />
     </QueryClientProvider>
   </StrictMode>,
 )

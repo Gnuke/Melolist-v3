@@ -1,30 +1,43 @@
 import { Link } from 'react-router-dom'
+import { motion } from 'motion/react'
+import { RecordPanel } from '@/features/search/RecordPanel'
 import { useAuthStore } from '@/stores/authStore'
-import { useMe } from '@/features/user/useMe'
+import { Button } from '@/components/ui/button'
 
+/** 홈 = 음악 검색 화면 (게스트 허용). v2 Record 화면을 프리미엄 다크 UI로 재설계. */
 export function HomePage() {
   const session = useAuthStore((s) => s.session)
-  const { data: profile, isLoading } = useMe(!!session)
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6">
-      <h1 className="text-4xl font-bold">🎤 Melolist</h1>
-      <p className="text-muted-foreground">마이크로 흥얼거려 음악을 찾아보세요</p>
+    <div className="relative min-h-dvh overflow-x-hidden">
+      {/* 배경 글로우 (깊이감) */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        <div
+          className="absolute left-1/2 top-[-15%] size-[680px] -translate-x-1/2 rounded-full opacity-20 blur-[130px]"
+          style={{ background: 'radial-gradient(circle, #5b8cff, transparent 70%)' }}
+        />
+      </div>
 
-      {session ? (
-        <p className="text-sm text-muted-foreground">
-          {isLoading
-            ? '프로필 불러오는 중…'
-            : `안녕하세요, ${profile?.displayName ?? profile?.email ?? '사용자'}님`}
-        </p>
-      ) : (
-        <Link
-          to="/login"
-          className="rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground transition hover:opacity-90"
-        >
-          로그인
-        </Link>
-      )}
-    </main>
+      <motion.div
+        className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 pb-20 pt-8 sm:px-6"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <header className="mb-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Melolist</h1>
+            <p className="mt-1 text-sm text-muted-foreground">흥얼거리거나 들려주면 곡을 찾아드려요</p>
+          </div>
+          {!session && (
+            <Button asChild variant="outline" size="sm" className="transition-transform active:scale-95">
+              <Link to="/login">로그인</Link>
+            </Button>
+          )}
+        </header>
+
+        <RecordPanel />
+      </motion.div>
+    </div>
   )
 }

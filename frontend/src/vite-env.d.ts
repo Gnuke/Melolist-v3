@@ -9,3 +9,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// CSS-only 패키지(타입 선언 없음)의 side-effect import 허용
+declare module '@fontsource-variable/inter'
