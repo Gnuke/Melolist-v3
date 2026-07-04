@@ -1,0 +1,294 @@
+# Melolist-v3 PRD Generation Request
+
+## Project Overview
+
+Melolist-v3는 기존 Melolist-v2(Vue + Node.js)를
+최신 기술 스택으로 마이그레이션하는 프로젝트이다.
+
+기존 기능은 최대한 유지하면서
+아키텍처 개선,
+사용자 경험 개선,
+AI 기능 확장을 목표로 한다.
+
+이번 단계에서는
+기존 프로젝트 분석 후
+Melolist-v3를 위한 PRD.md를 작성한다.
+
+단순한 기능 나열이 아니라
+실제 개발 문서 수준의 PRD를 생성한다.
+
+---
+
+# Project Goals
+
+- Nuxt.js 프로젝트를 React + Spring Boot 구조로 마이그레이션, 형상관리의 용이성을 위해 Frontend와 Backend로 프로젝트 폴더를 분리하는 것을 희망함
+- 유지보수가 쉬운 구조
+- 확장 가능한 Domain 기반 아키텍처
+- 모바일에서도 사용하기 쉬운 UX
+- 향후 AI 기능 확장이 쉬운 구조
+- 기존보다 높은 완성도의 UI/UX
+
+---
+
+# Tech Stack
+
+Frontend
+
+- React
+- React Native를 고려한 구조
+- TypeScript
+- React Router
+- TanStack Query
+- Zustand
+- Axios
+
+Backend
+
+- Spring Boot
+- Spring Security
+- Spring Data JPA
+- Hibernate
+- Lombok
+- Validation
+
+Database
+
+- Supabase PostgreSQL
+
+ORM
+
+- Spring Data JPA
+
+Authentication
+
+- Supabase Auth
+- JWT
+
+Storage
+
+- Supabase Storage
+
+Deployment
+
+- Docker
+- GitHub Actions
+- AWS 예정
+
+---
+
+# Migration Requirements
+
+기존 Melolist-v2 프로젝트를 분석하여
+
+- 기존 기능 목록 작성
+- 유지할 기능
+- 개선할 기능
+- 제거 가능한 기능
+
+을 정리한다.
+
+이후
+
+Melolist-v3 기준으로
+
+기능을 재설계한다.
+
+---
+
+# Architecture Requirements
+
+Backend는
+
+Layered Architecture가 아닌
+
+Domain 중심 구조를 우선적으로 고려한다.
+
+예시
+
+- auth
+- user
+- music
+- playlist
+- search
+- recommendation
+- community
+
+각 Domain은
+
+- Controller
+- Service
+- Repository
+- Entity
+- DTO
+- Mapper
+
+구조를 가진다.
+
+---
+
+# Database
+
+ERD 수준까지 고려하여
+
+Entity 설계를 포함한다.
+
+다음 내용을 포함한다.
+
+- User
+- Music
+- Playlist
+- PlaylistMusic
+- SearchHistory
+- Favorite
+- Comment
+- Review
+
+필요한 테이블은 추가 제안한다.
+
+---
+
+# API Design
+
+각 기능별
+
+REST API 설계를 작성한다.
+
+예시
+
+GET /music
+
+GET /playlist
+
+POST /playlist
+
+PATCH /playlist
+
+DELETE /playlist
+
+등을 포함한다.
+
+---
+
+# UI/UX Direction
+
+기존보다 훨씬 현대적인 디자인을 목표로 한다.
+
+방향
+
+- Spotify 수준의 완성도
+- Apple Music 수준의 부드러운 인터랙션
+- 여백 중심
+- Card UI
+- Glass Effect는 최소화
+- 다크모드 기본
+- 모바일 우선
+- 반응형 디자인
+
+UX 개선도 함께 제안한다.
+
+예시
+
+- Bottom Navigation
+- Swipe Gesture
+- Mini Player
+- Floating Action
+- Skeleton UI
+- Lazy Loading
+- Infinite Scroll
+
+---
+
+# AI Feature Planning
+
+향후 Spring AI 적용을 고려한다.
+
+현재 구현하지 않아도 되지만
+
+확장 가능한 구조를 설계한다.
+
+예시
+
+- 자연어 음악 검색
+- 플레이리스트 추천
+- AI 음악 추천
+- AI 감정 분석 추천
+- AI 채팅
+
+---
+
+# Performance
+
+다음을 고려한다.
+
+- Pagination
+- Infinite Scroll
+- Query Caching
+- Lazy Loading
+- Image Optimization
+- CDN 활용
+
+---
+
+# Security
+
+다음을 고려한다.
+
+- JWT
+- Refresh Token
+- Spring Security
+- Role 기반 권한
+- API Validation
+- SQL Injection 대응
+- XSS 대응
+
+---
+
+# Documentation
+
+생성되는 PRD.md에는
+
+다음을 포함한다.
+
+1. 프로젝트 소개
+
+2. 목표
+
+3. 기술 스택
+
+4. 시스템 아키텍처
+
+5. 기능 명세
+
+6. 화면 구성
+
+7. API 설계
+
+8. Database 설계
+
+9. 사용자 Flow
+
+10. UX 개선사항
+
+11. AI 확장 계획
+
+12. 개발 우선순위
+
+13. Milestone
+
+14. 향후 개선사항
+
+---
+
+# Important
+
+PRD는 단순한 기능 목록이 아니라
+
+실제 개발자가 사용할 수 있는 수준으로 작성한다.
+
+기존 프로젝트를 충분히 분석한 뒤
+Melolist-v3에 맞게 개선사항을 적극적으로 제안한다.
+
+기존 코드를 그대로 옮기는 것이 아니라
+더 나은 구조를 설계하는 것을 우선한다.
+
+UX와 유지보수성을 가장 중요하게 고려한다.
