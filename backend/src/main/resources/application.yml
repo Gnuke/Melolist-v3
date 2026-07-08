@@ -21,6 +21,8 @@ spring:
           # Supabase JWT Signing Keys(비대칭)의 JWKS 엔드포인트.
           # 예: https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json
           jwk-set-uri: ${SUPABASE_JWKS_URI:}
+          # Supabase 서명 키는 ES256(ECC) — Spring 기본값(RS256)만으로는 검증 실패
+          jws-algorithms: ES256,RS256
 
 server:
   port: ${PORT:8080}

@@ -39,6 +39,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/music/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews", "/api/reviews/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
+                        // 내 프로필은 인증 필수 — 아래 공개 프로필 와일드카드(/api/users/*)에 삼켜지지 않게 먼저 선언
+                        .requestMatchers("/api/users/me", "/api/users/me/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/*").permitAll()
                         // 그 외 전부 인증 필요
                         .anyRequest().authenticated()
