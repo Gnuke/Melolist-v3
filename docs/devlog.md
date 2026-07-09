@@ -1,5 +1,30 @@
 # Development Log
 
+## 2026-07-09
+
+### 완료
+
+- Melolist 디자인 시스템 확정 (Flame/Iris 팔레트 + Pretendard) — PRD §10 팔레트 대체
+- `docs/design-guideline.md` 작성 (Melolist 비주얼 방향성)
+- M2 검색 화면 UX 전면 개편 (와이어프레임 1b/1d/1e/1h/1i+1j/1k/1l 구현)
+  - SearchPage 신규 구축: RecognitionRing, LiveWaveform, PlaybackCard, ResultsView, FailureView, CoverArt, FavoriteSheet
+  - 기존 RecordPanel/RecordingModal/MicButton/SearchResultsList 제거 → useRecorder 훅으로 녹음 로직 분리
+  - HomePage/LoginPage 새 디자인 시스템 적용
+- 이벤트 계측 추가 (`features/events/` session + track) — event_log 스키마 대응
+- 검색 목업 데이터(`mock/searchMock.ts`) + 최근 찾은 곡(recentFinds) 구현
+- frontend-design 스킬 커밋 (.agents + skills-lock.json)
+
+### 검증
+
+- Context7(C7) 라이브러리 사전검증 통과
+- 프론트 실기동으로 검색 플로우(녹음 → 인식 → 결과/실패) 화면 확인
+
+### 다음 작업
+
+- M2 백엔드 착수 — 허밍 인식 스파이크 선행 (ACRCloud 키 필요)
+- (선택) Google OAuth 설정
+- push 전 nuxt-app/.env 시크릿 이력 filter-repo 제거 + 키 로테이션
+
 ## 2026-07-08
 
 ### 완료
