@@ -52,3 +52,5 @@ logs/
 
 # === Claude Code 로컬 설정 ===
 .claude/settings.local.json
+# 스킬 심볼릭 링크는 로컬 생성물 (본체는 .agents/skills + skills-lock.json 커밋)
+.claude/skills/
