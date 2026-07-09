@@ -3,67 +3,111 @@
 /* 다크 기본 (index.html에 class="dark") */
 @custom-variant dark (&:is(.dark *));
 
-/* ---- 디자인 토큰 (shadcn/ui 전체 세트 + Melolist 프리미엄 팔레트) ---- */
+/* ---- 디자인 토큰 ----
+   출처: Melolist Design System (claude.ai/design 프로젝트 _ds/tokens)
+   Ink 뉴트럴(다크 기본) + Flame(#FF5A3C, 주 액션) + Iris(#6E5CFF, 인식/발견 순간)
+   shadcn 변수명에 매핑해 기존 ui/* 컴포넌트와 호환 유지 */
 :root {
-  --radius: 0.9rem;
+  /* raw 스케일 */
+  --ink-1000: #060608;
+  --ink-950: #0a0a0c;
+  --ink-900: #111114;
+  --ink-850: #17171b;
+  --ink-800: #1e1e23;
+  --ink-750: #24242a;
+  --ink-700: #2b2b32;
+  --ink-600: #3a3a42;
+  --ink-500: #55555f;
+  --ink-400: #7c7c87;
+  --ink-300: #a3a3ae;
+  --ink-200: #c7c7d0;
+  --ink-100: #e6e6eb;
+  --ink-50: #f4f4f7;
 
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --flame-600: #e8421c;
+  --flame-500: #ff5a3c;
+  --flame-400: #ff7a5f;
+  --flame-tint: rgba(255, 90, 60, 0.14);
+
+  --iris-600: #5641e0;
+  --iris-500: #6e5cff;
+  --iris-400: #8b7cff;
+  --iris-tint: rgba(110, 92, 255, 0.16);
+
+  --green-500: #2fbf71;
+  --amber-500: #ffb020;
+  --red-500: #ff4d4f;
+  --red-tint: rgba(255, 77, 79, 0.16);
+
+  --radius: 1rem;
+
+  /* 라이트(웜 크림) — 향후 토글용, 앱 기본은 다크 */
+  --background: #faf7f4;
+  --foreground: #17120e;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #17120e;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #5b8cff;
+  --popover-foreground: #17120e;
+  --primary: var(--flame-500);
   --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #0a0a0a;
-  --muted: #f4f4f5;
-  --muted-foreground: #6b6b70;
-  --accent: #f1f1f3;
-  --accent-foreground: #0a0a0a;
-  --destructive: #ef4444;
+  --secondary: #f2ede7;
+  --secondary-foreground: #17120e;
+  --muted: #f2ede7;
+  --muted-foreground: #5a5048;
+  --accent: #f2ede7;
+  --accent-foreground: #17120e;
+  --destructive: var(--red-500);
   --destructive-foreground: #ffffff;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #5b8cff;
+  --border: rgba(30, 20, 12, 0.1);
+  --input: rgba(30, 20, 12, 0.12);
+  --ring: var(--flame-600);
 
-  --brand: #5b8cff;
-  --brand-hover: #7ea6ff;
+  --brand: var(--flame-500);
+  --brand-hover: var(--flame-400);
+  --iris: var(--iris-500);
+
+  --glow-flame: 0 6px 22px rgba(255, 90, 60, 0.45);
+  --glow-iris: 0 6px 22px rgba(110, 92, 255, 0.4);
 }
 
 .dark {
-  --background: #090909;
-  --foreground: #f5f5f7;
-  --card: #161616;
-  --card-foreground: #f5f5f7;
-  --popover: #161616;
-  --popover-foreground: #f5f5f7;
-  --primary: #5b8cff;
+  --background: var(--ink-950);
+  --foreground: var(--ink-50);
+  --card: var(--ink-850);
+  --card-foreground: var(--ink-50);
+  --popover: var(--ink-800);
+  --popover-foreground: var(--ink-50);
+  --primary: var(--flame-500);
   --primary-foreground: #ffffff;
-  --secondary: #1e1e1e;
-  --secondary-foreground: #f5f5f7;
-  --muted: #191919;
-  --muted-foreground: #8a8a90;
-  --accent: #1f1f1f;
-  --accent-foreground: #f5f5f7;
-  --destructive: #ef4444;
+  --secondary: var(--ink-800);
+  --secondary-foreground: var(--ink-100);
+  --muted: var(--ink-900);
+  --muted-foreground: var(--ink-300);
+  --accent: var(--ink-750);
+  --accent-foreground: var(--ink-50);
+  --destructive: var(--red-500);
   --destructive-foreground: #ffffff;
-  --border: #242424;
-  --input: #2a2a2a;
-  --ring: #5b8cff;
+  --border: rgba(255, 255, 255, 0.07);
+  --input: rgba(255, 255, 255, 0.11);
+  --ring: var(--flame-400);
 
-  --brand: #5b8cff;
-  --brand-hover: #7ea6ff;
+  --brand: var(--flame-500);
+  --brand-hover: var(--flame-400);
+  --iris: var(--iris-500);
 }
 
 /* ---- 토큰 → Tailwind 유틸 매핑 ---- */
 @theme inline {
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont,
+    'Apple SD Gothic Neo', 'Segoe UI', Roboto, sans-serif;
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* DS 라디우스 램프: 컨트롤=필, 카드 12–16, 시트 20–28, 커버 10 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-cover: 10px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -86,6 +130,18 @@
   --color-ring: var(--ring);
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
+  --color-flame: var(--flame-500);
+  --color-flame-soft: var(--flame-400);
+  --color-iris: var(--iris-500);
+  --color-iris-soft: var(--iris-400);
+  --color-success: var(--green-500);
+  --color-warning: var(--amber-500);
+
+  --shadow-glow-flame: var(--glow-flame);
+  --shadow-glow-iris: var(--glow-iris);
+
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ---- 베이스 ---- */
@@ -118,5 +174,13 @@
   ::-webkit-scrollbar-thumb:hover {
     background: color-mix(in oklab, var(--foreground) 24%, transparent);
     background-clip: content-box;
+  }
+  /* 모션 감소 존중 */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

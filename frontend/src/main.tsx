@@ -2,10 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
-import '@fontsource-variable/inter'
+import { MotionConfig } from 'motion/react'
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'
 import { router } from '@/routes/router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { trackVisitOnce } from '@/features/events/track'
 import { Toaster } from '@/components/ui/sonner'
 import './index.css'
 
@@ -17,12 +19,17 @@ supabase.auth.onAuthStateChange((_event, session) => {
   useAuthStore.getState().setSession(session)
 })
 
+// C5: visit은 앱 로드 시 세션당 1회 (KR3 분모)
+trackVisitOnce()
+
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <MotionConfig reducedMotion="user">
+        <RouterProvider router={router} />
+      </MotionConfig>
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
   </StrictMode>,
