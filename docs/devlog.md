@@ -15,19 +15,29 @@
 - `application.yml` ACRCloud 바인딩(.env 변수명 일치) + multipart 10MB 상한 + `.env.example` 갱신
 - Supabase 마이그레이션 `create_domain_tables` 적용 — 테이블 8종(music/search_history/event_log/playlist/playlist_music/favorite/review/comment), RLS on·정책 없음. SQL 사본 `backend/db/migrations/`
 - **ACRCloud 목업(acr-mock 프로파일)**: 클라이언트 인터페이스 추출 → 실구현(`!acr-mock`)/목업(`acr-mock`) 스위칭. `ACR_MOCK_SCENARIO=hit|nomatch|lowscore|error`. 프론트 searchMock과 같은 곡·시나리오 체계 — 쿼터 소모 없이 클라→서버→DB 파이프라인 테스트 가능
+- **GitHub 원격 연결 + push** (`github.com/Gnuke/Melolist-v3`)
+  - push 전 전 이력(116커밋) 시크릿 3중 검사(경로·오브젝트 전수·blob 내용) → `.env` 실값 커밋 이력 0건 확인. git-strategy 7장의 "filter-repo 필수" 경고는 과잉 우려로 판명(nuxt-app/.env는 애초 미추적)
+  - **브랜치 main 하나로 통합**: feat/scaffold-m1을 main에 fast-forward 병합(이력 보존) 후 로컬·원격 삭제. 이후 기능 개발은 새 피처 브랜치 → PR → main
+- **CI 모노레포 경로 분리**: ci.yml → `backend-ci.yml`(paths: backend/\*\*) + `frontend-ci.yml`(paths: frontend/\*\*, Node 22 oxlint+build 신설) — 변경된 쪽만 실행
+- **MVP 배포 완료** — 프론트 [melolist-v3.vercel.app](https://melolist-v3.vercel.app)(Vercel) + 백엔드 [melolist-v3.onrender.com](https://melolist-v3.onrender.com)(Render 무료, Docker 자동배포)
+  - 🐛 **ACRCloud 3002 버그 발견·수정**: Spring FormHttpMessageConverter가 multipart Content-Type에 `charset=UTF-8`을 붙여 ACRCloud가 `3002 Invalid http content type`로 거부(같은 키로 curl은 정상 → 형식 문제 확정). multipart 바디를 직접 조립하도록 `AcrCloudHttpClient` 수정 — **ACRCloud 실호출 첫 성공**
+  - CORS: yml 기본값에 Vercel 도메인 추가 + Render `CORS_ALLOWED_ORIGINS` 환경변수 수정(env var가 yml 기본값보다 우선함에 주의)
 
 ### 검증
 
 - `gradlew build` 성공 — SearchServiceTest 6건(ACRCloud mock) + contextLoads 통과
 - 실기동(Supabase 연결)으로 `ddl-auto=validate` 통과 + 스모크: 게스트 조회 200 / 무토큰 401 / events 204→event_log 실기록 / 빈 오디오·비오디오 MIME 400 표준 바디
 - acr-mock 실기동: 지문/허밍 200+계약 일치, MUSIC upsert·ytimg 커버 폴백 저장 확인, `search_request` 타이밍 기록(허밍 meta_ms 216ms — 3건 병렬 실증)
+- acr-mock + 프론트(`MOCK_SEARCH_ENABLED=false`) 클라→서버 E2E: 지문/허밍 결과 표시 + 즐겨찾기 로그인 유도 확인 (사용자 실브라우저)
+- **배포 전 체인 검증**: Render 헬스 UP · DB 조회 200 · ACRCloud 실호출 200(노이즈→2004→빈 배열, webm 업로드 수용 확인) · Vercel 번들에 API 주소 정상 반영 · CORS 프리플라이트/실요청 200
 
 ### 다음 작업
 
-- acr-mock + 프론트(`MOCK_SEARCH_ENABLED=false`) 조합으로 클라→서버 E2E 확인
-- 실오디오로 ACRCloud 실호출 검증 → 허밍 스파이크(§7.4 실측: identify external_metadata 커버리지·webm 포맷 수용 여부)
+- **배포판에서 실오디오 지문/허밍 검증** = 허밍 스파이크(§7.4) 실측: 매칭 품질 체감, identify external_metadata 커버리지, `search_request`의 실측 acr_ms
 - 매칭률 측정 스크립트(C6) + KR2/KR3 산출 SQL(§10)
 - (선택) Google OAuth 설정
+- 운영 참고: Render 무료 티어 15분 유휴 시 슬립(콜드스타트 30초+, 필요 시 UptimeRobot 핑) · 프로덕션 MUSIC에 목업 곡 행(acrid `mock-*`) 잔존 — 정리 시 `delete from music where acrid like 'mock-%'`
+- M6 체크리스트: acr-mock 소스 처리 방침(유지+프로파일 화이트리스트 or src/test 이동), 배포 정식화(AWS), git-strategy 7장 filter-repo 경고 문구 정정
 
 ## 2026-07-09
 
