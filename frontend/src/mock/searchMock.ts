@@ -9,7 +9,7 @@ import type { AcrResult, SearchType } from '@/features/search/types'
  */
 
 /** false로 바꾸면 실제 백엔드(/api/search/*)를 호출한다 */
-export const MOCK_SEARCH_ENABLED = true
+export const MOCK_SEARCH_ENABLED = false
 
 /**
  * - 'hit'      : 정상 결과 (지문=히어로 1j / 허밍=Top-3 리스트 1i)
