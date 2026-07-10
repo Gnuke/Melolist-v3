@@ -14,6 +14,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  servlet:
+    multipart:
+      # 검색 오디오 업로드 상한(F1 크기 검증의 서버측 방어선) — 초과 시 400 표준 바디
+      max-file-size: 10MB
+      max-request-size: 12MB
   security:
     oauth2:
       resourceserver:
@@ -32,6 +37,24 @@ melolist:
   cors:
     # 프론트(React) 오리진. 콤마로 여러 개.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  acrcloud:
+    # 지문/허밍 프로젝트 리전·호스트 동일(ap-southeast-1) 확인됨(2026-07-09 키 발급)
+    identify-host: ${ACRCLOUD_HOST:identify-ap-southeast-1.acrcloud.com}
+    metadata-host: eu-api-v2.acrcloud.com
+    identify-timeout-ms: 10000
+    metadata-timeout-ms: 5000
+    fingerprint:
+      access-key: ${FINGERPRINT_API_KEY:}
+      access-secret: ${FINGERPRINT_API_SECRET:}
+      metadata-token: ${METADATA_API_KEY_MUSIC:}
+    humming:
+      access-key: ${HUMMING_API_KEY:}
+      access-secret: ${HUMMING_API_SECRET:}
+      metadata-token: ${METADATA_API_KEY_HUMMING:}
+    mock:
+      # acr-mock 프로파일 전용 — ACRCloud 실호출 없이 파이프라인 테스트.
+      # 활성화: SPRING_PROFILES_ACTIVE=acr-mock · 시나리오: hit | nomatch | lowscore | error
+      scenario: ${ACR_MOCK_SCENARIO:hit}
 
 management:
   endpoints:

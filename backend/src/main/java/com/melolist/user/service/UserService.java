@@ -22,12 +22,18 @@ public class UserService {
      */
     @Transactional
     public ProfileResponse getOrProvision(Jwt jwt) {
+        return ProfileResponse.from(getOrProvisionProfile(jwt));
+    }
+
+    /**
+     * 엔티티 버전 — 다른 도메인이 Profile FK 참조(리뷰·댓글 작성 등) 전에 JIT 보장을
+     * 겸해 호출한다. 외부 응답에는 DTO 버전을 쓴다.
+     */
+    @Transactional
+    public Profile getOrProvisionProfile(Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
-
-        Profile profile = profileRepository.findById(userId)
+        return profileRepository.findById(userId)
                 .orElseGet(() -> provision(jwt, userId));
-
-        return ProfileResponse.from(profile);
     }
 
     private Profile provision(Jwt jwt, UUID userId) {

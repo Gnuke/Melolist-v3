@@ -35,10 +35,16 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         // 게스트 허용: 음악 검색
                         .requestMatchers(HttpMethod.POST, "/api/search/fingerprint", "/api/search/humming", "/api/search/text").permitAll()
+                        // 게스트 허용: 이벤트 수집(익명 계측, backend-prd §9-6)
+                        .requestMatchers(HttpMethod.POST, "/api/events").permitAll()
                         // 게스트 허용: 곡/리뷰/공개 플레이리스트 조회
                         .requestMatchers(HttpMethod.GET, "/api/music/**").permitAll()
+                        // 내 리뷰는 인증 필수 — 아래 /api/reviews/* 와일드카드보다 먼저 선언
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/reviews", "/api/reviews/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
+                        // 게스트 허용: 플레이리스트 상세·댓글 조회 — 비공개 접근 제어는 서비스 계층(404)
+                        .requestMatchers(HttpMethod.GET, "/api/playlists/*", "/api/playlists/*/comments").permitAll()
                         // 내 프로필은 인증 필수 — 아래 공개 프로필 와일드카드(/api/users/*)에 삼켜지지 않게 먼저 선언
                         .requestMatchers("/api/users/me", "/api/users/me/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/*").permitAll()
