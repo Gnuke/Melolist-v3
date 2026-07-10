@@ -7,22 +7,23 @@ import com.melolist.search.config.AcrCloudProperties;
 import com.melolist.search.domain.SearchMode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * ACRCloud identify API 실구현(지문/허밍 공용) — HMAC-SHA1 서명 방식.
@@ -60,33 +61,51 @@ public class AcrCloudHttpClient implements AcrCloudClient {
                 "POST", ENDPOINT, creds.accessKey(), "audio", "1", String.valueOf(timestamp));
         String signature = hmacSha1Base64(stringToSign, creds.accessSecret());
 
-        MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
-        form.add("sample", new ByteArrayResource(audio) {
-            @Override
-            public String getFilename() {
-                return "sample.wav";
-            }
-        });
-        form.add("data_type", "audio");
-        form.add("access_key", creds.accessKey());
-        form.add("signature", signature);
-        form.add("signature_version", "1");
-        form.add("timestamp", String.valueOf(timestamp));
-        form.add("sample_bytes", String.valueOf(audio.length));
+        // multipart 바디를 직접 조립한다. Spring FormHttpMessageConverter는 Content-Type에
+        // charset=UTF-8 파라미터를 붙이는데, ACRCloud가 이를 3002(Invalid http content type)로
+        // 거부한다(2026-07-10 실측). curl과 동일한 형식으로 보내기 위한 우회.
+        String boundary = "melolist-" + UUID.randomUUID();
+        byte[] body = buildMultipartBody(boundary, audio, Map.of(
+                "data_type", "audio",
+                "access_key", creds.accessKey(),
+                "signature", signature,
+                "signature_version", "1",
+                "timestamp", String.valueOf(timestamp),
+                "sample_bytes", String.valueOf(audio.length)
+        ));
 
-        String body;
+        String response;
         try {
-            body = restClient.post()
+            response = restClient.post()
                     .uri("https://" + properties.identifyHost() + ENDPOINT)
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(form)
+                    .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data; boundary=" + boundary)
+                    .body(body)
                     .retrieve()
                     .body(String.class);
         } catch (RestClientException e) {
             throw new ExternalApiException("음악 인식 서비스 호출에 실패했습니다.", e);
         }
 
-        return parse(body, mode);
+        return parse(response, mode);
+    }
+
+    private byte[] buildMultipartBody(String boundary, byte[] audio, Map<String, String> fields) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream(audio.length + 1024);
+            for (Map.Entry<String, String> field : fields.entrySet()) {
+                out.write(("--" + boundary + "\r\n"
+                        + "Content-Disposition: form-data; name=\"" + field.getKey() + "\"\r\n\r\n"
+                        + field.getValue() + "\r\n").getBytes(StandardCharsets.UTF_8));
+            }
+            out.write(("--" + boundary + "\r\n"
+                    + "Content-Disposition: form-data; name=\"sample\"; filename=\"sample.wav\"\r\n"
+                    + "Content-Type: application/octet-stream\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+            out.write(audio);
+            out.write(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("multipart 바디 생성 실패", e);
+        }
     }
 
     private List<AcrTrack> parse(String body, SearchMode mode) {
