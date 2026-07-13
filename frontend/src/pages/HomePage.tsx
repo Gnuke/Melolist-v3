@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { CoverArt } from '@/features/search/CoverArt'
 import { getRecentFinds } from '@/features/search/recentFinds'
 import { useAuthStore } from '@/stores/authStore'
+import { useMe } from '@/features/user/useMe'
 
 const containerVariants: Variants = {
   hidden: {},
@@ -44,7 +45,9 @@ export function HomePage() {
           <h1 className="text-[21px] font-black tracking-[-0.02em]">
             Melolist<span className="text-brand">.</span>
           </h1>
-          {!session && (
+          {session ? (
+            <ProfileChip fallbackEmail={session.user.email} />
+          ) : (
             <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-foreground">
               <Link to="/login">로그인</Link>
             </Button>
@@ -129,6 +132,23 @@ export function HomePage() {
         )}
       </motion.div>
     </div>
+  )
+}
+
+/** 로그인 시 헤더 우측 프로필 표시 — 첫 조회가 profiles JIT 프로비저닝을 트리거한다. 정식 마이페이지는 M3. */
+function ProfileChip({ fallbackEmail }: { fallbackEmail?: string }) {
+  const { data: me } = useMe(true)
+  const label = me?.displayName || me?.email || fallbackEmail || ''
+  return me?.avatarUrl ? (
+    // Google 프로필 이미지는 referrer 있으면 403이 나는 경우가 있음
+    <img src={me.avatarUrl} alt={label} referrerPolicy="no-referrer" className="size-7 rounded-full" />
+  ) : (
+    <span
+      aria-label={label}
+      className="flex size-7 items-center justify-center rounded-full bg-iris/15 text-[12px] font-bold text-iris-soft"
+    >
+      {(label[0] ?? '?').toUpperCase()}
+    </span>
   )
 }
 

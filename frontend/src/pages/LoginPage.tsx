@@ -6,7 +6,11 @@ import { supabase } from '@/lib/supabase'
 
 export function LoginPage() {
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google' })
+    // 로그인 후 현재 오리진(로컬 5173/운영 Vercel)으로 복귀 — Supabase Redirect URLs에 등록된 주소여야 함
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
   }
 
   return (
