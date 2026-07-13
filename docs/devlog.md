@@ -1,5 +1,29 @@
 # Development Log
 
+## 2026-07-13
+
+### 완료
+
+- **spec-kit(Spec-Driven Development) 도입** (커밋 `a65fdd1`, main)
+  - `uv tool install specify-cli`(v0.12.11) → `specify init --here --integration claude --script ps`. `.specify/`(템플릿·스크립트) 커밋, `.claude/skills/speckit-*` 10종은 gitignore 유지
+  - **constitution v1.0.0 제정**(`.specify/memory/constitution.md`) — 기존 확정 문서(PRD·backend-prd·git-strategy·부록 A)에서 원칙 6종 도출: Ⅰ도메인 중심 아키텍처 / Ⅱ계약 동기화·문서 위계 / Ⅲ측정 기본 탑재 / Ⅳ프라이버시·저작권 가드레일(NON-NEGOTIABLE) / Ⅴ게스트 우선 / Ⅵmock 테스트 가능성
+  - **spec 001 작성**(`specs/001-google-oauth2-login/`) — Google 로그인 명세: US 3종(P1 로그인+JIT / P2 맥락 복귀 / P3 세션 유지·로그아웃) + FR 11 + SC 5, 품질 체크리스트 전 항목 통과
+- **Google OAuth 로그인 연동 완성 — 로컬 E2E 전 체인 성공** (브랜치 `feat/google-oauth`)
+  - Google Cloud Console OAuth 클라이언트 생성 + Supabase Google 공급자 활성화. Google에는 Supabase 콜백(`…supabase.co/auth/v1/callback`)만, 프론트 주소들은 Supabase Redirect URLs에 등록하는 구조
+  - `LoginPage` — `signInWithOAuth`에 `redirectTo: window.location.origin` 추가(로컬 5173/운영 Vercel 각자 제자리 복귀)
+  - `HomePage` — **ProfileChip 신설**(로그인 시 헤더에 아바타/이니셜). 🐛 07-09 화면 개편 때 `useMe` 훅이 정의만 되고 미사용이라 **로그인해도 `/users/me` 호출·JIT 프로비저닝이 전혀 안 되던 공백**을 발견·수정 — 첫 조회가 JIT를 트리거하는 연결 복원
+
+### 검증
+
+- 연동 스모크: `{supabase_url}/auth/v1/authorize?provider=google` 직접 호출로 단계별 진단 — ①400 `provider is not enabled`(Enable 토글/Save 누락) ②Google `redirect_uri_mismatch`(다른 GCP 프로젝트에 URI 등록했던 것 정정) 순차 해결
+- **로그인 E2E(사용자 실브라우저)**: Google 동의 → 5173 복귀 → 세션 생성(홈 로그인 버튼 소멸) → `auth.users` 레코드(provider=google) 확인
+- **JIT 체인**: 백엔드 기동 → ProfileChip 렌더 → `/api/users/me` → **profiles 자동 생성 확인**(id=auth UUID 미러, display_name은 Google 메타에서 자동 수급, role USER). tsc 통과
+
+### 다음 작업
+
+- **spec 001 잔여**: 운영(Vercel) 로그인 검증(SC-005 — Supabase Redirect URLs에 `melolist-v3.vercel.app/**` 등록 + 프론트 재배포) · P2 맥락 복귀(현재 redirectTo는 항상 홈) · P3 로그아웃 UI · FR-009 로그인 이벤트 계측(이벤트 사전 갱신 + 양쪽 PRD 동기화) · (선택) JIT 때 Google avatar_url 수급(현재 null)
+- 기존 대기: 배포판 실오디오 지문/허밍 검증(허밍 스파이크 §7.4) · 매칭률 측정 스크립트(C6)·KR SQL(§10)
+
 ## 2026-07-10
 
 ### 완료
