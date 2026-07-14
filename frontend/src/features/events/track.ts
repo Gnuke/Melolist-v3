@@ -13,7 +13,7 @@ export type EventType =
   | 'login_succeeded'
   | 'login_failed'
 
-export type SearchFailReason = 'bad_audio' | 'no_match' | 'low_score' | 'error'
+export type SearchFailReason = 'bad_audio' | 'no_match' | 'low_score' | 'error' | 'timeout' | 'cancelled'
 
 /**
  * 계측 이벤트 발화 — fire-and-forget. 실패해도 UX 영향 0, 재시도하지 않는다.

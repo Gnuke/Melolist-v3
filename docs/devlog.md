@@ -1,5 +1,22 @@
 # Development Log
 
+## 2026-07-14 (2) — 검색 응답 최적화 (브랜치 `perf/search-latency`)
+
+### 배경 — 첫 실측 데이터가 가리킨 병목
+
+- 운영 검증 후 사용자 체감 "6초 이상 걸리는 경우 있음" 제보 → `search_request` 22건 구간 분해: **지문 p95 5.7s(예산 내), 허밍 p95 12.4s·최대 14.5s(예산 초과)**. 최악 케이스 분해 = acr 6.7s + meta 6.1s + upsert 1.7s — 오디오가 아니라 **응답 경로에 얹힌 뒷단 작업**이 주범 (녹음 품질 개선은 데이터상 우선순위 아님 → 기존 조건부 결정 유지)
+
+### 완료
+
+- **① upsert 비동기 분리(§5.3 확정)**: 응답은 tracks+enrichments만으로 생성됨을 확인 → MUSIC upsert·SearchHistory·search_request 기록을 가상 스레드 후처리로 분리. `total_ms`는 응답 경로만 계측(upsert_ms는 비동기 측정치). acrid 동시 경합은 MusicService가 이미 재조회 수렴 처리. no_match 경로의 기록 3건도 동일 분리
+- **② meta 타임아웃 5s→3s**: 실측 meta_ms 최대 6.1s → 3s 컷. 실패는 EMPTY 수렴 + 커버 ytimg/플레이스홀더 폴백(§5.2)이 받아 UX 손실 없음
+- **③ 프론트 15s 타임아웃 + [취소] 버튼**: 인식 요청 axios `timeout: 15000` + AbortController(언마운트 시에도 중단). 타임아웃→F4(blob 보존 재시도), `reason: timeout` 구분. 검색 중 화면에 [취소] — 요청 중단 후 녹음 화면 복귀, `reason: cancelled`. 이벤트 사전 reason 2종 추가(양쪽 PRD 동기화, 원칙 II)
+
+### 검증
+
+- 백엔드 `gradlew build`(테스트 — 비동기 후처리는 Mockito `timeout()` 검증으로 전환) + 프론트 tsc·oxlint·build 통과
+- **acr-mock 실기동 E2E**: 응답 200 **0.75s**(total_ms 647) 반환 후 upsert_ms **728**이 비동기 완료 — search_request 레코드·MUSIC 3행 적재 확인(직전까지는 이 728ms가 응답에 포함됐음). 테스트 행 정리 완료
+
 ## 2026-07-14
 
 ### 완료

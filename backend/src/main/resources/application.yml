@@ -42,7 +42,8 @@ melolist:
     identify-host: ${ACRCLOUD_HOST:identify-ap-southeast-1.acrcloud.com}
     metadata-host: eu-api-v2.acrcloud.com
     identify-timeout-ms: 10000
-    metadata-timeout-ms: 5000
+    # §5.3: 실측 meta_ms 최대 6.1s → 3s 컷. 늦으면 커버는 ytimg/플레이스홀더 폴백이 받는다
+    metadata-timeout-ms: 3000
     fingerprint:
       access-key: ${FINGERPRINT_API_KEY:}
       access-secret: ${FINGERPRINT_API_SECRET:}

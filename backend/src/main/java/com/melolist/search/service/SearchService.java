@@ -39,10 +39,12 @@ import java.util.concurrent.Executors;
  * M2 검색 파이프라인(backend-prd §5.1).
  *
  * <pre>
- * 검증 → [acr_ms] identify → Top-3 → [meta_ms] 메타 보강(병렬, score≤0.5 생략)
- *  → [upsert_ms] MUSIC upsert → SearchHistory write(로그인 시) → search_request 기록 → 응답
+ * 검증 → [acr_ms] identify → Top-3 → [meta_ms] 메타 보강(병렬, score≤0.5 생략) → 응답
+ *  └ 비동기 후처리(§5.3 확정): [upsert_ms] MUSIC upsert → SearchHistory write(로그인 시) → search_request 기록
  * </pre>
  *
+ * 응답은 tracks+enrichments만으로 만들어지므로 upsert·기록은 응답 경로에서 분리한다
+ * (실측: 허밍 upsert_ms 최대 2.5s — KR2 예산 밖 작업). total_ms는 응답 경로만 계측한다.
  * 오디오 원본은 저장하지 않고 처리 후 즉시 폐기한다(§9-3).
  */
 @Service
@@ -54,7 +56,8 @@ public class SearchService {
     private static final double ENRICH_MIN_SCORE = 0.5;
     private static final int TOP_N = 3;
 
-    private static final ExecutorService META_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+    /** 메타 보강 병렬 실행 + 응답 후 비동기 후처리(upsert·기록) 공용 — 가상 스레드. */
+    private static final ExecutorService PIPELINE_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     private final AcrCloudClient acrCloudClient;
     private final AcrMetadataClient acrMetadataClient;
@@ -73,10 +76,13 @@ public class SearchService {
 
         List<AcrTrack> top = dedupe(tracks).stream().limit(TOP_N).toList();
         if (top.isEmpty()) {
-            recordHistory(jwt, mode, SearchHistory.Status.NO_MATCH, null, null);
-            recordSearchRequest(eventSessionId, jwt, mode, bytes.length, false, elapsedMs(t0), acrMs, 0, 0);
-            eventService.recordSilently("search_failed", eventSessionId, currentUserId(jwt),
-                    Map.of("mode", mode.eventValue(), "reason", "no_match"));
+            long totalMs = elapsedMs(t0);
+            runTailAsync(() -> {
+                recordHistory(jwt, mode, SearchHistory.Status.NO_MATCH, null, null);
+                recordSearchRequest(eventSessionId, jwt, mode, bytes.length, false, totalMs, acrMs, 0, 0);
+                eventService.recordSilently("search_failed", eventSessionId, currentUserId(jwt),
+                        Map.of("mode", mode.eventValue(), "reason", "no_match"));
+            });
             return SearchResponse.empty();
         }
 
@@ -84,16 +90,30 @@ public class SearchService {
         List<MetaEnrichment> enrichments = enrichInParallel(top, mode);
         long metaMs = elapsedMs(metaStart);
 
-        long upsertStart = System.nanoTime();
-        List<Music> musics = upsertAll(top, enrichments);
-        long upsertMs = elapsedMs(upsertStart);
-
-        Music topMusic = musics.isEmpty() ? null : musics.get(0);
-        recordHistory(jwt, mode, SearchHistory.Status.MATCHED,
-                topMusic == null ? null : topMusic.getId(), toScore(top.get(0).score()));
-        recordSearchRequest(eventSessionId, jwt, mode, bytes.length, true, elapsedMs(t0), acrMs, metaMs, upsertMs);
+        long totalMs = elapsedMs(t0);
+        runTailAsync(() -> {
+            long upsertStart = System.nanoTime();
+            List<Music> musics = upsertAll(top, enrichments);
+            long upsertMs = elapsedMs(upsertStart);
+            Music topMusic = musics.isEmpty() ? null : musics.get(0);
+            recordHistory(jwt, mode, SearchHistory.Status.MATCHED,
+                    topMusic == null ? null : topMusic.getId(), toScore(top.get(0).score()));
+            recordSearchRequest(eventSessionId, jwt, mode, bytes.length, true, totalMs, acrMs, metaMs, upsertMs);
+        });
 
         return buildResponse(top, enrichments);
+    }
+
+    /**
+     * 응답 후 후처리(§5.3) — upsert·검색기록·계측은 응답에 필요 없으므로 응답 경로에서 분리.
+     * 동시 검색의 같은 acrid 경합은 MusicService가 재조회로 수렴시키므로 비동기화에 안전하다.
+     * 실패해도 이미 나간 응답에는 영향 없음 — 기록 유실만 로그로 남긴다.
+     */
+    private void runTailAsync(Runnable tail) {
+        CompletableFuture.runAsync(tail, PIPELINE_EXECUTOR).exceptionally(e -> {
+            log.warn("검색 파이프라인 후처리(비동기) 실패", e);
+            return null;
+        });
     }
 
     /** 기본 검증(§5.1 t0) — 빈 파일·비오디오 MIME은 400. 크기 상한은 multipart 설정이 선차단. */
@@ -137,7 +157,7 @@ public class SearchService {
         List<CompletableFuture<MetaEnrichment>> futures = tracks.stream()
                 .map(t -> t.score() > ENRICH_MIN_SCORE
                         ? CompletableFuture.supplyAsync(
-                                () -> acrMetadataClient.lookup(t.title(), t.firstArtist(), mode), META_EXECUTOR)
+                                () -> acrMetadataClient.lookup(t.title(), t.firstArtist(), mode), PIPELINE_EXECUTOR)
                         : CompletableFuture.completedFuture(MetaEnrichment.EMPTY))
                 .toList();
         return futures.stream()
