@@ -157,7 +157,7 @@ multipart(audio) 수신
 // user_id는 JWT가 있으면 서버가 채움. IP는 저장하지 않음(게스트 PII 없음)
 ```
 
-**이벤트 사전 (M2)**
+**이벤트 사전 (M2 + spec 001 로그인 계측)**
 
 | type | 기록 주체 | properties |
 |---|---|---|
@@ -166,6 +166,10 @@ multipart(audio) 수신
 | `search_result_shown` | 프론트 | `mode`, `result_count`, `top_score`, `client_ms` |
 | `search_failed` | 프론트(F1·F4·렌더 실패) / 서버(no_match 등 직접 아는 것) | `mode`, `reason`(bad_audio\|no_match\|low_score\|error), `http_status` |
 | `search_request` | **서버 전용** (검색 처리 중 직접 기록) | `total_ms`, `acr_ms`, `meta_ms`, `upsert_ms`, `audio_bytes`, `mode`, `matched` |
+| `favorite_click` | 프론트 | `mode`, `authed` — C6 게스트→가입 전환 원천 |
+| `login_started` | 프론트 | `provider` — 로그인 버튼 클릭(OAuth 리다이렉트 직전) |
+| `login_succeeded` | 프론트 | `provider` — OAuth 복귀 후 세션 확인 시 |
+| `login_failed` | 프론트 | `provider`, `reason`(cancelled\|error), `error_code` — 사용자 취소는 `cancelled`(SC-002 산출 시 제외) |
 
 ### 6.2 전체 API — 마일스톤 매핑 (경로·의미는 PRD §7 유지)
 

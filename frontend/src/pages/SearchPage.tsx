@@ -16,6 +16,8 @@ import { ResultsView } from '@/features/search/ResultsView'
 import { FailureView } from '@/features/search/FailureView'
 import { FavoriteSheet } from '@/features/search/FavoriteSheet'
 import { addRecentFind } from '@/features/search/recentFinds'
+import { clearStashedResults, peekStashedResults, stashResults } from '@/features/search/resultStash'
+import { hasPendingLoginReturn } from '@/features/events/loginEvents'
 import { recognize } from '@/features/search/api'
 import type { AcrResult, SearchType } from '@/features/search/types'
 
@@ -31,7 +33,7 @@ type Phase =
   | { name: 'recording' }
   | { name: 'confirm'; rec: Recording } // 허밍 전용 — 확인 후 수동 검색
   | { name: 'searching' }
-  | { name: 'results'; results: AcrResult[]; lowScore: boolean }
+  | { name: 'results'; results: AcrResult[]; lowScore: boolean; restored?: boolean }
   | { name: 'failure'; kind: 'F1'; variant: 'silent' | 'short' }
   | { name: 'failure'; kind: 'F2' }
   | { name: 'failure'; kind: 'F4' }
@@ -56,7 +58,14 @@ function SearchFlow({ mode }: { mode: SearchType }) {
   const session = useAuthStore((s) => s.session)
   const { maxMs, minMs } = LIMITS[mode]
 
-  const [phase, setPhase] = useState<Phase>({ name: 'recording' })
+  // FR-004: ♡ 로그인 유도 → OAuth 복귀 시 리다이렉트로 소실된 결과 화면을 복원한다.
+  // 플래그(pending)는 LoginReturnGate가 effect에서 소거하므로 렌더 시점엔 아직 살아 있다.
+  const [phase, setPhase] = useState<Phase>(() => {
+    const stashed = hasPendingLoginReturn() ? peekStashedResults(mode) : null
+    return stashed
+      ? { name: 'results', results: stashed.results, lowScore: stashed.lowScore, restored: true }
+      : { name: 'recording' }
+  })
   const [sheetOpen, setSheetOpen] = useState(false)
 
   const lastRecRef = useRef<Recording | null>(null) // F4 재시도·재검색용 blob 보존
@@ -126,11 +135,13 @@ function SearchFlow({ mode }: { mode: SearchType }) {
     onError: (message) => setPhase({ name: 'failure', kind: 'MIC', message }),
   })
 
-  // 화면 진입 즉시 녹음 시작 (권한 ~2s는 30초 예산에 포함)
+  // 화면 진입 즉시 녹음 시작 (권한 ~2s는 30초 예산에 포함) — 복원 진입이면 결과를 보여주므로 녹음하지 않는다
   const startRef = useRef(recorder.start)
   startRef.current = recorder.start
+  const restoredRef = useRef(phase.name === 'results')
   useEffect(() => {
-    void startRef.current()
+    clearStashedResults() // 스태시는 1회용 — 다음 검색 진입은 새 녹음으로
+    if (!restoredRef.current) void startRef.current()
   }, [])
 
   // C5: search_started = 녹음 시작 시점
@@ -143,8 +154,9 @@ function SearchFlow({ mode }: { mode: SearchType }) {
   }, [recorder.phase, mode])
 
   // C5: search_result_shown = 결과 렌더 완료 (+ 홈 선반용 최근 기록)
+  // 복원 진입(restored)은 이미 발화·기록된 결과라 다시 계측하지 않는다
   useEffect(() => {
-    if (phase.name !== 'results') return
+    if (phase.name !== 'results' || phase.restored) return
     const top = phase.results[0]
     track('search_result_shown', {
       mode,
@@ -463,7 +475,11 @@ function SearchFlow({ mode }: { mode: SearchType }) {
       <FavoriteSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        onLogin={() => navigate('/login')}
+        onLogin={() => {
+          // FR-004: OAuth 리다이렉트로 소실될 결과를 보관 — 복귀 시 이 화면 그대로 복원
+          if (phase.name === 'results') stashResults(mode, phase.results, phase.lowScore)
+          navigate('/login', { state: { next: `/search/${mode}` } })
+        }}
       />
     </div>
   )
