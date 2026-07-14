@@ -91,14 +91,15 @@ com.melolist
 multipart(audio) 수신
  → [t0] 기본 검증 (크기 상한, MIME)
  → [acr_ms] ACRCloud identify (서명 요청)
- → 결과 0건이면: search_request(matched=false) 기록 → 200 + 빈 배열 (F2)
+ → 결과 0건이면: 200 + 빈 배열 (F2) — 기록(search_request matched=false·search_failed)은 비동기 후처리
  → 상위 최대 3곡 확정 (Top-3)
  → [meta_ms] 메타 보강: Metadata API 조회 (허밍 Top-3는 병렬, score≤0.5는 생략)
      └ 커버·videoId 추출 (§5.2)
- → [upsert_ms] MUSIC upsert (acrid 기준) — 응답 후 비동기 분리 검토(타이밍 로그 확인 후)
- → SearchHistory write (JWT 있을 때만; 실패해도 검색 응답에 영향 없음)
- → search_request 타이밍 레코드 기록
- → 200 + AcrResult[] (§6.1)
+ → 200 + AcrResult[] (§6.1) — 응답은 여기서 종료
+ ─┄ 비동기 후처리 (응답 경로에서 분리, 2026-07-14 실측 후 확정) ┄─
+ → [upsert_ms] MUSIC upsert (acrid 기준; 동시 acrid 경합은 재조회 수렴)
+ → SearchHistory write (JWT 있을 때만; 실패해도 기록 유실만 로그)
+ → search_request 타이밍 레코드 기록 (total_ms = 응답 경로만, upsert_ms는 비동기 측정치)
 ```
 
 ### 5.2 커버·유튜브 추출 규칙 (brainstorming §7.3 확정)
@@ -117,7 +118,9 @@ multipart(audio) 수신
 | eager 캐시 | 같은 acrid 재검색 시 MUSIC 캐시 히트 → meta_ms = 0 |
 | 병렬화 | 허밍 Top-3 메타 조회 3건 병렬 |
 | 보강 생략 | score ≤ 0.5 결과는 메타 보강 생략 |
-| 비동기 upsert | 타이밍 로그로 upsert_ms 확인 후, 응답 경로에서 분리 여부 결정 |
+| 비동기 upsert | ✅ 적용(2026-07-14) — 실측 upsert_ms 평균 0.8s·최대 2.5s(허밍) 확인 후 upsert·검색기록·계측 기록을 응답 경로에서 분리. KR2의 `total_ms`는 이제 응답 경로만 계측 |
+| meta 타임아웃 3s | ✅ 적용(2026-07-14) — 실측 meta_ms 최대 6.1s → 3s 컷. 미보강 시 커버는 ytimg/플레이스홀더 폴백(§5.2)이 받는다 |
+| 클라 타임아웃 15s | 프론트 인식 요청 15s 컷 + 검색 중 [취소] 버튼(frontend-prd 참조) — 파이프라인이 아닌 최악 대기의 상한 |
 
 ---
 
@@ -164,7 +167,7 @@ multipart(audio) 수신
 | `visit` | 프론트 | `referrer`, `is_mobile` |
 | `search_started` | 프론트 | `mode` |
 | `search_result_shown` | 프론트 | `mode`, `result_count`, `top_score`, `client_ms` |
-| `search_failed` | 프론트(F1·F4·렌더 실패) / 서버(no_match 등 직접 아는 것) | `mode`, `reason`(bad_audio\|no_match\|low_score\|error), `http_status` |
+| `search_failed` | 프론트(F1·F4·렌더 실패·타임아웃·취소) / 서버(no_match 등 직접 아는 것) | `mode`, `reason`(bad_audio\|no_match\|low_score\|error\|timeout\|cancelled), `http_status` |
 | `search_request` | **서버 전용** (검색 처리 중 직접 기록) | `total_ms`, `acr_ms`, `meta_ms`, `upsert_ms`, `audio_bytes`, `mode`, `matched` |
 | `favorite_click` | 프론트 | `mode`, `authed` — C6 게스트→가입 전환 원천 |
 | `login_started` | 프론트 | `provider` — 로그인 버튼 클릭(OAuth 리다이렉트 직전) |

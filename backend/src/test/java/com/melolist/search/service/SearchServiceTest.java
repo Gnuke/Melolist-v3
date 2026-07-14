@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -90,16 +91,17 @@ class SearchServiceTest {
         assertThat(result.coverUrl()).isEqualTo("https://example.com/cover.jpg");
         assertThat(result.artists()).extracting(SearchResponse.Artist::name).containsExactly("Taylor Swift");
 
+        // upsert·기록은 응답 후 비동기 후처리(§5.3) — timeout 검증으로 대기
         ArgumentCaptor<MusicUpsertCommand> upsert = ArgumentCaptor.forClass(MusicUpsertCommand.class);
-        verify(musicService).upsertFromRecognition(upsert.capture());
+        verify(musicService, timeout(2000)).upsertFromRecognition(upsert.capture());
         assertThat(upsert.getValue().acrid()).isEqualTo("acr-1");
         assertThat(upsert.getValue().youtubeVideoId()).isEqualTo("dC9QIUKviJU");
 
-        // 게스트(JWT 없음) → 검색 기록 저장 안 함
-        verify(searchHistoryRepository, never()).save(any());
-
         ArgumentCaptor<Map<String, Object>> props = ArgumentCaptor.forClass(Map.class);
-        verify(eventService).recordSilently(eq("search_request"), eq(SESSION_ID), eq(null), props.capture());
+        verify(eventService, timeout(2000)).recordSilently(eq("search_request"), eq(SESSION_ID), eq(null), props.capture());
+
+        // 게스트(JWT 없음) → 검색 기록 저장 안 함 (후처리 완료 후 판정)
+        verify(searchHistoryRepository, never()).save(any());
         assertThat(props.getValue())
                 .containsEntry("mode", "fingerprint")
                 .containsEntry("matched", true)
@@ -113,9 +115,9 @@ class SearchServiceTest {
         SearchResponse response = searchService.search(SearchMode.HUMMING, audioFile(), SESSION_ID, null);
 
         assertThat(response.results()).isEmpty();
-        verify(musicService, never()).upsertFromRecognition(any());
-        verify(eventService).recordSilently(eq("search_failed"), eq(SESSION_ID), eq(null),
+        verify(eventService, timeout(2000)).recordSilently(eq("search_failed"), eq(SESSION_ID), eq(null),
                 eq(Map.of("mode", "humming", "reason", "no_match")));
+        verify(musicService, never()).upsertFromRecognition(any());
     }
 
     @Test
@@ -137,6 +139,8 @@ class SearchServiceTest {
         assertThat(response.results().get(1).youtubeVideoId()).isNull();
         assertThat(response.results().get(1).coverUrl()).isNull();
         verify(acrMetadataClient, never()).lookup(eq("Song B"), anyString(), any());
+        // 비동기 후처리의 upsert 2건 완료까지 대기(테스트 종료 레이스 방지)
+        verify(musicService, timeout(2000).times(2)).upsertFromRecognition(any());
     }
 
     @Test
@@ -157,6 +161,8 @@ class SearchServiceTest {
         assertThat(response.results().get(0).acrid()).isEqualTo("a1");
         assertThat(response.results()).extracting(SearchResponse.TrackResult::acrid)
                 .doesNotContain("a2", "a5");
+        // 비동기 후처리의 upsert 3건(dedupe 후) 완료까지 대기
+        verify(musicService, timeout(2000).times(3)).upsertFromRecognition(any());
     }
 
     @Test

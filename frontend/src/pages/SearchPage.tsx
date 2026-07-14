@@ -70,13 +70,17 @@ function SearchFlow({ mode }: { mode: SearchType }) {
 
   const lastRecRef = useRef<Recording | null>(null) // F4 재시도·재검색용 blob 보존
   const searchStartedAtRef = useRef(0) // client_ms 측정 시작점
+  const abortRef = useRef<AbortController | null>(null) // 검색 중 취소·언마운트 시 요청 중단
 
   const runSearch = useCallback(
     async (rec: Recording) => {
+      const controller = new AbortController()
+      abortRef.current = controller
       setPhase({ name: 'searching' })
       searchStartedAtRef.current = performance.now()
       try {
-        const results = await recognize(mode, rec.blob)
+        const results = await recognize(mode, rec.blob, controller.signal)
+        if (controller.signal.aborted) return // 취소가 응답과 경합한 경우 — 취소 쪽이 이긴다
         if (results.length === 0) {
           // F2 무결과 — no_match 이벤트는 서버가 직접 기록(중복 발화 금지)
           setPhase({ name: 'failure', kind: 'F2' })
@@ -97,9 +101,12 @@ function SearchFlow({ mode }: { mode: SearchType }) {
           setPhase({ name: 'results', results: results.slice(0, 3), lowScore: false })
         }
       } catch (err) {
-        // F4 — raw 에러 메시지는 화면에 노출하지 않는다(C4)
+        // 사용자 취소(AbortController) — cancelSearch가 화면 전환·계측을 이미 처리했다
+        if (isAxiosError(err) && err.code === 'ERR_CANCELED') return
+        // F4 — raw 에러 메시지는 화면에 노출하지 않는다(C4). 15초 타임아웃은 timeout으로 구분(KR2 진단용)
+        const timedOut = isAxiosError(err) && err.code === 'ECONNABORTED'
         const httpStatus = isAxiosError(err) ? err.response?.status : undefined
-        track('search_failed', { mode, reason: 'error', http_status: httpStatus ?? null })
+        track('search_failed', { mode, reason: timedOut ? 'timeout' : 'error', http_status: httpStatus ?? null })
         setPhase({ name: 'failure', kind: 'F4' })
       }
     },
@@ -189,6 +196,16 @@ function SearchFlow({ mode }: { mode: SearchType }) {
     if (rec) void runSearch(rec)
     else reRecord()
   }, [runSearch, reRecord])
+
+  // 검색 중 사용자 취소 — 요청을 끊고 녹음 화면으로 (오래 걸릴 때의 탈출구)
+  const cancelSearch = useCallback(() => {
+    abortRef.current?.abort()
+    track('search_failed', { mode, reason: 'cancelled' })
+    reRecord()
+  }, [mode, reRecord])
+
+  // 화면 이탈 시 진행 중 요청 정리 (이탈 후 도착할 응답은 버려진다)
+  useEffect(() => () => abortRef.current?.abort(), [])
 
   const onFavorite = useCallback(
     (_r: AcrResult) => {
@@ -384,6 +401,18 @@ function SearchFlow({ mode }: { mode: SearchType }) {
                   </div>
                 </div>
               ))}
+            </div>
+            {/* 오래 걸릴 때의 탈출구 — 요청을 끊고 다시 녹음으로 */}
+            <div className="mt-auto flex justify-center pb-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={cancelSearch}
+                size="lg"
+                className="h-12 rounded-full px-7 text-sm font-bold transition-transform active:scale-[0.97]"
+              >
+                취소
+              </Button>
             </div>
           </motion.section>
         )}

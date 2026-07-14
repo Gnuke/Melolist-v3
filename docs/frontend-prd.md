@@ -108,7 +108,8 @@
 | F4 | 오류 (네트워크/서버) | HTTP 오류·타임아웃 | "일시적인 문제가 발생했어요" — **raw 에러 메시지 노출 금지** | **[재시도] = 보존한 blob 재전송** (재녹음 불필요) |
 
 - 우선순위: F1(실패 다수 예방) > F4(blob 보존 — 녹음 유실이 최악의 경험) > F2 > F3
-- 모든 실패는 `search_failed(reason: bad_audio|no_match|low_score|error)` 이벤트로 기록 → 실패 분포가 다음 개선 우선순위 결정
+- 모든 실패는 `search_failed(reason: bad_audio|no_match|low_score|error|timeout|cancelled)` 이벤트로 기록 → 실패 분포가 다음 개선 우선순위 결정
+- 인식 요청은 **15초 타임아웃**(초과 시 F4 — blob 보존, 재시도 가능) + 검색 중 화면에 **[취소] 버튼**(AbortController로 요청 중단 → 녹음 화면 복귀, `reason: cancelled`)
 
 ---
 
