@@ -17,6 +17,12 @@
 - 백엔드 `gradlew build`(테스트 — 비동기 후처리는 Mockito `timeout()` 검증으로 전환) + 프론트 tsc·oxlint·build 통과
 - **acr-mock 실기동 E2E**: 응답 200 **0.75s**(total_ms 647) 반환 후 upsert_ms **728**이 비동기 완료 — search_request 레코드·MUSIC 3행 적재 확인(직전까지는 이 728ms가 응답에 포함됐음). 테스트 행 정리 완료
 
+### 후속 — 취소 확인 시트 (사용자 로컬 확인 피드백, 브랜치 `fix/search-cancel-confirm`)
+
+- 피드백: "취소가 즉시 실행되고, 취소 후 녹음이 멋대로 다시 시작된다 — 의사를 먼저 묻고, 계속하면 하던 것을 이어가고, 확정하면 검색 시작 화면으로 나가야"
+- **useRecorder에 pause/resume 추가**: MediaRecorder.pause + 자동정지 타이머·경과 인터벌 정지, 재개 시 시작시각을 정지 시간만큼 이동(경과·진행률·durationMs에서 정지 구간 제외). 일시정지 중 RMS는 무음검증 분모에서 제외(F1 오탐 방지) + 링 진행률 프리즈(`getElapsedMs`) + "잠시 멈췄어요" 문구
+- **QuitConfirmSheet 신설**(FavoriteSheet 패턴, 주 버튼=계속하기): 녹음 중 취소(헤더)→일시정지+시트(계속 녹음/그만두기), 검색 중 [취소]→요청 유지+시트(계속 기다리기/그만두기 — 대기 중 결과 도착 시 시트 자동 닫힘). 확정 시 홈 복귀(자동 재녹음 제거), `reason: cancelled`는 확정 취소만 기록
+
 ## 2026-07-14
 
 ### 완료

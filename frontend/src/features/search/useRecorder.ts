@@ -14,7 +14,7 @@ interface Options {
   onError: (message: string) => void
 }
 
-export type RecorderPhase = 'idle' | 'acquiring' | 'recording'
+export type RecorderPhase = 'idle' | 'acquiring' | 'recording' | 'paused'
 
 function pickMimeType(): string | undefined {
   const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg', 'audio/mp4']
@@ -70,6 +70,8 @@ export function useRecorder({ maxMs, onComplete, onError }: Options) {
     autoStop: number
     levelSum: number
     levelCount: number
+    /** 일시정지 시각(performance.now) — null이면 녹음 진행 중 */
+    pausedAt: number | null
   } | null>(null)
   const acquiringRef = useRef(false)
   // 언마운트 후 getUserMedia가 늦게 resolve되면 스트림을 즉시 폐기하기 위한 플래그.
@@ -110,7 +112,8 @@ export function useRecorder({ maxMs, onComplete, onError }: Options) {
     window.clearInterval(s.timer)
     window.clearTimeout(s.autoStop)
 
-    const durationMs = performance.now() - startedAtRef.current
+    // 일시정지 상태에서 종료되면 정지 시각까지만 녹음 시간으로 친다
+    const durationMs = (s.pausedAt ?? performance.now()) - startedAtRef.current
     const meanLevel = s.levelCount > 0 ? s.levelSum / s.levelCount : 0
 
     const finalize = () => {
@@ -143,6 +146,54 @@ export function useRecorder({ maxMs, onComplete, onError }: Options) {
     setPhase('idle')
     setSeconds(0)
   }, [disposeSession])
+
+  /**
+   * 녹음 일시정지 — 취소 확인 시트가 뜨는 동안 데이터 수집·자동정지·경과시간을 멈춘다.
+   * 마이크 스트림은 유지되므로 resume()으로 끊김 없이 이어진다.
+   */
+  const pause = useCallback(() => {
+    const s = sessionRef.current
+    if (!s || s.pausedAt !== null) return
+    s.pausedAt = performance.now()
+    window.clearTimeout(s.autoStop)
+    window.clearInterval(s.timer)
+    if (s.recorder.state === 'recording') {
+      try {
+        s.recorder.pause()
+      } catch {
+        // ignore
+      }
+    }
+    setPhase('paused')
+  }, [])
+
+  const resume = useCallback(() => {
+    const s = sessionRef.current
+    if (!s || s.pausedAt === null) return
+    // 시작 시각을 정지 시간만큼 뒤로 밀어 경과·진행률·durationMs에서 정지 구간을 제외
+    startedAtRef.current += performance.now() - s.pausedAt
+    s.pausedAt = null
+    if (s.recorder.state === 'paused') {
+      try {
+        s.recorder.resume()
+      } catch {
+        // ignore
+      }
+    }
+    s.timer = window.setInterval(() => {
+      setSeconds(Math.floor((performance.now() - startedAtRef.current) / 1000))
+    }, 250)
+    const remaining = Math.max(0, maxMs - (performance.now() - startedAtRef.current))
+    s.autoStop = window.setTimeout(() => stopRef.current(), remaining)
+    setPhase('recording')
+  }, [maxMs])
+
+  /** 녹음 경과(ms) — 일시정지 중에는 정지 시점 값으로 고정된다 (링 진행률용). */
+  const getElapsedMs = useCallback(() => {
+    const s = sessionRef.current
+    if (!s) return 0
+    return (s.pausedAt ?? performance.now()) - startedAtRef.current
+  }, [])
 
   const start = useCallback(async () => {
     disposedRef.current = false
@@ -206,6 +257,7 @@ export function useRecorder({ maxMs, onComplete, onError }: Options) {
       autoStop: 0,
       levelSum: 0,
       levelCount: 0,
+      pausedAt: null as number | null,
     }
     sessionRef.current = session
 
@@ -214,6 +266,11 @@ export function useRecorder({ maxMs, onComplete, onError }: Options) {
     const measure = () => {
       if (sessionRef.current !== session) return
       session.raf = requestAnimationFrame(measure)
+      if (session.pausedAt !== null) {
+        // 일시정지 중 — 시각 레벨만 감쇠시키고 평균(무음 검증 분모)에는 넣지 않는다
+        levelRef.current *= 0.9
+        return
+      }
       analyser.getByteTimeDomainData(buffer)
       let sum = 0
       for (let i = 0; i < buffer.length; i++) {
@@ -244,5 +301,5 @@ export function useRecorder({ maxMs, onComplete, onError }: Options) {
     [disposeSession],
   )
 
-  return { phase, seconds, start, stop, cancel, levelRef, startedAtRef, analyserRef }
+  return { phase, seconds, start, stop, cancel, pause, resume, getElapsedMs, levelRef, startedAtRef, analyserRef }
 }
