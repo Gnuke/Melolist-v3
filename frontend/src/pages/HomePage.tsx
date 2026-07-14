@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import type { Variants } from 'motion/react'
@@ -8,6 +8,7 @@ import { CoverArt } from '@/features/search/CoverArt'
 import { getRecentFinds } from '@/features/search/recentFinds'
 import { useAuthStore } from '@/stores/authStore'
 import { useMe } from '@/features/user/useMe'
+import { ProfileSheet } from '@/features/user/ProfileSheet'
 
 const containerVariants: Variants = {
   hidden: {},
@@ -23,6 +24,7 @@ const itemVariants: Variants = {
 export function HomePage() {
   const session = useAuthStore((s) => s.session)
   const recentFinds = useMemo(() => getRecentFinds().slice(0, 3), [])
+  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
@@ -46,7 +48,14 @@ export function HomePage() {
             Melolist<span className="text-brand">.</span>
           </h1>
           {session ? (
-            <ProfileChip fallbackEmail={session.user.email} />
+            <button
+              type="button"
+              onClick={() => setProfileOpen(true)}
+              aria-label="내 프로필"
+              className="rounded-full transition-transform focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/60 active:scale-95"
+            >
+              <ProfileChip fallbackEmail={session.user.email} />
+            </button>
           ) : (
             <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-foreground">
               <Link to="/login">로그인</Link>
@@ -131,6 +140,12 @@ export function HomePage() {
           </motion.section>
         )}
       </motion.div>
+
+      <ProfileSheet
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        fallbackEmail={session?.user.email}
+      />
     </div>
   )
 }

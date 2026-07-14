@@ -1,16 +1,36 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { ChevronLeft } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/authStore'
+import { trackLoginFailedImmediate, trackLoginStarted } from '@/features/events/loginEvents'
 
 export function LoginPage() {
+  const session = useAuthStore((s) => s.session)
+  const location = useLocation()
+
+  // FR-004: 로그인을 유도한 화면이 state.next로 복귀 경로를 넘긴다(없으면 홈). 내부 경로만 허용.
+  const rawNext = (location.state as { next?: string } | null)?.next
+  const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
+
+  // 이미 로그인한 상태로 로그인 화면 접근 시 홈(또는 이전 화면)으로 안내 (spec 001 edge case)
+  if (session) {
+    return <Navigate to={next} replace />
+  }
+
   const signInWithGoogle = async () => {
-    // 로그인 후 현재 오리진(로컬 5173/운영 Vercel)으로 복귀 — Supabase Redirect URLs에 등록된 주소여야 함
-    await supabase.auth.signInWithOAuth({
+    trackLoginStarted()
+    // 로그인 후 시작 맥락으로 복귀 — origin+next가 Supabase Redirect URLs(와일드카드 /**)에 허용돼야 함
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.origin + next },
     })
+    if (error) {
+      trackLoginFailedImmediate(error.code ?? null)
+      toast('로그인에 문제가 생겼어요. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   return (

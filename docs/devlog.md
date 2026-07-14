@@ -1,5 +1,27 @@
 # Development Log
 
+## 2026-07-14
+
+### 완료
+
+- **spec 001 잔여 구현 — 맥락 복귀(P2) + 로그아웃(P3) + 로그인 계측(FR-009)** (브랜치 `feat/google-oauth`)
+  - **P2 맥락 복귀(FR-004)**: FavoriteSheet 로그인 유도 → `/login`에 `state.next`(현재 검색 화면 경로) 전달 → `signInWithOAuth`의 `redirectTo`를 `origin+next`로 — 로그인 후 홈이 아닌 시작 화면으로 복귀. 내부 경로(`/`로 시작)만 허용. ⚠️ 전체 페이지 리다이렉트 특성상 검색 결과 상태 자체는 소실(화면 단위 복귀까지가 범위)
+  - **P3 로그아웃(FR-008)**: `ProfileSheet` 신설(FavoriteSheet 패턴) — 홈 ProfileChip 클릭 → 시트(아바타·이름·이메일) → 로그아웃(`signOut` + `['me']` 쿼리 캐시 제거 + 토스트)
+  - **FR-009 로그인 계측**: `login_started`/`login_succeeded`/`login_failed` 3종. OAuth는 전체 리다이렉트라 시작 시 sessionStorage pending 플래그 → 복귀 로드 시 `consumeLoginReturn()`이 성공(세션 확인)/실패(URL 에러 파라미터) 판정. 취소(access_denied)는 `reason=cancelled`로 구분(SC-002 분모 제외) + 안내 토스트 + 에러 파라미터만 URL에서 제거. 이미 로그인 상태로 `/login` 접근 시 리다이렉트(edge case)
+  - **이벤트 사전 동기화(원칙 II)**: backend-prd §6.1 ↔ frontend-prd §7에 로그인 3종 동시 반영 + **기존 드리프트 정정** — 코드에만 있고 사전에 누락됐던 `favorite_click`(C6) 등재
+  - **JIT avatar_url 수급(선택 항목)**: 백엔드 `UserService` — `user_metadata.avatar_url → picture` 순 추출, 프로비저닝 시 저장 + avatar 없이 만들어진 기존 행은 `/users/me` 호출 시 자가 치유(dirty checking)
+
+### 검증
+
+- 프론트 `tsc`·`oxlint`(기존과 동일 경고만)·`vite build` 통과, 백엔드 `gradlew build`(테스트 포함) 통과
+- 실브라우저 검증 대기: 맥락 복귀·취소 토스트·로그아웃·계측 기록(`event_log`) — 로컬 확인 후 운영(SC-005)
+
+### 다음 작업
+
+- **Supabase Redirect URLs 등록(수동)**: `http://localhost:5173/**` + `https://melolist-v3.vercel.app/**` (맥락 복귀가 서브경로로 돌아가므로 와일드카드 필수)
+- 로컬 실브라우저 E2E(위 검증 대기 항목) → PR → main 병합 → Vercel 재배포 → **운영 로그인 검증(SC-005)**
+- 이후: 실오디오 지문/허밍 검증(허밍 스파이크 §7.4) · 매칭률 스크립트(C6) = M2 DoD 완결 → M3 저장(즐겨찾기 실저장부터)
+
 ## 2026-07-13
 
 ### 완료

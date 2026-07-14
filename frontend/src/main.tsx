@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
@@ -8,6 +8,7 @@ import { router } from '@/routes/router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { trackVisitOnce } from '@/features/events/track'
+import { consumeLoginReturn } from '@/features/events/loginEvents'
 import { Toaster } from '@/components/ui/sonner'
 import './index.css'
 
@@ -24,6 +25,14 @@ trackVisitOnce()
 
 const queryClient = new QueryClient()
 
+/** OAuth 복귀 판정(성공/실패 계측 + 안내 토스트) — Toaster 마운트 후 실행돼야 해서 effect로. */
+function LoginReturnGate() {
+  useEffect(() => {
+    void consumeLoginReturn()
+  }, [])
+  return null
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -31,6 +40,7 @@ createRoot(document.getElementById('root')!).render(
         <RouterProvider router={router} />
       </MotionConfig>
       <Toaster position="top-center" richColors />
+      <LoginReturnGate />
     </QueryClientProvider>
   </StrictMode>,
 )

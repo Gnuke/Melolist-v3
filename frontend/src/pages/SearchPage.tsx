@@ -463,7 +463,7 @@ function SearchFlow({ mode }: { mode: SearchType }) {
       <FavoriteSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        onLogin={() => navigate('/login')}
+        onLogin={() => navigate('/login', { state: { next: `/search/${mode}` } })}
       />
     </div>
   )

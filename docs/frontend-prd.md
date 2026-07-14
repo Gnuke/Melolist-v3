@@ -124,8 +124,13 @@
 | `search_started` | 녹음 시작 | `mode` |
 | `search_result_shown` | 결과 렌더 완료 | `mode`, `result_count`, `top_score`, `client_ms` |
 | `search_failed` | F1·F4 등 클라 확정 실패 | `mode`, `reason`, `http_status` |
+| `favorite_click` | 결과 카드 ♡ 클릭(로그인 여부 무관) | `mode`, `authed` — C6 게스트→가입 전환 원천 |
+| `login_started` | 로그인 버튼 클릭(OAuth 리다이렉트 직전) | `provider` |
+| `login_succeeded` | OAuth 복귀 후 세션 확인 시(sessionStorage pending 플래그로 판정) | `provider` |
+| `login_failed` | 복귀 URL 에러 파라미터 감지 또는 즉시 실패 | `provider`, `reason`(cancelled\|error), `error_code` — 취소는 `cancelled`(SC-002 제외) |
 
 서버가 직접 아는 것(검색 요청 타이밍, no_match)은 서버가 기록 — 프론트는 중복 발화하지 않는다.
+로그인 계측(spec 001 FR-009)은 OAuth 전체 페이지 리다이렉트 특성상 시작 시 pending 플래그를 남기고 복귀 로드 시점에 성공/실패를 판정한다.
 
 ---
 

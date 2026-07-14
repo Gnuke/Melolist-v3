@@ -1,12 +1,15 @@
 import { api } from '@/lib/api'
 
-/** backend-prd §6.1 이벤트 사전 + favorite_click(C6 게스트→가입 전환 원천) */
+/** backend-prd §6.1 이벤트 사전 + favorite_click(C6 게스트→가입 전환 원천) + 로그인 3종(spec 001 FR-009) */
 export type EventType =
   | 'visit'
   | 'search_started'
   | 'search_result_shown'
   | 'search_failed'
   | 'favorite_click'
+  | 'login_started'
+  | 'login_succeeded'
+  | 'login_failed'
 
 export type SearchFailReason = 'bad_audio' | 'no_match' | 'low_score' | 'error'
 
