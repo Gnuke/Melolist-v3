@@ -1,5 +1,6 @@
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
+import type { Session } from '@supabase/supabase-js'
+import { useAuthStore } from '@/stores/authStore'
 import { track } from '@/features/events/track'
 
 /**
@@ -13,6 +14,14 @@ const PENDING_KEY = 'melolist.login-pending'
 export function trackLoginStarted(): void {
   sessionStorage.setItem(PENDING_KEY, '1')
   track('login_started', { provider: 'google' })
+}
+
+/**
+ * OAuth 복귀 대기 중 여부 — 복귀 페이지가 마운트 렌더 시점(consumeLoginReturn이
+ * 플래그를 소거하기 전)에 화면 상태 복원(FR-004) 여부를 판단하는 데 쓴다.
+ */
+export function hasPendingLoginReturn(): boolean {
+  return sessionStorage.getItem(PENDING_KEY) !== null
 }
 
 /** 리다이렉트조차 못 간 즉시 실패(네트워크 등) — 복귀 판정 경로를 안 타므로 직접 기록. */
@@ -74,9 +83,38 @@ export async function consumeLoginReturn(): Promise<void> {
   }
 
   if (!pending) return
-  // getSession은 URL의 토큰 처리(detectSessionInUrl)까지 끝난 뒤 결과를 준다
-  const { data } = await supabase.auth.getSession()
-  if (data.session) {
+  const session = await waitForSession(10_000)
+  if (session) {
     track('login_succeeded', { provider: 'google' })
   }
+  // 세션이 끝내 없으면(동의 화면에서 뒤로가기 등 중도 이탈) 아무것도 기록하지 않는다
+  // — 오류가 아니므로 login_failed로 잡으면 SC-002가 오염된다.
+}
+
+/**
+ * OAuth 복귀 직후 세션 확립 대기. getSession() 단발 호출은 URL 토큰 교환이
+ * 끝나기 전이면 null을 줄 수 있어(이벤트 조용히 유실), 스토어 값을 먼저 보고
+ * 없으면 스토어 구독으로 세션 등장을 기다린다(최대 timeoutMs).
+ * main.tsx가 onAuthStateChange → 스토어 동기화를 앱 부팅 시 등록해 둔다.
+ */
+function waitForSession(timeoutMs: number): Promise<Session | null> {
+  const immediate = useAuthStore.getState().session
+  if (immediate) return Promise.resolve(immediate)
+
+  return new Promise((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let unsubscribe: (() => void) | undefined
+    let settled = false
+    const finish = (session: Session | null) => {
+      if (settled) return
+      settled = true
+      if (timer !== undefined) clearTimeout(timer)
+      unsubscribe?.()
+      resolve(session)
+    }
+    unsubscribe = useAuthStore.subscribe((state) => {
+      if (state.session) finish(state.session)
+    })
+    timer = setTimeout(() => finish(useAuthStore.getState().session), timeoutMs)
+  })
 }

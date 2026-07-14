@@ -5,21 +5,24 @@
 ### 완료
 
 - **spec 001 잔여 구현 — 맥락 복귀(P2) + 로그아웃(P3) + 로그인 계측(FR-009)** (브랜치 `feat/google-oauth`)
-  - **P2 맥락 복귀(FR-004)**: FavoriteSheet 로그인 유도 → `/login`에 `state.next`(현재 검색 화면 경로) 전달 → `signInWithOAuth`의 `redirectTo`를 `origin+next`로 — 로그인 후 홈이 아닌 시작 화면으로 복귀. 내부 경로(`/`로 시작)만 허용. ⚠️ 전체 페이지 리다이렉트 특성상 검색 결과 상태 자체는 소실(화면 단위 복귀까지가 범위)
+  - **P2 맥락 복귀(FR-004)**: FavoriteSheet 로그인 유도 → `/login`에 `state.next`(현재 검색 화면 경로) 전달 → `signInWithOAuth`의 `redirectTo`를 `origin+next`로 — 로그인 후 홈이 아닌 시작 화면으로 복귀. 내부 경로(`/`로 시작)만 허용. (검색 결과 상태 소실 문제는 당일 후속 수정으로 해결 — 아래 "결과 화면 복원")
   - **P3 로그아웃(FR-008)**: `ProfileSheet` 신설(FavoriteSheet 패턴) — 홈 ProfileChip 클릭 → 시트(아바타·이름·이메일) → 로그아웃(`signOut` + `['me']` 쿼리 캐시 제거 + 토스트)
   - **FR-009 로그인 계측**: `login_started`/`login_succeeded`/`login_failed` 3종. OAuth는 전체 리다이렉트라 시작 시 sessionStorage pending 플래그 → 복귀 로드 시 `consumeLoginReturn()`이 성공(세션 확인)/실패(URL 에러 파라미터) 판정. 취소(access_denied)는 `reason=cancelled`로 구분(SC-002 분모 제외) + 안내 토스트 + 에러 파라미터만 URL에서 제거. 이미 로그인 상태로 `/login` 접근 시 리다이렉트(edge case)
   - **이벤트 사전 동기화(원칙 II)**: backend-prd §6.1 ↔ frontend-prd §7에 로그인 3종 동시 반영 + **기존 드리프트 정정** — 코드에만 있고 사전에 누락됐던 `favorite_click`(C6) 등재
   - **JIT avatar_url 수급(선택 항목)**: 백엔드 `UserService` — `user_metadata.avatar_url → picture` 순 추출, 프로비저닝 시 저장 + avatar 없이 만들어진 기존 행은 `/users/me` 호출 시 자가 치유(dirty checking)
+- **로컬 E2E에서 발견된 결함 2건 수정** (같은 브랜치 후속 커밋)
+  - 🐛 **로그인 계측 유실**: 첫 E2E에서 검색·♡ 이벤트는 적재되는데 로그인 3종만 0건. 원인 ① `login_started` — `track()`이 axios XHR이라 발화 직후 OAuth 전체 페이지 이동이 요청을 죽임 → **`fetch(keepalive: true)`로 교체**(페이지 이탈에도 전송 보장, Bearer는 authStore에서 동기 취득). 원인 ② `login_succeeded` — 복귀 직후 `getSession()` 단발 호출이 토큰 교환 완료 전이면 null → **authStore 구독으로 세션 등장 대기(최대 10초)** 후 발화(`waitForSession`)
+  - 🐛 **FR-004 결과 화면 복원**: 로그인 후 `/search/{mode}` 경로로는 복귀하지만 결과가 리액트 상태라 소실 → 초기 녹음 화면이 뜸(US2 "처음부터 다시 시작" 금지 위반). → ♡ 시트에서 로그인 클릭 시 결과를 sessionStorage 스태시(`resultStash.ts`, mode·lowScore 포함, TTL 10분, 1회용)에 보관, 복귀 마운트 시 **OAuth 복귀 중일 때만**(pending 플래그로 판정) 결과 화면 복원. 복원 진입은 녹음 자동 시작·`search_result_shown` 재발화·최근 기록 중복 적재를 모두 건너뜀. 취소 복귀에도 동일 적용. 지문·허밍 공통(`SearchFlow` 공유)
 
 ### 검증
 
 - 프론트 `tsc`·`oxlint`(기존과 동일 경고만)·`vite build` 통과, 백엔드 `gradlew build`(테스트 포함) 통과
-- 실브라우저 검증 대기: 맥락 복귀·취소 토스트·로그아웃·계측 기록(`event_log`) — 로컬 확인 후 운영(SC-005)
+- **로컬 실브라우저 E2E 전 항목 사용자 검증 통과**: 로그인/로그아웃(ProfileSheet) · ♡ 게스트 유도 → 로그인 → **결과 화면 그대로 복귀**(지문 확인, 허밍은 동일 코드 경로) · `event_log`에 `login_started`→`login_succeeded` 2쌍 적재 확인 · profiles `avatar_url` 자가 치유 확인(구글 프로필 사진). Supabase Redirect URLs 와일드카드 등록 완료(로컬분 동작 확인)
+- ♡ 흐름 검증은 dev 전용 검색 목업(`MOCK_SEARCH_ENABLED`) + 무음 회피(마이크 마찰음)로 수행 — 공공장소에서 실음원 없이 테스트하는 우회로 확립
 
 ### 다음 작업
 
-- **Supabase Redirect URLs 등록(수동)**: `http://localhost:5173/**` + `https://melolist-v3.vercel.app/**` (맥락 복귀가 서브경로로 돌아가므로 와일드카드 필수)
-- 로컬 실브라우저 E2E(위 검증 대기 항목) → PR → main 병합 → Vercel 재배포 → **운영 로그인 검증(SC-005)**
+- PR → main 병합 → Vercel 재배포 → **운영 로그인 검증(SC-005)** (운영 와일드카드 `https://melolist-v3.vercel.app/**` 등록 상태 확인 포함)
 - 이후: 실오디오 지문/허밍 검증(허밍 스파이크 §7.4) · 매칭률 스크립트(C6) = M2 DoD 완결 → M3 저장(즐겨찾기 실저장부터)
 
 ## 2026-07-13
