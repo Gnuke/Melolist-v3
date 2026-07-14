@@ -20,10 +20,17 @@
 - **로컬 실브라우저 E2E 전 항목 사용자 검증 통과**: 로그인/로그아웃(ProfileSheet) · ♡ 게스트 유도 → 로그인 → **결과 화면 그대로 복귀**(지문 확인, 허밍은 동일 코드 경로) · `event_log`에 `login_started`→`login_succeeded` 2쌍 적재 확인 · profiles `avatar_url` 자가 치유 확인(구글 프로필 사진). Supabase Redirect URLs 와일드카드 등록 완료(로컬분 동작 확인)
 - ♡ 흐름 검증은 dev 전용 검색 목업(`MOCK_SEARCH_ENABLED`) + 무음 회피(마이크 마찰음)로 수행 — 공공장소에서 실음원 없이 테스트하는 우회로 확립
 
+### 운영 검증 완료 — spec 001 종료 (같은 날 후속)
+
+- **PR #1 병합**(`35406cd`, CI 통과: Backend 50s·Frontend 22s·Vercel 프리뷰) → Vercel 재배포 확인(프로덕션 번들에 신규 계측 마커 검증) → Render 웜업 후 실사용자 로그인
+- **SC-005 통과 증거**: Supabase auth 로그 `/callback` 302 `auth_event: login`(referer=`melolist-v3.vercel.app`, provider google) + `event_log`에 `login_started`→`login_succeeded` 운영 경유 적재. 운영 실검색 1건도 확인(`search_request` acr_ms 3077, 주변 소음 no_match 정상)
+- 📌 사후 판명: 오전 첫 E2E는 배포판(구 번들)에서 수행된 것 — 같은 Vercel 탭 세션 ID로 확인. 로그인 이벤트 0건에는 구 코드 요인도 있었음(keepalive 수정은 로컬·운영 모두 유효 실증)
+- **spec 001 SC 5종 전부 충족 — Google OAuth2 로그인 기능 완료.** 브랜치 `feat/google-oauth` 정리
+
 ### 다음 작업
 
-- PR → main 병합 → Vercel 재배포 → **운영 로그인 검증(SC-005)** (운영 와일드카드 `https://melolist-v3.vercel.app/**` 등록 상태 확인 포함)
-- 이후: 실오디오 지문/허밍 검증(허밍 스파이크 §7.4) · 매칭률 스크립트(C6) = M2 DoD 완결 → M3 저장(즐겨찾기 실저장부터)
+- **M2 측정**: 실오디오 지문/허밍 검증(허밍 스파이크 §7.4) · 매칭률 스크립트(C6) · KR SQL(§10) = M2 DoD 완결 (허밍 실측은 환경 되는 날 — 가짜 마이크용 ffmpeg 준비됨)
+- 이후 **M3 저장**(즐겨찾기 실저장부터 — ♡ 버튼·로그인 유도는 이미 완성)
 
 ## 2026-07-13
 
