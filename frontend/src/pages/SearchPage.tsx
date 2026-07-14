@@ -15,6 +15,7 @@ import { PlaybackCard } from '@/features/search/PlaybackCard'
 import { ResultsView } from '@/features/search/ResultsView'
 import { FailureView } from '@/features/search/FailureView'
 import { FavoriteSheet } from '@/features/search/FavoriteSheet'
+import { QuitConfirmSheet } from '@/features/search/QuitConfirmSheet'
 import { addRecentFind } from '@/features/search/recentFinds'
 import { clearStashedResults, peekStashedResults, stashResults } from '@/features/search/resultStash'
 import { hasPendingLoginReturn } from '@/features/events/loginEvents'
@@ -67,6 +68,8 @@ function SearchFlow({ mode }: { mode: SearchType }) {
       : { name: 'recording' }
   })
   const [sheetOpen, setSheetOpen] = useState(false)
+  // 취소 확인 시트 — 어느 단계의 취소인지 (녹음 중=일시정지 후 확인 / 검색 중=요청 유지한 채 확인)
+  const [quitSheet, setQuitSheet] = useState<null | 'recording' | 'searching'>(null)
 
   const lastRecRef = useRef<Recording | null>(null) // F4 재시도·재검색용 blob 보존
   const searchStartedAtRef = useRef(0) // client_ms 측정 시작점
@@ -141,6 +144,8 @@ function SearchFlow({ mode }: { mode: SearchType }) {
     onComplete: handleRecorded,
     onError: (message) => setPhase({ name: 'failure', kind: 'MIC', message }),
   })
+  // useCallback 의존성용 — 훅이 반환하는 함수들은 참조가 안정적이다
+  const { pause: pauseRecorder, resume: resumeRecorder, cancel: cancelRecorder } = recorder
 
   // 화면 진입 즉시 녹음 시작 (권한 ~2s는 30초 예산에 포함) — 복원 진입이면 결과를 보여주므로 녹음하지 않는다
   const startRef = useRef(recorder.start)
@@ -197,12 +202,38 @@ function SearchFlow({ mode }: { mode: SearchType }) {
     else reRecord()
   }, [runSearch, reRecord])
 
-  // 검색 중 사용자 취소 — 요청을 끊고 녹음 화면으로 (오래 걸릴 때의 탈출구)
-  const cancelSearch = useCallback(() => {
-    abortRef.current?.abort()
+  // 취소 확정 공통 — 이 검색 시도를 접고 홈(검색 시작 화면)으로 나간다
+  const quitToHome = useCallback(() => {
+    setQuitSheet(null)
     track('search_failed', { mode, reason: 'cancelled' })
-    reRecord()
-  }, [mode, reRecord])
+    navigate('/')
+  }, [mode, navigate])
+
+  // 녹음 중 취소: 녹음을 일시정지해 두고 의사를 묻는다 — 계속하면 이어서 녹음
+  const askQuitRecording = useCallback(() => {
+    pauseRecorder()
+    setQuitSheet('recording')
+  }, [pauseRecorder])
+
+  const continueFromSheet = useCallback(() => {
+    setQuitSheet(null)
+    if (quitSheet === 'recording') resumeRecorder()
+    // 'searching'은 요청을 끊지 않았으므로 닫기만 하면 대기가 이어진다
+  }, [quitSheet, resumeRecorder])
+
+  const confirmQuit = useCallback(() => {
+    if (quitSheet === 'recording') {
+      cancelRecorder() // onComplete 없이 폐기 — 검색으로 넘어가지 않는다
+    } else {
+      abortRef.current?.abort()
+    }
+    quitToHome()
+  }, [quitSheet, cancelRecorder, quitToHome])
+
+  // 확인 시트가 떠 있는 동안 검색이 끝나면(결과/실패 도착) 시트를 접는다 — 기다림이 끝났으므로
+  useEffect(() => {
+    if (quitSheet === 'searching' && phase.name !== 'searching') setQuitSheet(null)
+  }, [quitSheet, phase.name])
 
   // 화면 이탈 시 진행 중 요청 정리 (이탈 후 도착할 응답은 버려진다)
   useEffect(() => () => abortRef.current?.abort(), [])
@@ -231,7 +262,8 @@ function SearchFlow({ mode }: { mode: SearchType }) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/')}
+          // 녹음이 진행 중일 땐 바로 나가지 않고 일시정지 + 확인 시트를 거친다
+          onClick={isRecordingScreen ? askQuitRecording : () => navigate('/')}
           className="-ml-2 rounded-full text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft /> {isRecordingScreen || phase.name === 'confirm' ? '취소' : '홈'}
@@ -253,11 +285,8 @@ function SearchFlow({ mode }: { mode: SearchType }) {
               {mode === 'fingerprint' ? (
                 <RecognitionRing
                   levelRef={recorder.levelRef}
-                  getProgress={() =>
-                    recorder.phase === 'recording'
-                      ? Math.min(1, (performance.now() - recorder.startedAtRef.current) / maxMs)
-                      : 0
-                  }
+                  // 일시정지 중에는 getElapsedMs가 정지 시점 값으로 고정된다 (링 프리즈)
+                  getProgress={() => Math.min(1, recorder.getElapsedMs() / maxMs)}
                   active={recorder.phase === 'recording'}
                 >
                   <Mic className="size-7 text-iris-soft" />
@@ -296,11 +325,13 @@ function SearchFlow({ mode }: { mode: SearchType }) {
                   </span>
                 )}
                 <p className="text-[17px] font-extrabold tracking-tight">
-                  {recorder.phase !== 'recording'
-                    ? '마이크 준비 중…'
-                    : mode === 'fingerprint'
-                      ? '듣고 있어요…'
-                      : '불러주세요 — 후렴구가 좋아요'}
+                  {recorder.phase === 'paused'
+                    ? '잠시 멈췄어요'
+                    : recorder.phase !== 'recording'
+                      ? '마이크 준비 중…'
+                      : mode === 'fingerprint'
+                        ? '듣고 있어요…'
+                        : '불러주세요 — 후렴구가 좋아요'}
                 </p>
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
                   {mode === 'fingerprint'
@@ -402,12 +433,12 @@ function SearchFlow({ mode }: { mode: SearchType }) {
                 </div>
               ))}
             </div>
-            {/* 오래 걸릴 때의 탈출구 — 요청을 끊고 다시 녹음으로 */}
+            {/* 오래 걸릴 때의 탈출구 — 요청은 유지한 채 확인 시트로 의사를 먼저 묻는다 */}
             <div className="mt-auto flex justify-center pb-6">
               <Button
                 type="button"
                 variant="outline"
-                onClick={cancelSearch}
+                onClick={() => setQuitSheet('searching')}
                 size="lg"
                 className="h-12 rounded-full px-7 text-sm font-bold transition-transform active:scale-[0.97]"
               >
@@ -509,6 +540,21 @@ function SearchFlow({ mode }: { mode: SearchType }) {
           if (phase.name === 'results') stashResults(mode, phase.results, phase.lowScore)
           navigate('/login', { state: { next: `/search/${mode}` } })
         }}
+      />
+
+      <QuitConfirmSheet
+        open={quitSheet !== null}
+        icon={quitSheet === 'searching' ? Search : Mic}
+        title={quitSheet === 'searching' ? '검색을 그만둘까요?' : '녹음을 그만둘까요?'}
+        body={
+          quitSheet === 'searching'
+            ? '조금만 기다리면 결과가 나올 수 있어요'
+            : '그만두면 지금까지 녹음한 내용은 사라져요'
+        }
+        continueLabel={quitSheet === 'searching' ? '계속 기다리기' : '계속 녹음하기'}
+        quitLabel="그만두기"
+        onContinue={continueFromSheet}
+        onQuit={confirmQuit}
       />
     </div>
   )
