@@ -1,5 +1,28 @@
 # Development Log
 
+## 2026-07-16 총괄 — PR 8건(#4~#11) 전부 병합: 유튜브 링크 수정 + M2 측정 도구 완비 + M3 저장/목록/내비 개통
+
+유튜브 링크 미표시 제보에서 출발해, 하루에 M2 측정 잔여를 닫고 M3의 저장·목록·내비를 개통했다. 상세는 아래 (1)~(8) 항목.
+
+| PR | 내용 | 갈래 |
+|---|---|---|
+| #4 | 🐛 유튜브 링크 미표시 — 메타 `query.artists` 문자열→**배열**(주범) + 타임아웃 3s→4s(3s 컷은 videoId까지 잃는 전제 오류) | 결함 수정 |
+| #5 | 즐겨찾기 실저장 — `POST /favorites`에 acrid 수용, ♡ 토글, `favorite_click`에 acrid·rank·score(매칭률 실측 원천) | M3 착수 |
+| #6 | KR 산출 SQL(`backend/db/queries/kr_metrics.sql`) + 운영 첫 산출 — **KR2 허밍 p95 5,708ms ✅통과**(최적화 전 12.4s) | M2 DoD #3 |
+| #7 | 매칭률 측정 스크립트(`backend/scripts/match-rate/`) — Top-3 판정·KR1 리포트, acr-mock 스모크 통과 | M2 C6 |
+| #8 | 즐겨찾기 목록 `/favorites` + authStore `initialized` 가드 + PageResponse snake_case 정비 | M3 |
+| #9 | 검색 기록 `/history` + `GET/DELETE /api/search/history`(일괄 조인·소유자 한정 삭제) | M3 C4 |
+| #10 | 🐛 PlaybackCard AbortError 흡수 + frontend-prd §10 DS 문서 드리프트 해소 | 정리 |
+| #11 | Bottom Navigation 3탭(홈·즐겨찾기·기록) — 진입점 통합, 검색 플로우 제외, 미니 플레이어 보류 | M3 |
+
+**핵심 진단(어제 "의도와 다른 곡" 제보)**: 07-15 밤 실측에서 top-1 score 0.94+ 4건은 정상 매칭 — **사용자 허밍 기술 문제 아님**. 오매칭은 0.47~0.67 구간으로, 의도곡이 ACR 허밍 DB에 없을 때 "가장 가까운 남의 곡"이 나오는 패턴 = **DB 커버리지 문제 유력**. 확정은 ♡ 실측 데이터(PR #5)·매칭률 스크립트(PR #7) 실행으로.
+
+**남은 것**:
+- 운영 실검색 확인 — 유튜브 링크 표시(PR #4)·♡ 저장(PR #5)·목록/내비(PR #8·9·11) 실화면 검증
+- KR1 첫 실측 — 테스트 곡 셋 오디오(지문 30·허밍 20) 준비 후 `match-rate` 실행
+- KR2 재확인 — meta 4s 완화 이후 데이터로(주간 추이 쿼리), 6s 예산 빠듯해질 수 있음
+- **플레이리스트 화면(M3 마지막 덩어리) — 다음 세션에 진행하기로 함**
+
 ## 2026-07-16 (8) — Bottom Navigation (M3, 브랜치 `feat/bottom-nav`)
 
 - **하단 탭 내비 신설**(`components/BottomNav.tsx`): 홈 / 즐겨찾기 / 기록 3탭. router에 `TabLayout`(Outlet+BottomNav) 도입 — **탭 화면에만 노출**, 검색 플로우(`/search/*`)·로그인은 몰입 유지를 위해 제외. 게스트가 즐겨찾기/기록 탭 진입 시 기존 페이지 가드가 /login(next)으로 처리(일관)
