@@ -78,10 +78,11 @@ public class AcrMetadataHttpClient implements AcrMetadataClient {
         var query = objectMapper.createObjectNode();
         query.put("track", cleanQueryText(track));
         if (artist != null && !artist.isBlank()) {
-            // v2와 동일: 복수 표기는 콤마 분리 후 첫 아티스트만 사용
+            // 복수 표기는 콤마 분리 후 첫 아티스트만 사용.
+            // artists는 반드시 배열로 — 문자열이면 API가 대부분 data:[]를 반환한다(실측 2026-07-16)
             String first = cleanQueryText(artist.split(",")[0]);
             if (!first.isBlank()) {
-                query.put("artists", first);
+                query.putArray("artists").add(first);
             }
         }
         return objectMapper.writeValueAsString(query);

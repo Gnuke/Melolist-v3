@@ -6,7 +6,7 @@ interface RecognizeResponse {
 }
 
 /**
- * 인식 요청 타임아웃 — 서버 최악 경로(ACR 10s + meta 3s) + 전송 여유.
+ * 인식 요청 타임아웃 — 서버 최악 경로(ACR 10s + meta 4s) + 전송 여유.
  * 초과 시 axios가 ECONNABORTED로 던지고 F4(재시도, blob 보존)로 흘러간다.
  */
 const RECOGNIZE_TIMEOUT_MS = 15_000
