@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, AudioLines, ChevronLeft, Mic, MicOff, Search, SearchX, Square } from 'lucide-react'
@@ -20,6 +20,7 @@ import { addRecentFind } from '@/features/search/recentFinds'
 import { clearStashedResults, peekStashedResults, stashResults } from '@/features/search/resultStash'
 import { hasPendingLoginReturn } from '@/features/events/loginEvents'
 import { recognize } from '@/features/search/api'
+import { addFavorite, removeFavorite } from '@/features/favorites/api'
 import type { AcrResult, SearchType } from '@/features/search/types'
 
 const MIN_SCORE = 50 // 허밍 저신뢰(F3) 기준: score*100 < 50
@@ -238,17 +239,52 @@ function SearchFlow({ mode }: { mode: SearchType }) {
   // 화면 이탈 시 진행 중 요청 정리 (이탈 후 도착할 응답은 버려진다)
   useEffect(() => () => abortRef.current?.abort(), [])
 
+  // 이번 화면에서 저장한 곡: acrid → musicId (해제 DELETE에 musicId가 필요하다).
+  // acrid가 키라서 같은 곡을 재검색해도 토글 상태가 이어진다.
+  const [savedByAcrid, setSavedByAcrid] = useState<Record<string, number>>({})
+  const savedAcridSet = useMemo(() => new Set(Object.keys(savedByAcrid)), [savedByAcrid])
+  const favBusyRef = useRef<Set<string>>(new Set()) // 곡별 요청 in-flight 가드 (연타 방지)
+
   const onFavorite = useCallback(
-    (_r: AcrResult) => {
-      track('favorite_click', { mode, authed: !!session }) // C6: 게스트→가입 전환 원천
-      if (session) {
-        // 저장 동작은 M3 — 버튼만 선노출(D4)
-        toast('즐겨찾기 저장은 곧 열려요 — 준비 중이에요')
-      } else {
+    async (r: AcrResult, rank: number) => {
+      const acrid = r.acrid
+      const savedMusicId = acrid ? savedByAcrid[acrid] : undefined
+      // C6: 게스트→가입 전환 + 매칭률 실측 원천 — 어느 순위·점수의 곡을 "내 곡"으로 집었는지
+      track('favorite_click', {
+        mode,
+        authed: !!session,
+        acrid: acrid ?? null,
+        rank,
+        score: typeof r.score === 'number' ? r.score : null,
+        action: session ? (savedMusicId ? 'remove' : 'add') : 'login_prompt',
+      })
+      if (!session) {
         setSheetOpen(true)
+        return
+      }
+      if (!acrid || favBusyRef.current.has(acrid)) return
+      favBusyRef.current.add(acrid)
+      try {
+        if (savedMusicId) {
+          await removeFavorite(savedMusicId)
+          setSavedByAcrid((m) => {
+            const next = { ...m }
+            delete next[acrid]
+            return next
+          })
+          toast('즐겨찾기에서 뺐어요')
+        } else {
+          const fav = await addFavorite(acrid)
+          setSavedByAcrid((m) => ({ ...m, [acrid]: fav.music.id }))
+          toast('즐겨찾기에 저장했어요')
+        }
+      } catch {
+        toast('저장하지 못했어요 — 잠시 후 다시 시도해주세요')
+      } finally {
+        favBusyRef.current.delete(acrid)
       }
     },
-    [mode, session],
+    [mode, session, savedByAcrid],
   )
 
   const isRecordingScreen = phase.name === 'recording'
@@ -463,6 +499,7 @@ function SearchFlow({ mode }: { mode: SearchType }) {
               results={phase.results}
               lowScore={phase.lowScore}
               onFavorite={onFavorite}
+              savedAcrids={savedAcridSet}
               onRetrySame={retrySame}
               onReRecord={reRecord}
             />

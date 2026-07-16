@@ -15,6 +15,4 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     Page<Favorite> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
     Optional<Favorite> findByUserIdAndMusicId(UUID userId, Long musicId);
-
-    boolean existsByUserIdAndMusicId(UUID userId, Long musicId);
 }

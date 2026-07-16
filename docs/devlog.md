@@ -1,5 +1,18 @@
 # Development Log
 
+## 2026-07-16 (2) — 즐겨찾기 실저장 (M3 착수, 브랜치 `feat/favorite-save`)
+
+### 배경 — "응답 정확도 체크도 할 겸"
+
+- 사용자 제보: 허밍 결과가 의도한 곡과 다른 경우가 있는데 원인(허밍 vs DB)을 모르겠다 → 즐겨찾기 실저장을 당겨서 **♡ = "내가 찾던 곡" 실측 신호**로 삼기로 함. `favorite_click`에 acrid·rank·score를 추가해 매칭률(C6)·순위 분포의 원천 데이터 확보
+- 07-15 밤 실측 진단: top-1 score 0.94+ 4건은 정상 매칭(귀로·Landing in Love 등), 0.47~0.67 구간이 오매칭 — 허밍 기술보다 ACRCloud 허밍 DB 커버리지가 유력(고신뢰 매칭이 잘 되는 걸로 보아 사용자 허밍은 문제 아님)
+
+### 완료
+
+- **backend**: `POST /api/favorites`가 `music_id` **또는 `acrid`** 수용(검색 결과 화면엔 musicId가 없음 — §5.3 비동기 upsert라 응답 시점 존재 보장도 안 됨) + 저장 행(`{id, music, created_at}`) 반환(해제 DELETE에 music.id 필요). add는 의도적으로 무트랜잭션 — unique 충돌 후 같은 tx 재조회는 PG aborted라 조회·저장을 분리하고 충돌 시 기존 행 반환(멱등). LAZY music 대신 이미 조회한 Music으로 응답 구성
+- **frontend**: 로그인 상태 ♡ = 토글(`features/favorites/api.ts`) — 404(upsert 경합) 시 1.5s 후 1회 재시도, 곡별 in-flight 가드, 하트 채움+토스트. 게스트는 기존 유도 시트 유지. `favorite_click` properties 확장: `acrid`, `rank`(0~), `score`, `action`(add|remove|login_prompt) — 양쪽 PRD 이벤트 사전 동기화(원칙 II)
+- **테스트**: FavoriteServiceTest 5건(acrid 저장·멱등·404·400·unique 경합 수렴)
+
 ## 2026-07-16 — 유튜브 링크 미표시 수정 (메타 보강 쿼리·타임아웃)
 
 ### 배경 — "결과 화면에 유튜브 링크가 안 나온다" 제보

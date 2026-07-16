@@ -170,7 +170,7 @@ multipart(audio) 수신
 | `search_result_shown` | 프론트 | `mode`, `result_count`, `top_score`, `client_ms` |
 | `search_failed` | 프론트(F1·F4·렌더 실패·타임아웃·취소) / 서버(no_match 등 직접 아는 것) | `mode`, `reason`(bad_audio\|no_match\|low_score\|error\|timeout\|cancelled), `http_status` |
 | `search_request` | **서버 전용** (검색 처리 중 직접 기록) | `total_ms`, `acr_ms`, `meta_ms`, `upsert_ms`, `audio_bytes`, `mode`, `matched` |
-| `favorite_click` | 프론트 | `mode`, `authed` — C6 게스트→가입 전환 원천 |
+| `favorite_click` | 프론트 | `mode`, `authed`, `acrid`, `rank`(결과 내 순위 0~), `score`, `action`(add\|remove\|login_prompt) — C6 게스트→가입 전환 + **매칭률 실측 원천**(사용자가 "내 곡"으로 집은 순위·점수) |
 | `login_started` | 프론트 | `provider` — 로그인 버튼 클릭(OAuth 리다이렉트 직전) |
 | `login_succeeded` | 프론트 | `provider` — OAuth 복귀 후 세션 확인 시 |
 | `login_failed` | 프론트 | `provider`, `reason`(cancelled\|error), `error_code` — 사용자 취소는 `cancelled`(SC-002 산출 시 제외) |
@@ -185,7 +185,7 @@ multipart(audio) 수신
 | search | `GET /search/history`, `DELETE /search/history/{id}` | M3 (write는 M2) |
 | music | `GET /music/{id}`, `GET /music?query=` (로컬 캐시 검색) | M3 |
 | playlist | CRUD + tracks + reorder | M3 |
-| community | reviews(1인1건·409)/favorites/comments/공개 탐색 | M3(favorites)·M4 |
+| community | reviews(1인1건·409)/favorites/comments/공개 탐색 | ✅M3 favorites 실저장 개통(2026-07-16) — `POST /favorites`는 `music_id` **또는 `acrid`**(검색 결과 화면엔 musicId가 없음 — upsert 비동기라 404 시 클라 1회 재시도) 수용, 저장 행(`{id, music, created_at}`)을 반환(해제 DELETE에 music.id 사용). 나머지는 M4 |
 | recommendation | `/recommendations/*`, `/ai/chat`, `POST /search/text` | M5 |
 
 ---
