@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Heart, History, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -77,32 +76,14 @@ export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
                 )}
               </div>
             </div>
-            <Button
-              asChild
-              size="lg"
-              className="mt-6 h-12 w-full rounded-full text-[15px] font-bold transition-transform active:scale-[0.97]"
-            >
-              <Link to="/favorites" onClick={onClose}>
-                <Heart className="size-4" /> 즐겨찾기
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="mt-2.5 h-12 w-full rounded-full bg-card text-[15px] font-bold transition-transform active:scale-[0.97]"
-            >
-              <Link to="/history" onClick={onClose}>
-                <History className="size-4" /> 검색 기록
-              </Link>
-            </Button>
+            {/* 즐겨찾기·검색 기록 진입점은 하단 탭 내비로 통합(07-16) — 시트는 계정 영역만 담당 */}
             <Button
               type="button"
               onClick={signOut}
               disabled={signingOut}
               variant="outline"
               size="lg"
-              className="mt-2.5 h-12 w-full rounded-full bg-card text-[15px] font-bold transition-transform active:scale-[0.97]"
+              className="mt-6 h-12 w-full rounded-full bg-card text-[15px] font-bold transition-transform active:scale-[0.97]"
             >
               <LogOut className="size-4" /> 로그아웃
             </Button>
