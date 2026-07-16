@@ -94,7 +94,8 @@
 
 **즐겨찾기 유도 시트 (C6, D4 확정)**
 - 비로그인 클릭 → 바텀 시트: "로그인하면 이 곡을 저장할 수 있어요" + [로그인] CTA
-- 저장 동작 자체는 M3. 클릭은 게스트→가입 전환 이벤트 원천으로 기록
+- 클릭은 게스트→가입 전환 이벤트 원천으로 기록
+- ✅**실저장 개통(2026-07-16, M3 착수)**: 로그인 상태 ♡ = 토글 — `POST /api/favorites {acrid}`(응답의 `music.id`로 해제 DELETE), 404(비동기 upsert 경합)면 1.5s 후 1회 재시도, 곡별 in-flight 가드로 연타 방지. 저장 시 하트 채움(`fill` + brand 색) + 토스트. 저장 상태는 화면 수명 동안 acrid 키로 유지(즐겨찾기 목록 화면은 M3 후속)
 
 ---
 
@@ -126,7 +127,7 @@
 | `search_started` | 녹음 시작 | `mode` |
 | `search_result_shown` | 결과 렌더 완료 | `mode`, `result_count`, `top_score`, `client_ms` |
 | `search_failed` | F1·F4 등 클라 확정 실패 | `mode`, `reason`, `http_status` |
-| `favorite_click` | 결과 카드 ♡ 클릭(로그인 여부 무관) | `mode`, `authed` — C6 게스트→가입 전환 원천 |
+| `favorite_click` | 결과 카드 ♡ 클릭(로그인 여부 무관) | `mode`, `authed`, `acrid`, `rank`(결과 내 순위 0~), `score`, `action`(add\|remove\|login_prompt) — C6 게스트→가입 전환 + **매칭률 실측 원천**(사용자가 "내 곡"으로 집은 순위·점수) |
 | `login_started` | 로그인 버튼 클릭(OAuth 리다이렉트 직전) | `provider` |
 | `login_succeeded` | OAuth 복귀 후 세션 확인 시(sessionStorage pending 플래그로 판정) | `provider` |
 | `login_failed` | 복귀 URL 에러 파라미터 감지 또는 즉시 실패 | `provider`, `reason`(cancelled\|error), `error_code` — 취소는 `cancelled`(SC-002 제외) |

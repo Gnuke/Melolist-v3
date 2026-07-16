@@ -40,8 +40,8 @@ public class FavoriteController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void add(@Valid @RequestBody AddRequest request, @AuthenticationPrincipal Jwt jwt) {
-        favoriteService.add(jwt, request.musicId());
+    public FavoriteResponse add(@Valid @RequestBody AddRequest request, @AuthenticationPrincipal Jwt jwt) {
+        return favoriteService.add(jwt, request.musicId(), request.acrid());
     }
 
     @DeleteMapping("/{musicId}")

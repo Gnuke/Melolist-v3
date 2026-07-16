@@ -10,7 +10,10 @@ interface Props {
   results: AcrResult[]
   /** F3: 허밍 저신뢰 — 최고 1건 + 배너 + [다시 불러보기] */
   lowScore: boolean
-  onFavorite: (r: AcrResult) => void
+  /** rank = 결과 내 순위(0부터) — favorite_click 계측(C6 매칭률 원천)에 쓴다 */
+  onFavorite: (r: AcrResult, rank: number) => void
+  /** 이번 화면에서 저장된 곡(acrid) — 하트 채움 표시 */
+  savedAcrids: ReadonlySet<string>
   onRetrySame: () => void
   onReRecord: () => void
 }
@@ -71,9 +74,11 @@ function ListenLink({ r, hero = false }: { r: AcrResult; hero?: boolean }) {
 function FavoriteButton({
   onClick,
   subtle = false,
+  active = false,
 }: {
   onClick: () => void
   subtle?: boolean
+  active?: boolean
 }) {
   return (
     <Button
@@ -81,10 +86,15 @@ function FavoriteButton({
       variant={subtle ? 'ghost' : 'outline'}
       size={subtle ? 'icon-sm' : 'icon-lg'}
       onClick={onClick}
-      className="rounded-full text-muted-foreground transition-transform hover:text-brand active:scale-90"
-      aria-label="즐겨찾기"
+      className={
+        active
+          ? 'rounded-full text-brand transition-transform hover:text-brand active:scale-90'
+          : 'rounded-full text-muted-foreground transition-transform hover:text-brand active:scale-90'
+      }
+      aria-label={active ? '즐겨찾기 해제' : '즐겨찾기'}
+      aria-pressed={active}
     >
-      <Heart />
+      <Heart className={active ? 'fill-current' : undefined} />
     </Button>
   )
 }
@@ -93,12 +103,13 @@ function FavoriteButton({
  * 검색 결과(C2·C3) — Top-3 고정.
  * 지문 = 히어로형(1j, score 숨김) / 허밍 = 동등 리스트형(1i, 일치율 노출) — 모드별 혼합안.
  */
-export function ResultsView({ mode, results, lowScore, onFavorite, onRetrySame, onReRecord }: Props) {
+export function ResultsView({ mode, results, lowScore, onFavorite, savedAcrids, onRetrySame, onReRecord }: Props) {
   const top3 = results.slice(0, 3)
   const [first, ...rest] = top3
   if (!first) return null
 
   const heroLayout = mode === 'fingerprint'
+  const isSaved = (r: AcrResult) => !!r.acrid && savedAcrids.has(r.acrid)
 
   return (
     <motion.div variants={listVariants} initial="hidden" animate="show" className="flex flex-1 flex-col gap-4">
@@ -132,7 +143,7 @@ export function ResultsView({ mode, results, lowScore, onFavorite, onRetrySame, 
             </div>
             <div className="flex items-center gap-2">
               <ListenLink r={first} hero />
-              <FavoriteButton onClick={() => onFavorite(first)} />
+              <FavoriteButton active={isSaved(first)} onClick={() => onFavorite(first, 0)} />
             </div>
           </motion.div>
 
@@ -153,7 +164,7 @@ export function ResultsView({ mode, results, lowScore, onFavorite, onRetrySame, 
                     <p className="truncate text-xs text-muted-foreground">{artistName(r.artists)}</p>
                   </div>
                   <ListenLink r={r} />
-                  <FavoriteButton subtle onClick={() => onFavorite(r)} />
+                  <FavoriteButton subtle active={isSaved(r)} onClick={() => onFavorite(r, i + 1)} />
                 </div>
               ))}
             </motion.div>
@@ -182,7 +193,7 @@ export function ResultsView({ mode, results, lowScore, onFavorite, onRetrySame, 
               </div>
               <div className="flex flex-col items-center gap-1">
                 <ListenLink r={r} />
-                <FavoriteButton subtle onClick={() => onFavorite(r)} />
+                <FavoriteButton subtle active={isSaved(r)} onClick={() => onFavorite(r, i)} />
               </div>
             </motion.li>
           ))}
