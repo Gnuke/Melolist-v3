@@ -1,5 +1,12 @@
 # Development Log
 
+## 2026-07-16 (8) — Bottom Navigation (M3, 브랜치 `feat/bottom-nav`)
+
+- **하단 탭 내비 신설**(`components/BottomNav.tsx`): 홈 / 즐겨찾기 / 기록 3탭. router에 `TabLayout`(Outlet+BottomNav) 도입 — **탭 화면에만 노출**, 검색 플로우(`/search/*`)·로그인은 몰입 유지를 위해 제외. 게스트가 즐겨찾기/기록 탭 진입 시 기존 페이지 가드가 /login(next)으로 처리(일관)
+- **DS 준수**: 활성 표시는 전경색 전환+스트로크 강조만 — flame은 뷰당 주 액션 1개 규칙이라 내비에 쓰지 않음. `bg-background/85 + backdrop-blur` + 상단 헤어라인, iOS safe-area 대응(`env(safe-area-inset-bottom)`)
+- **진입점 통합**: 프로필 시트의 임시 [즐겨찾기]/[검색 기록] 버튼 제거(시트는 계정 영역만), 탭 3화면 하단 여백 pb-28로 내비와 겹침 방지
+- 미니 플레이어는 design-guideline("하단 미니 플레이어 고정 지양")에 따라 보류 — M3 잔여는 플레이리스트 화면
+
 ## 2026-07-16 (7) — 소형 정리: PlaybackCard AbortError + frontend-prd §10 갱신 (브랜치 `chore/playback-abort-and-ds-doc`)
 
 - 🐛 **PlaybackCard unhandled rejection**: `void ws.load(url)`이 프라미스를 버려서, 언마운트 시 `destroy()`가 로드 중 fetch를 중단하면 AbortError가 unhandled로 떴다(StrictMode 이중 이펙트에서 상시 재현 — 07-16 dev 로그 실측). → `.catch(() => {})`로 의도된 중단 흡수

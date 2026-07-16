@@ -65,7 +65,7 @@ export function FavoritesPage() {
   const loading = !initialized || query.isPending
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-4">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-28 pt-4">
       <header className="mb-2 flex items-center">
         <Button
           type="button"
