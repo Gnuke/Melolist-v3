@@ -1,5 +1,13 @@
 # Development Log
 
+## 2026-07-16 (6) — 검색 기록 화면 (M3 C4, 브랜치 `feat/search-history-page`)
+
+### 완료
+
+- **backend `GET/DELETE /api/search/history`**(M2 write의 조회/삭제 완성): SearchHistoryService — top 곡 스냅샷은 페이지 단위 `findAllById` 일괄 조인(N+1 방지), no_match/곡 소실이면 `music: null`. DELETE는 `findByIdAndUserId` 소유자 한정(비소유=404, 존재 비노출). SecurityConfig 변경 불필요(`anyRequest().authenticated()`에 걸림 — 검색 POST 3종만 permitAll이라 매처 순서 함정 없음)
+- **frontend `/history` HistoryPage**: 즐겨찾기 목록과 같은 패턴(useInfiniteQuery 20개+[더 보기], 캐시 필터 삭제, 빈 상태·스켈레톤·재시도, `initialized` 가드) — matched 행=커버·곡정보·모드·시각·허밍 일치율 배지·[듣기]·[삭제], no_match 행=SearchX 플레이스홀더·"찾지 못했어요". 진입점: 홈 프로필 시트 [검색 기록]
+- 테스트: SearchHistoryServiceTest 3건(일괄 조인+no_match null·소유자 삭제·비소유 404)
+
 ## 2026-07-16 (5) — 즐겨찾기 목록 화면 (M3, 브랜치 `feat/favorites-page`)
 
 ### 완료

@@ -182,7 +182,7 @@ multipart(audio) 수신
 | user | `GET/PATCH /users/me`, `GET /users/{id}`, `PATCH /users/me/review-visibility` | M1(me)·M4(리뷰유예) |
 | search | `POST /search/fingerprint`·`/humming` | **M2** |
 | event | `POST /events` | **M2 (신설)** |
-| search | `GET /search/history`, `DELETE /search/history/{id}` | M3 (write는 M2) |
+| search | `GET /search/history`, `DELETE /search/history/{id}` | ✅M3 개통(2026-07-16) — GET=PageResponse(snake_case), 항목 `{id, type, status, score, music(스냅샷·no_match면 null), created_at}`, top 곡은 페이지 단위 일괄 조인(N+1 방지). DELETE는 소유자 한정(비소유=404, 존재 비노출). write는 M2부터 |
 | music | `GET /music/{id}`, `GET /music?query=` (로컬 캐시 검색) | M3 |
 | playlist | CRUD + tracks + reorder | M3 |
 | community | reviews(1인1건·409)/favorites/comments/공개 탐색 | ✅M3 favorites 실저장 개통(2026-07-16) — `POST /favorites`는 `music_id` **또는 `acrid`**(검색 결과 화면엔 musicId가 없음 — upsert 비동기라 404 시 클라 1회 재시도) 수용, 저장 행(`{id, music, created_at}`)을 반환(해제 DELETE에 music.id 사용). 나머지는 M4 |
