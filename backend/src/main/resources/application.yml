@@ -42,8 +42,9 @@ melolist:
     identify-host: ${ACRCLOUD_HOST:identify-ap-southeast-1.acrcloud.com}
     metadata-host: eu-api-v2.acrcloud.com
     identify-timeout-ms: 10000
-    # §5.3: 실측 meta_ms 최대 6.1s → 3s 컷. 늦으면 커버는 ytimg/플레이스홀더 폴백이 받는다
-    metadata-timeout-ms: 3000
+    # §5.3: 타임아웃 시 videoId까지 잃어 듣기 버튼·ytimg 폴백이 모두 사라진다 —
+    # 실측 정상 조회 2.4~3.6s 분포라 4s로 커버하되, KR2(p95≤6s) 예산 안(acr ~1.5s + meta 4s)
+    metadata-timeout-ms: 4000
     fingerprint:
       access-key: ${FINGERPRINT_API_KEY:}
       access-secret: ${FINGERPRINT_API_SECRET:}

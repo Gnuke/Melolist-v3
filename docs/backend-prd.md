@@ -110,6 +110,7 @@ multipart(audio) 수신
 
 - `youtube_video_id` = `external_metadata.youtube[].id` — **external_metadata에서 읽는 유일한 필드**. link의 도메인이 youtube 계열인지 검증 후 사용(§7.1-5 오염 사례 대비)
 - applemusic/deezer/spotify 배열은 파싱하지 않음. `preview`는 읽지도 저장하지도 않음(§9)
+- 조회 query의 `artists`는 **배열**(`{"track":"...","artists":["..."]}`) — 문자열로 보내면 API가 대부분 `data:[]`를 반환한다(2026-07-16 실측: 문자열 형식에서 19곡 중 1곡만 매칭, 배열 전환 후 동일 곡들 매칭)
 
 ### 5.3 성능 예산 (KR2 ≤ 6초)
 
@@ -119,7 +120,7 @@ multipart(audio) 수신
 | 병렬화 | 허밍 Top-3 메타 조회 3건 병렬 |
 | 보강 생략 | score ≤ 0.5 결과는 메타 보강 생략 |
 | 비동기 upsert | ✅ 적용(2026-07-14) — 실측 upsert_ms 평균 0.8s·최대 2.5s(허밍) 확인 후 upsert·검색기록·계측 기록을 응답 경로에서 분리. KR2의 `total_ms`는 이제 응답 경로만 계측 |
-| meta 타임아웃 3s | ✅ 적용(2026-07-14) — 실측 meta_ms 최대 6.1s → 3s 컷. 미보강 시 커버는 ytimg/플레이스홀더 폴백(§5.2)이 받는다 |
+| meta 타임아웃 4s | ✅ 조정(2026-07-16, 3s→4s) — 타임아웃 시 videoId까지 잃어 듣기 버튼·ytimg 폴백이 모두 사라진다(3s 컷의 전제 오류). 실측 정상 조회 2.4~3.6s를 커버하면서 KR2 예산(acr ~1.5s + meta 4s ≈ 5.5s) 안 |
 | 클라 타임아웃 15s | 프론트 인식 요청 15s 컷 + 검색 중 [취소] 버튼(frontend-prd 참조) — 파이프라인이 아닌 최악 대기의 상한 |
 
 ---

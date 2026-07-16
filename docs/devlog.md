@@ -1,5 +1,19 @@
 # Development Log
 
+## 2026-07-16 — 유튜브 링크 미표시 수정 (메타 보강 쿼리·타임아웃)
+
+### 배경 — "결과 화면에 유튜브 링크가 안 나온다" 제보
+
+- 운영 실측(07-15 밤 세션): 허밍 검색으로 저장된 최근 19곡 중 **videoId 획득 1곡** — 듣기 버튼·커버가 거의 항상 사라지는 상태. 프론트는 `youtube_url` 없으면 버튼 숨김이 정상 동작이므로 백엔드 보강 실패가 원인
+- 원인 분해(Metadata API 직접 호출로 실증):
+  - **① 쿼리 형식 오류(주범)**: `query.artists`를 **문자열**로 보내면 API가 대부분 `data:[]` 반환. **배열**(`["NAUL"]`)로 바꾸면 동일 곡(귀로·Ditto·SSFW·끝사랑·Landing in Love) 전부 youtube id 매칭. 문자열도 가끔 매칭돼(Amy Grant 등) "아주 가끔만 링크가 뜨는" 증상이 됨
+  - **② meta 3s 컷의 전제 오류(가중)**: 07-14 최적화는 "늦으면 커버만 잃는다"고 전제했지만, 타임아웃 시 `MetaEnrichment.EMPTY`라 **videoId까지 소실 → 듣기 버튼·ytimg 폴백 모두 사라짐**. 실측 정상 조회가 2.4~3.6s 분포라 3s 컷에 상시 걸림(07-15 밤 10건 중 6건 meta_ms 3.4~3.6s = 타임아웃)
+
+### 완료
+
+- **① `AcrMetadataHttpClient.buildQueryJson` — artists를 배열로**(`putArray`). backend-prd §5.2에 형식 규칙 명문화
+- **② meta 타임아웃 3s→4s**: 실측 조회 분포(2.4~3.6s)를 커버하면서 KR2 예산 안(acr ~1.5s + meta 4s ≈ 5.5s ≤ 6s). 5s는 최악 겹침 시 예산 초과라 배제. application.yml·AcrCloudProperties 기본값·프론트 15s 주석·§5.3 표 동기화
+
 ## 2026-07-14 (2) — 검색 응답 최적화 (브랜치 `perf/search-latency`)
 
 ### 배경 — 첫 실측 데이터가 가리킨 병목

@@ -13,8 +13,8 @@ public record AcrCloudProperties(
         @DefaultValue("identify-ap-southeast-1.acrcloud.com") String identifyHost,
         @DefaultValue("eu-api-v2.acrcloud.com") String metadataHost,
         @DefaultValue("10000") int identifyTimeoutMs,
-        /* §5.3: 커버 폴백(ytimg/플레이스홀더)이 있어 짧게 잘라도 UX 손실 없음 */
-        @DefaultValue("3000") int metadataTimeoutMs,
+        /* §5.3: 타임아웃 시 videoId(듣기 버튼)까지 잃는다 — 실측 조회 2.4~3.6s를 커버하는 4s */
+        @DefaultValue("4000") int metadataTimeoutMs,
         @DefaultValue Credentials fingerprint,
         @DefaultValue Credentials humming
 ) {
