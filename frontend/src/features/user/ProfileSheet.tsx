@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { LogOut } from 'lucide-react'
+import { Heart, LogOut } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -77,12 +78,21 @@ export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
               </div>
             </div>
             <Button
+              asChild
+              size="lg"
+              className="mt-6 h-12 w-full rounded-full text-[15px] font-bold transition-transform active:scale-[0.97]"
+            >
+              <Link to="/favorites" onClick={onClose}>
+                <Heart className="size-4" /> 즐겨찾기
+              </Link>
+            </Button>
+            <Button
               type="button"
               onClick={signOut}
               disabled={signingOut}
               variant="outline"
               size="lg"
-              className="mt-6 h-12 w-full rounded-full bg-card text-[15px] font-bold transition-transform active:scale-[0.97]"
+              className="mt-2.5 h-12 w-full rounded-full bg-card text-[15px] font-bold transition-transform active:scale-[0.97]"
             >
               <LogOut className="size-4" /> 로그아웃
             </Button>

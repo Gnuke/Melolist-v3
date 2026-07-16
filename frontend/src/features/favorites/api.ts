@@ -1,17 +1,38 @@
 import { isAxiosError } from 'axios'
 import { api } from '@/lib/api'
 
+/** 곡 스냅샷(MusicResponse, snake_case). */
+export interface FavoriteMusic {
+  id: number
+  title?: string | null
+  artist?: string | null
+  album?: string | null
+  release_date?: string | null
+  youtube_video_id?: string | null
+  youtube_url?: string | null
+  cover_url?: string | null
+}
+
 /** POST /api/favorites 응답 — 곡 스냅샷 포함(M3 계약, snake_case). */
 export interface FavoriteResponse {
   id: number | null
-  music: {
-    id: number
-    title?: string | null
-    artist?: string | null
-    youtube_url?: string | null
-    cover_url?: string | null
-  }
+  music: FavoriteMusic
   created_at: string | null
+}
+
+/** GET /api/favorites 페이지(PageResponse, snake_case). */
+export interface FavoritesPage {
+  items: FavoriteResponse[]
+  page: number
+  size: number
+  total_items: number
+  total_pages: number
+}
+
+/** 내 즐겨찾기 목록 — 저장 최신순. */
+export async function getFavorites(page: number, size = 20): Promise<FavoritesPage> {
+  const { data } = await api.get<FavoritesPage>('/favorites', { params: { page, size } })
+  return data
 }
 
 /**
