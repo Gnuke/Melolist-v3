@@ -1,0 +1,9 @@
+{
+  "_설명": "매칭률 측정 곡 목록 예시 — 이 파일을 manifest.json으로 복사해 실제 곡 셋(지문 30·허밍 20)을 채운다. file 경로는 이 파일 기준 상대경로, audio/ 디렉터리는 gitignore(원칙 IV — 오디오 커밋 금지).",
+  "_판정": "Top-3 내 acrid(있으면 우선) 또는 제목+아티스트 느슨 일치(괄호·대소문자·공백 무시). artist는 생략 가능하나 채우기를 권장.",
+  "tracks": [
+    { "file": "audio/good-day-clip.wav", "mode": "fingerprint", "title": "좋은 날", "artist": "아이유" },
+    { "file": "audio/good-day-humming.webm", "mode": "humming", "title": "좋은 날", "artist": "아이유" },
+    { "file": "audio/gwiro-humming.webm", "mode": "humming", "title": "귀로", "artist": "나얼", "acrid": "f624a2598138cd2c144063f979601929" }
+  ]
+}
