@@ -1,5 +1,13 @@
 # Development Log
 
+## 2026-07-16 (5) — 즐겨찾기 목록 화면 (M3, 브랜치 `feat/favorites-page`)
+
+### 완료
+
+- **`/favorites` FavoritesPage 신설**: `GET /api/favorites` useInfiniteQuery(20개 + [더 보기]) — 커버·제목·아티스트·[듣기]·[해제(채운 하트)] 행, 해제는 캐시 필터로 즉시 반영, 빈 상태(♡ 안내 + [노래 찾으러 가기]) · 로딩 스켈레톤 · 오류 재시도. 진입점: 홈 프로필 시트에 [즐겨찾기] 버튼 추가
+- **비로그인 가드**: `/login`(state.next=/favorites) 리다이렉트. **authStore에 `initialized` 플래그 추가** — 세션 하이드레이션(getSession 비동기) 전에 null을 비로그인으로 오판해 새로고침 직후 로그인으로 튕기는 문제 방지(판단 보류 중 스켈레톤)
+- **PageResponse snake_case 정비(backend)**: `@JsonNaming` 누락으로 `totalItems`가 camelCase로 나가던 것을 첫 프론트 소비자가 생기는 시점에 `total_items/total_pages`로 통일(§4.3 계약 규약). 기존 소비자 없음 — 안전
+
 ## 2026-07-16 (4) — 매칭률 측정 스크립트 (C6, 브랜치 `feat/match-rate-script`)
 
 ### 완료

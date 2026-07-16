@@ -95,7 +95,8 @@
 **즐겨찾기 유도 시트 (C6, D4 확정)**
 - 비로그인 클릭 → 바텀 시트: "로그인하면 이 곡을 저장할 수 있어요" + [로그인] CTA
 - 클릭은 게스트→가입 전환 이벤트 원천으로 기록
-- ✅**실저장 개통(2026-07-16, M3 착수)**: 로그인 상태 ♡ = 토글 — `POST /api/favorites {acrid}`(응답의 `music.id`로 해제 DELETE), 404(비동기 upsert 경합)면 1.5s 후 1회 재시도, 곡별 in-flight 가드로 연타 방지. 저장 시 하트 채움(`fill` + brand 색) + 토스트. 저장 상태는 화면 수명 동안 acrid 키로 유지(즐겨찾기 목록 화면은 M3 후속)
+- ✅**실저장 개통(2026-07-16, M3 착수)**: 로그인 상태 ♡ = 토글 — `POST /api/favorites {acrid}`(응답의 `music.id`로 해제 DELETE), 404(비동기 upsert 경합)면 1.5s 후 1회 재시도, 곡별 in-flight 가드로 연타 방지. 저장 시 하트 채움(`fill` + brand 색) + 토스트. 저장 상태는 화면 수명 동안 acrid 키로 유지
+- ✅**목록 화면 개통(2026-07-16)**: `/favorites`(FavoritesPage) — 저장 최신순, 20개 페이지 "더 보기", 해제 즉시 반영(캐시 필터), 빈 상태 CTA(노래 찾으러 가기). 진입점: 홈 프로필 시트의 [즐겨찾기]. 비로그인 접근은 `/login`(next=/favorites)으로 — authStore `initialized` 플래그로 세션 하이드레이션 전 오판 방지. 계약: `GET /api/favorites` = PageResponse(snake_case: `items/page/size/total_items/total_pages`)
 
 ---
 
@@ -166,7 +167,7 @@ export interface AcrResult {
 | 시점 | 화면·요소 |
 |---|---|
 | **M2** | 홈/검색(플로우 개편 C1, 실패 UX, 결과 카드 C2·C3, 즐겨찾기 유도 C6), 이벤트 계측 |
-| M3 | 로그인 화면 연결 강화, 플레이리스트 목록/상세, 즐겨찾기 목록, 검색 기록 화면, **Bottom Navigation·미니 플레이어**, 인라인 재생 검토 |
+| M3 | 로그인 화면 연결 강화, 플레이리스트 목록/상세, ✅즐겨찾기 목록(07-16), 검색 기록 화면, **Bottom Navigation·미니 플레이어**, 인라인 재생 검토 |
 | M4 | 커뮤니티(탐색)·리뷰 작성/수정·댓글, 프로필/설정 |
 | M5+ | 자연어 검색 입력, 추천 피드 |
 
