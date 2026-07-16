@@ -1,5 +1,17 @@
 # Development Log
 
+## 2026-07-16 (4) — 매칭률 측정 스크립트 (C6, 브랜치 `feat/match-rate-script`)
+
+### 완료
+
+- **`backend/scripts/match-rate/`** — `match-rate.mjs`(Node 18+ 내장 fetch/FormData, 의존성 0) + `manifest.example.json` + README. 곡 셋(manifest)을 `/api/search/*`에 순차 투입(기본 간격 2s — ACR 과금 보호) → **Top-3 판정**: acrid 우선, 없으면 제목+아티스트 느슨 일치(괄호·대소문자·공백 무시, v2 cleanQueryText 계승) → 모드별 매칭률 + KR1(지문 ≥80%·허밍 ≥50%) 판정 표 + JSON 리포트(`reports/`)
+- **가드레일**: 오디오·리포트·실측 manifest는 .gitignore(원칙 IV — 오디오 커밋 금지). 운영 대상 실행 시 search_request가 지표에 섞이는 주의사항 README에 명기
+- **acr-mock 스모크 통과**: HIT rank0(제목-아티스트) · MISS(무관 곡) · HIT rank2(괄호 표기 흡수) · HIT rank1(acrid 우선, 제목 불일치여도) — 요약 표·판정·리포트 저장 확인. 테스트 잔여물(mock 곡 4행·search_request 4건·로컬 픽스처) 정리
+
+### 남은 것 — 실측은 준비물 필요
+
+- **테스트 곡 셋 오디오**(지문 30: 원음 마이크 녹음 클립 / 허밍 20: 직접 부른 녹음) 준비 후 실행 → KR1 첫 실측. 허밍 오매칭 원인(사용자 허밍 vs ACR 허밍 DB 커버리지) 정량 판정도 이 실측으로 확정
+
 ## 2026-07-16 (3) — KR 산출 SQL + 운영 첫 산출 (M2 DoD #3, 브랜치 `chore/kr-metrics-sql`)
 
 ### 완료

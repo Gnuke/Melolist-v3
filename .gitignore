@@ -54,3 +54,8 @@ logs/
 .claude/settings.local.json
 # 스킬 심볼릭 링크는 로컬 생성물 (본체는 .agents/skills + skills-lock.json 커밋)
 .claude/skills/
+
+# === 매칭률 측정(§10 C6) — 오디오·리포트·실측 manifest는 로컬 전용 (원칙 IV) ===
+backend/scripts/match-rate/audio/
+backend/scripts/match-rate/reports/
+backend/scripts/match-rate/manifest.json

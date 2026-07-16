@@ -257,7 +257,7 @@ USER(profiles) · SEARCH_HISTORY · PLAYLIST · PLAYLIST_MUSIC · FAVORITE · RE
 
 ## 10. 측정
 
-- **매칭률 스크립트** (backend 내, 수동 실행): 테스트 곡 셋(지문 30 + 허밍 20)을 `/api/search/*`에 투입 → Top-3 내 acrid/제목-아티스트 일치 판정 → 분기 중 3회 이상 실행(M2 중간·완료·분기 말)
+- **매칭률 스크립트** (backend 내, 수동 실행): 테스트 곡 셋(지문 30 + 허밍 20)을 `/api/search/*`에 투입 → Top-3 내 acrid/제목-아티스트 일치 판정 → 분기 중 3회 이상 실행(M2 중간·완료·분기 말) — ✅**`backend/scripts/match-rate/`**(2026-07-16, Node 의존성 0). manifest에 곡 셋 기입, 오디오·리포트·실측 manifest는 gitignore(원칙 IV). acr-mock 스모크 통과 — **실측은 테스트 곡 셋 오디오 준비 후**
 - **KR 산출 SQL**: KR2 = `search_request.total_ms`의 p95 · KR3 = 기간 내 distinct `search_result_shown` 세션 ÷ `visit` 세션 — ✅**`backend/db/queries/kr_metrics.sql`**(2026-07-16, KR2 모드별/구간 분해/주간 추이/실패 분포 포함). 첫 산출: 07-14 최적화 이후 허밍 p95 **5,708ms 통과**(n=10, 직전 12.4s), KR3 24%(베타 전 — 개발 테스트 세션 오염 참고치)
 - 헬스 메트릭(전환율·리뷰율·재방문율)은 M3/M4 기능 추가 시점부터 이벤트 원천만 수집
 
