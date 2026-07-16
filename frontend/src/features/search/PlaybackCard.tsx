@@ -42,7 +42,9 @@ export function PlaybackCard({ url }: Props) {
       barGap: 2,
       height: 64,
     })
-    void ws.load(url)
+    // destroy()가 로드 중인 fetch를 중단시키면 이 프라미스가 AbortError로 거부된다
+    // (StrictMode 이중 이펙트·빠른 언마운트에서 상시 발생) — 의도된 중단이라 삼킨다
+    ws.load(url).catch(() => {})
     wsRef.current = ws
 
     ws.on('ready', () => setDuration(ws.getDuration()))

@@ -173,12 +173,18 @@ export interface AcrResult {
 
 ---
 
-## 10. 디자인 시스템 (유지 — PRD §10.1 참조)
+## 10. 디자인 시스템 (2026-07-16 갱신 — 07-09 M2 화면 개편에서 교체된 DS 반영)
 
-- 프리미엄 다크 기본 · 모바일 우선 · shadcn/ui 조합(직접 제작 최소화) · Framer Motion 마이크로 인터랙션
-- 팔레트: bg `#090909` · surface `#161616` · accent `#5B8CFF` · red `#EF4444`(오류·녹음 중에만)
-- M2 신규 요소도 동일 원칙: 카운트다운 링(지문 자동 종료), 유도 시트, 실패 화면 카피 톤 통일
-- 결과 카드 이미지는 `rounded` + 스켈레톤 페이드인, 레이아웃 시프트 없도록 고정 크기(56px)
+> **정본**: claude.ai/design 프로젝트(`_ds/melolist-design-system-*` 토큰·readme) + `docs/design-guideline.md`(적용 철학 — "감상 앱이 아니라 발견/검색/기록 앱"). 이 절은 요약이며 충돌 시 정본 우선.
+> (구 팔레트 `#090909`/`#5B8CFF`/Inter는 07-09에 아래 DS로 대체됨 — PRD §10.1의 해당 기술은 구식)
+
+- **Ink 뉴트럴 스케일**: 배경 `--ink-950 #0a0a0c`(프리미엄 다크 기본) ~ `--ink-50`, 카드/서피스는 ink 스케일 + 흰색 저투명 보더(`border-white/7~15`)
+- **Flame `#FF5A3C`(`--flame-500`) = primary** — **뷰당 주 액션 1개** 규칙(예: 재생 버튼만 flame+글로우). 파괴/오류·녹음 중 표시는 destructive red 유지
+- **Iris `#6E5CFF`(`--iris-500`) = 인식·발견 순간 전용** — 인식 링 트레일, 허밍 일치율 배지(`bg-iris/15 text-iris-soft`), 발견 계열 아이콘
+- **타이포**: Pretendard Variable(npm `pretendard`), 헤드라인 `font-black tracking-[-0.02~0.03em]`
+- **워드마크**: 로고 없음 — 플레인 타입 "Melolist" + flame 마침표
+- shadcn/ui 조합(직접 제작 최소화) · motion(Framer Motion) 마이크로 인터랙션 · 모바일 우선(max-w-md)
+- 결과 카드 이미지는 `rounded` + 스켈레톤 페이드인, 레이아웃 시프트 없도록 고정 크기(56px) + 1px 내부 헤어라인 링
 
 ---
 

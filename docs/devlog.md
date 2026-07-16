@@ -1,5 +1,10 @@
 # Development Log
 
+## 2026-07-16 (7) — 소형 정리: PlaybackCard AbortError + frontend-prd §10 갱신 (브랜치 `chore/playback-abort-and-ds-doc`)
+
+- 🐛 **PlaybackCard unhandled rejection**: `void ws.load(url)`이 프라미스를 버려서, 언마운트 시 `destroy()`가 로드 중 fetch를 중단하면 AbortError가 unhandled로 떴다(StrictMode 이중 이펙트에서 상시 재현 — 07-16 dev 로그 실측). → `.catch(() => {})`로 의도된 중단 흡수
+- 📝 **frontend-prd §10 디자인 시스템 갱신**: 07-09 M2 개편 때 교체된 DS(Ink 뉴트럴/#0a0a0c·Flame #FF5A3C 뷰당 1 주 액션·Iris #6E5CFF 인식 전용·Pretendard)가 문서에는 구 팔레트(#090909/#5B8CFF/Inter)로 남아 있던 드리프트 해소. 정본(claude.ai/design `_ds` 토큰 + docs/design-guideline.md) 위계 명시
+
 ## 2026-07-16 (6) — 검색 기록 화면 (M3 C4, 브랜치 `feat/search-history-page`)
 
 ### 완료
