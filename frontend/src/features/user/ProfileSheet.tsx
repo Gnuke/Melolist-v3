@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { LogOut } from 'lucide-react'
+import { LogOut, UserRound } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -14,10 +15,11 @@ interface Props {
 }
 
 /**
- * 프로필 바텀 시트(spec 001 US3) — 내 정보 확인 + 로그아웃.
- * 정식 마이페이지는 M3. 시트 패턴은 FavoriteSheet와 동일.
+ * 프로필 바텀 시트(spec 001 US3) — 내 정보 확인 + [프로필 관리] 진입 + 로그아웃.
+ * 시트 패턴은 FavoriteSheet와 동일.
  */
 export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
+  const navigate = useNavigate()
   const { data: me } = useMe(open)
   const queryClient = useQueryClient()
   const [signingOut, setSigningOut] = useState(false)
@@ -79,11 +81,22 @@ export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
             {/* 즐겨찾기·검색 기록 진입점은 하단 탭 내비로 통합(07-16) — 시트는 계정 영역만 담당 */}
             <Button
               type="button"
+              onClick={() => {
+                onClose()
+                navigate('/profile')
+              }}
+              size="lg"
+              className="mt-6 h-12 w-full rounded-full text-[15px] font-bold transition-transform active:scale-[0.97]"
+            >
+              <UserRound className="size-4" /> 프로필 관리
+            </Button>
+            <Button
+              type="button"
               onClick={signOut}
               disabled={signingOut}
               variant="outline"
               size="lg"
-              className="mt-6 h-12 w-full rounded-full bg-card text-[15px] font-bold transition-transform active:scale-[0.97]"
+              className="mt-3 h-12 w-full rounded-full bg-card text-[15px] font-bold transition-transform active:scale-[0.97]"
             >
               <LogOut className="size-4" /> 로그아웃
             </Button>

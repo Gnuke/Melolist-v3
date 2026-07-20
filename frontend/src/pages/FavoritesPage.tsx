@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import type { Variants } from 'motion/react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ExternalLink, Heart, Search } from 'lucide-react'
+import { ChevronLeft, ExternalLink, Heart, ListPlus, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/authStore'
 import { CoverArt } from '@/features/search/CoverArt'
 import { getFavorites, removeFavorite, type FavoriteResponse, type FavoritesPage as Page } from '@/features/favorites/api'
+import { AddToPlaylistSheet } from '@/features/playlists/AddToPlaylistSheet'
+import { ProfileCorner } from '@/features/user/ProfileCorner'
 
 const PAGE_SIZE = 20
 
@@ -27,6 +30,7 @@ export function FavoritesPage() {
   const session = useAuthStore((s) => s.session)
   const initialized = useAuthStore((s) => s.initialized)
   const queryClient = useQueryClient()
+  const [addTarget, setAddTarget] = useState<number | null>(null)
 
   const query = useInfiniteQuery({
     queryKey: ['favorites'],
@@ -66,7 +70,7 @@ export function FavoritesPage() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-28 pt-4">
-      <header className="mb-2 flex items-center">
+      <header className="mb-2 flex items-center justify-between">
         <Button
           type="button"
           variant="ghost"
@@ -76,6 +80,7 @@ export function FavoritesPage() {
         >
           <ChevronLeft /> 홈
         </Button>
+        <ProfileCorner />
       </header>
 
       <div className="pt-4">
@@ -137,6 +142,7 @@ export function FavoritesPage() {
                 f={f}
                 removing={removal.isPending && removal.variables === f.music.id}
                 onRemove={() => removal.mutate(f.music.id)}
+                onAddToPlaylist={() => setAddTarget(f.music.id)}
               />
             ))}
           </motion.ul>
@@ -157,11 +163,23 @@ export function FavoritesPage() {
           )}
         </>
       )}
+
+      <AddToPlaylistSheet musicId={addTarget} onClose={() => setAddTarget(null)} />
     </div>
   )
 }
 
-function FavoriteRow({ f, removing, onRemove }: { f: FavoriteResponse; removing: boolean; onRemove: () => void }) {
+function FavoriteRow({
+  f,
+  removing,
+  onRemove,
+  onAddToPlaylist,
+}: {
+  f: FavoriteResponse
+  removing: boolean
+  onRemove: () => void
+  onAddToPlaylist: () => void
+}) {
   const m = f.music
   return (
     <motion.li
@@ -175,6 +193,16 @@ function FavoriteRow({ f, removing, onRemove }: { f: FavoriteResponse; removing:
         <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{m.artist ?? '미상'}</p>
       </div>
       <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onAddToPlaylist}
+          className="rounded-full text-muted-foreground hover:text-foreground"
+          aria-label="플레이리스트에 담기"
+        >
+          <ListPlus />
+        </Button>
         {m.youtube_url && (
           <Button
             asChild

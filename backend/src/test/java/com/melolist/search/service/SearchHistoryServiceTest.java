@@ -2,6 +2,8 @@ package com.melolist.search.service;
 
 import com.melolist.common.dto.PageResponse;
 import com.melolist.common.error.NotFoundException;
+import com.melolist.community.domain.Favorite;
+import com.melolist.community.repository.FavoriteRepository;
 import com.melolist.music.domain.Music;
 import com.melolist.music.repository.MusicRepository;
 import com.melolist.search.domain.SearchHistory;
@@ -41,6 +43,8 @@ class SearchHistoryServiceTest {
     private SearchHistoryRepository searchHistoryRepository;
     @Mock
     private MusicRepository musicRepository;
+    @Mock
+    private FavoriteRepository favoriteRepository;
 
     @InjectMocks
     private SearchHistoryService service;
@@ -56,6 +60,9 @@ class SearchHistoryServiceTest {
         Music music = mock(Music.class);
         when(music.getId()).thenReturn(42L);
         when(musicRepository.findAllById(Set.of(42L))).thenReturn(List.of(music));
+        Favorite favorite = mock(Favorite.class);
+        when(favorite.getMusic()).thenReturn(music);
+        when(favoriteRepository.findByUserIdAndMusicIdIn(USER_ID, Set.of(42L))).thenReturn(List.of(favorite));
 
         PageResponse<SearchHistoryResponse> page = service.getPage(USER_ID, PAGE);
 
@@ -63,8 +70,10 @@ class SearchHistoryServiceTest {
         assertThat(page.items().get(0).type()).isEqualTo("humming");
         assertThat(page.items().get(0).status()).isEqualTo("matched");
         assertThat(page.items().get(0).music().id()).isEqualTo(42L);
+        assertThat(page.items().get(0).favorited()).isTrue();
         assertThat(page.items().get(1).status()).isEqualTo("no_match");
         assertThat(page.items().get(1).music()).isNull();
+        assertThat(page.items().get(1).favorited()).isFalse();
     }
 
     @Test

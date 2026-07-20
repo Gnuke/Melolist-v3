@@ -56,6 +56,12 @@ export async function addFavorite(acrid: string): Promise<FavoriteResponse> {
   }
 }
 
+/** MUSIC 행이 이미 있는 곡(기록 등 목록 화면)을 담는다 — acrid 재시도 불필요, 멱등. */
+export async function addFavoriteByMusicId(musicId: number): Promise<FavoriteResponse> {
+  const { data } = await api.post<FavoriteResponse>('/favorites', { music_id: musicId })
+  return data
+}
+
 /** 즐겨찾기 해제(멱등 — 없어도 조용히 성공). */
 export async function removeFavorite(musicId: number): Promise<void> {
   await api.delete(`/favorites/${musicId}`)
