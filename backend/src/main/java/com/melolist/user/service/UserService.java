@@ -2,6 +2,7 @@ package com.melolist.user.service;
 
 import com.melolist.user.domain.Profile;
 import com.melolist.user.dto.ProfileResponse;
+import com.melolist.user.dto.UpdateMeRequest;
 import com.melolist.user.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -39,6 +40,29 @@ public class UserService {
             profile.setAvatarUrl(resolveAvatarUrl(jwt));
         }
         return profile;
+    }
+
+    /**
+     * 내 프로필 부분 수정(M3 프로필 화면) — null 필드는 유지. 별명은 공백 불가,
+     * 아바타는 https URL만(업로드 자체는 프론트가 Storage에 직접, 여기는 URL 저장만).
+     */
+    @Transactional
+    public ProfileResponse updateMe(Jwt jwt, UpdateMeRequest request) {
+        Profile profile = getOrProvisionProfile(jwt);
+        if (request.displayName() != null) {
+            String name = request.displayName().trim();
+            if (name.isEmpty()) {
+                throw new IllegalArgumentException("별명은 비울 수 없습니다.");
+            }
+            profile.setDisplayName(name);
+        }
+        if (request.avatarUrl() != null) {
+            if (!request.avatarUrl().startsWith("https://")) {
+                throw new IllegalArgumentException("avatarUrl은 https URL이어야 합니다.");
+            }
+            profile.setAvatarUrl(request.avatarUrl());
+        }
+        return ProfileResponse.from(profile);
     }
 
     private Profile provision(Jwt jwt, UUID userId) {
