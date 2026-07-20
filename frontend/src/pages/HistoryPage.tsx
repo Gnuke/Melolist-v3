@@ -1,13 +1,18 @@
+import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import type { Variants } from 'motion/react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ExternalLink, History, Search, SearchX, Trash2 } from 'lucide-react'
+import { ChevronLeft, ExternalLink, Heart, History, ListPlus, Search, SearchX, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 import { CoverArt } from '@/features/search/CoverArt'
+import { addFavoriteByMusicId, removeFavorite } from '@/features/favorites/api'
+import { AddToPlaylistSheet } from '@/features/playlists/AddToPlaylistSheet'
+import { ProfileCorner } from '@/features/user/ProfileCorner'
 import {
   getHistory,
   removeHistory,
@@ -48,6 +53,7 @@ export function HistoryPage() {
   const session = useAuthStore((s) => s.session)
   const initialized = useAuthStore((s) => s.initialized)
   const queryClient = useQueryClient()
+  const [addTarget, setAddTarget] = useState<number | null>(null)
 
   const query = useInfiniteQuery({
     queryKey: ['search-history'],
@@ -75,6 +81,26 @@ export function HistoryPage() {
     onError: () => toast('지우지 못했어요 — 잠시 후 다시 시도해주세요'),
   })
 
+  const favToggle = useMutation({
+    mutationFn: ({ musicId, next }: { musicId: number; next: boolean }) =>
+      next ? addFavoriteByMusicId(musicId).then(() => undefined) : removeFavorite(musicId),
+    onSuccess: (_data, { musicId, next }) => {
+      // 같은 곡이 여러 기록에 있으면 전부 함께 뒤집는다 — favorited는 곡 단위 상태
+      queryClient.setQueryData<{ pages: HistoryPageData[]; pageParams: number[] }>(['search-history'], (data) =>
+        data && {
+          ...data,
+          pages: data.pages.map((p) => ({
+            ...p,
+            items: p.items.map((h) => (h.music?.id === musicId ? { ...h, favorited: next } : h)),
+          })),
+        },
+      )
+      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+      toast(next ? '즐겨찾기에 담았어요' : '즐겨찾기에서 뺐어요')
+    },
+    onError: () => toast('즐겨찾기를 바꾸지 못했어요 — 잠시 후 다시 시도해주세요'),
+  })
+
   // 세션 하이드레이션 전에는 판단 보류(스켈레톤) — 새로고침 직후 오판 방지
   if (initialized && !session) {
     return <Navigate to="/login" state={{ next: '/history' }} replace />
@@ -86,7 +112,7 @@ export function HistoryPage() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-28 pt-4">
-      <header className="mb-2 flex items-center">
+      <header className="mb-2 flex items-center justify-between">
         <Button
           type="button"
           variant="ghost"
@@ -96,6 +122,7 @@ export function HistoryPage() {
         >
           <ChevronLeft /> 홈
         </Button>
+        <ProfileCorner />
       </header>
 
       <div className="pt-4">
@@ -156,7 +183,12 @@ export function HistoryPage() {
                 key={h.id}
                 h={h}
                 removing={removal.isPending && removal.variables === h.id}
+                favToggling={favToggle.isPending && favToggle.variables?.musicId === h.music?.id}
                 onRemove={() => removal.mutate(h.id)}
+                onToggleFavorite={() =>
+                  h.music && favToggle.mutate({ musicId: h.music.id, next: !h.favorited })
+                }
+                onAddToPlaylist={() => h.music && setAddTarget(h.music.id)}
               />
             ))}
           </motion.ul>
@@ -177,11 +209,27 @@ export function HistoryPage() {
           )}
         </>
       )}
+
+      <AddToPlaylistSheet musicId={addTarget} onClose={() => setAddTarget(null)} />
     </div>
   )
 }
 
-function HistoryRow({ h, removing, onRemove }: { h: SearchHistoryItem; removing: boolean; onRemove: () => void }) {
+function HistoryRow({
+  h,
+  removing,
+  favToggling,
+  onRemove,
+  onToggleFavorite,
+  onAddToPlaylist,
+}: {
+  h: SearchHistoryItem
+  removing: boolean
+  favToggling: boolean
+  onRemove: () => void
+  onToggleFavorite: () => void
+  onAddToPlaylist: () => void
+}) {
   const matched = h.status === 'matched' && h.music
   const metaLine = `${MODE_LABEL[h.type] ?? h.type} · ${formatWhen(h.created_at)}`
 
@@ -223,7 +271,19 @@ function HistoryRow({ h, removing, onRemove }: { h: SearchHistoryItem; removing:
         </p>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
+        {matched && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onAddToPlaylist}
+            className="rounded-full text-muted-foreground hover:text-foreground"
+            aria-label="플레이리스트에 담기"
+          >
+            <ListPlus />
+          </Button>
+        )}
         {matched && h.music!.youtube_url && (
           <Button
             asChild
@@ -234,6 +294,23 @@ function HistoryRow({ h, removing, onRemove }: { h: SearchHistoryItem; removing:
             <a href={h.music!.youtube_url} target="_blank" rel="noopener noreferrer" aria-label="YouTube에서 듣기">
               <ExternalLink />
             </a>
+          </Button>
+        )}
+        {matched && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={favToggling}
+            onClick={onToggleFavorite}
+            className={cn(
+              'rounded-full transition-transform active:scale-90',
+              h.favorited ? 'text-brand hover:text-brand' : 'text-muted-foreground hover:text-brand',
+            )}
+            aria-label={h.favorited ? '즐겨찾기 해제' : '즐겨찾기에 담기'}
+            aria-pressed={h.favorited}
+          >
+            <Heart className={h.favorited ? 'fill-current' : undefined} />
           </Button>
         )}
         <Button

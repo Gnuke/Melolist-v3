@@ -1,15 +1,16 @@
 import { NavLink } from 'react-router-dom'
-import { Heart, History, Home } from 'lucide-react'
+import { Heart, History, Home, ListMusic } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const TABS = [
   { to: '/', label: '홈', icon: Home, end: true },
   { to: '/favorites', label: '즐겨찾기', icon: Heart, end: false },
+  { to: '/playlists', label: '플레이리스트', icon: ListMusic, end: false },
   { to: '/history', label: '기록', icon: History, end: false },
 ] as const
 
 /**
- * 하단 탭 내비(M3) — 탭 화면(홈·즐겨찾기·기록)에만 노출. 검색 플로우·로그인은
+ * 하단 탭 내비(M3) — 탭 화면(홈·즐겨찾기·플레이리스트·기록)에만 노출. 검색 플로우·로그인은
  * 몰입 유지를 위해 제외(router의 TabLayout 소속만 해당). 활성 표시는 전경색
  * 전환만 — flame은 뷰당 주 액션 1개 규칙(DS §10)이라 내비에 쓰지 않는다.
  */

@@ -10,6 +10,8 @@ export interface SearchHistoryItem {
   status: 'matched' | 'no_match'
   score: number | null
   music: FavoriteMusic | null
+  /** 조회자 기준 즐겨찾기 여부 — 기록 화면 ♡ 토글 초기 상태 */
+  favorited: boolean
   created_at: string
 }
 
