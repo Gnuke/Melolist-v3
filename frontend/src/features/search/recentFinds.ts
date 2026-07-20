@@ -13,12 +13,19 @@ export interface RecentFind {
 const KEY = 'melolist.recent-finds'
 const MAX = 6
 
+/** dev 목업 곡(searchMock·acr-mock, acrid `mock-*`)은 선반에 남기지 않는다 */
+const isMock = (key: string) => key.startsWith('mock-')
+
 /** 홈 "최근 찾은 곡" 선반용 로컬 기록 (클라 전용 — 서버 SearchHistory는 M3). */
 export function getRecentFinds(): RecentFind[] {
   try {
     const raw = localStorage.getItem(KEY)
     const list = raw ? (JSON.parse(raw) as RecentFind[]) : []
-    return Array.isArray(list) ? list : []
+    if (!Array.isArray(list)) return []
+    const clean = list.filter((f) => !isMock(f.key))
+    // 과거 목업 테스트 잔재 자가 정리
+    if (clean.length !== list.length) localStorage.setItem(KEY, JSON.stringify(clean))
+    return clean
   } catch {
     return []
   }
@@ -27,7 +34,7 @@ export function getRecentFinds(): RecentFind[] {
 /** 검색 성공 시 Top-1을 기록한다 (저신뢰 F3 결과는 기록하지 않음). */
 export function addRecentFind(r: AcrResult): void {
   const title = r.title?.trim()
-  if (!title) return
+  if (!title || (r.acrid && isMock(r.acrid))) return
   const find: RecentFind = {
     key: r.acrid ?? `${title}-${r.artists?.[0]?.name ?? ''}`,
     title,

@@ -1,14 +1,13 @@
-import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import type { Variants } from 'motion/react'
 import { AudioLines, Mic } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CoverArt } from '@/features/search/CoverArt'
-import { getRecentFinds } from '@/features/search/recentFinds'
+import type { RecentFind } from '@/features/search/recentFinds'
+import { useRecentFinds } from '@/features/search/useRecentFinds'
 import { useAuthStore } from '@/stores/authStore'
-import { useMe } from '@/features/user/useMe'
-import { ProfileSheet } from '@/features/user/ProfileSheet'
+import { ProfileCorner } from '@/features/user/ProfileCorner'
 
 const containerVariants: Variants = {
   hidden: {},
@@ -23,8 +22,7 @@ const itemVariants: Variants = {
 /** 홈 = 검색 진입(와이어프레임 1b 듀얼 CTA) — 모드별 플로우 차이(자동/수동)를 진입부터 분리(C1). */
 export function HomePage() {
   const session = useAuthStore((s) => s.session)
-  const recentFinds = useMemo(() => getRecentFinds().slice(0, 3), [])
-  const [profileOpen, setProfileOpen] = useState(false)
+  const recentFinds = useRecentFinds()
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
@@ -48,14 +46,7 @@ export function HomePage() {
             Melolist<span className="text-brand">.</span>
           </h1>
           {session ? (
-            <button
-              type="button"
-              onClick={() => setProfileOpen(true)}
-              aria-label="내 프로필"
-              className="rounded-full transition-transform focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/60 active:scale-95"
-            >
-              <ProfileChip fallbackEmail={session.user.email} />
-            </button>
+            <ProfileCorner />
           ) : (
             <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-foreground">
               <Link to="/login">로그인</Link>
@@ -112,7 +103,7 @@ export function HomePage() {
           </Link>
         </motion.nav>
 
-        {/* 최근 찾은 곡 (로컬 기록) — 기록 화면은 M3 */}
+        {/* 최근 찾은 곡 — 로그인=서버 기록, 게스트=로컬 (useRecentFinds) */}
         {recentFinds.length > 0 && (
           <motion.section variants={itemVariants} className="mt-auto pt-12">
             <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
@@ -140,34 +131,11 @@ export function HomePage() {
           </motion.section>
         )}
       </motion.div>
-
-      <ProfileSheet
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        fallbackEmail={session?.user.email}
-      />
     </div>
   )
 }
 
-/** 로그인 시 헤더 우측 프로필 표시 — 첫 조회가 profiles JIT 프로비저닝을 트리거한다. 정식 마이페이지는 M3. */
-function ProfileChip({ fallbackEmail }: { fallbackEmail?: string }) {
-  const { data: me } = useMe(true)
-  const label = me?.displayName || me?.email || fallbackEmail || ''
-  return me?.avatarUrl ? (
-    // Google 프로필 이미지는 referrer 있으면 403이 나는 경우가 있음
-    <img src={me.avatarUrl} alt={label} referrerPolicy="no-referrer" className="size-7 rounded-full" />
-  ) : (
-    <span
-      aria-label={label}
-      className="flex size-7 items-center justify-center rounded-full bg-iris/15 text-[12px] font-bold text-iris-soft"
-    >
-      {(label[0] ?? '?').toUpperCase()}
-    </span>
-  )
-}
-
-function RecentFindBody({ f }: { f: ReturnType<typeof getRecentFinds>[number] }) {
+function RecentFindBody({ f }: { f: RecentFind }) {
   return (
     <>
       <CoverArt coverUrl={f.coverUrl} videoId={f.videoId} alt={f.title} className="aspect-square w-full" />
