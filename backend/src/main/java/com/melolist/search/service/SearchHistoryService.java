@@ -2,6 +2,7 @@ package com.melolist.search.service;
 
 import com.melolist.common.dto.PageResponse;
 import com.melolist.common.error.NotFoundException;
+import com.melolist.community.repository.FavoriteRepository;
 import com.melolist.music.domain.Music;
 import com.melolist.music.repository.MusicRepository;
 import com.melolist.search.domain.SearchHistory;
@@ -30,18 +31,24 @@ public class SearchHistoryService {
 
     private final SearchHistoryRepository searchHistoryRepository;
     private final MusicRepository musicRepository;
+    private final FavoriteRepository favoriteRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<SearchHistoryResponse> getPage(UUID userId, Pageable pageable) {
         Page<SearchHistory> page = searchHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        // top 곡 스냅샷은 페이지 단위 일괄 조회 — 기록당 개별 조회(N+1) 방지
+        // top 곡 스냅샷·즐겨찾기 여부는 페이지 단위 일괄 조회 — 기록당 개별 조회(N+1) 방지
         Set<Long> musicIds = page.getContent().stream()
                 .map(SearchHistory::getTopMusicId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<Long, Music> musics = musicRepository.findAllById(musicIds).stream()
                 .collect(Collectors.toMap(Music::getId, Function.identity()));
-        return PageResponse.of(page, h -> SearchHistoryResponse.from(h, musics.get(h.getTopMusicId())));
+        Set<Long> favoritedIds = favoriteRepository.findByUserIdAndMusicIdIn(userId, musicIds).stream()
+                .map(f -> f.getMusic().getId())
+                .collect(Collectors.toSet());
+        return PageResponse.of(page, h -> SearchHistoryResponse.from(h,
+                musics.get(h.getTopMusicId()),
+                h.getTopMusicId() != null && favoritedIds.contains(h.getTopMusicId())));
     }
 
     @Transactional
