@@ -1,6 +1,25 @@
 # Development Log
 
-## 2026-07-16 총괄 — PR 8건(#4~#11) 전부 병합: 유튜브 링크 수정 + M2 측정 도구 완비 + M3 저장/목록/내비 개통
+## 2026-07-20 — 플레이리스트 화면 (M3 마지막 덩어리, 브랜치 `feat/playlists-screen`)
+
+### 완료
+
+- **frontend `/playlists` 목록 + `/playlists/:id` 상세**: 목록은 `useQuery`(수정 최신순, 백엔드 비페이징 계약 그대로) + `initialized` 가드 패턴. 상세는 공개면 게스트도 조회(뒤로가기·빈 상태 카피가 세션 유무에 따라 분기), 비공개 비소유는 백엔드 404 → "찾을 수 없어요" 화면. 소유자 편집: 정보 수정(생성·수정 공용 `PlaylistFormSheet`), 삭제(확인 시트, destructive), 곡 빼기(X), **순서 편집 모드**(↑/↓ — 행당 버튼 수를 늘리지 않으려 모드 토글, 이동 즉시 낙관 반영 후 reorder PATCH, 실패 시 재조회 롤백)
+- **담기 플로우**: `AddToPlaylistSheet` — 즐겨찾기 행의 담기(ListPlus) 버튼 → 내 플레이리스트 선택 or **새로 만들고 바로 담기**(플레이리스트 0개면 바로 생성 모드). 중복 409는 "이미 담겨 있는 곡이에요"로 안내. 담기 원천을 즐겨찾기로 한 이유: 검색 결과에는 music id가 없고(acrid뿐, upsert 비동기) 상세 계약이 music id 기반이라 ♡ 저장 → 담기 순서가 자연 흐름
+- **공용 `BottomSheet` 셸 추출**(FavoriteSheet 패턴): 폼·확인·선택 시트 3종이 재사용. 스위치 on은 뉴트럴 전경색 — flame은 시트 저장 버튼 1개(§10 뷰당 주 액션 1개)
+- **Bottom Nav 4탭**: 홈·즐겨찾기·플레이리스트·기록. design-guideline "플레이리스트 피드 중심 화면 지양"은 유지 — 탭은 진입점일 뿐, 홈·검색 중심 구조는 그대로
+- **backend 검색 기록 `favorited`**(전 세션 착수분 마무리): `SearchHistoryResponse.favorited` + `FavoriteRepository.findByUserIdAndMusicIdIn` 페이지 단위 일괄 조회(N+1 방지 유지). **테스트 NPE 수정**: `@InjectMocks`가 새 생성자 인자에 null을 넣어 컴파일은 통과·런타임 실패하던 것 → `@Mock FavoriteRepository` 추가 + favorited true/false 검증 보강
+- **기록 화면 ♡ 토글 + 담기 연결**(사용자 로컬 확인 중 지적): matched 행에 담기(ListPlus)·♡ 토글(favorited 초기 상태, `music_id`로 POST — MUSIC 행이 이미 있어 acrid 재시도 불필요) 추가. 같은 곡이 여러 기록에 있으면 캐시에서 함께 뒤집는다(favorited는 곡 단위). `['favorites']` 무효화로 즐겨찾기 목록과 동기
+- 🐛 **홈 "최근 찾은 곡" 목업 잔재**(사용자 로컬 확인 중 지적): 선반은 localStorage(`melolist.recent-finds`) 원천인데 07-16 목테스트 곡(acrid `mock-*`)이 localhost 오리진에 잔존 — DB·목업 스위치는 무관(둘 다 깨끗함 확인). → recentFinds에 `mock-*` 읽기 자가 정리 + 쓰기 가드(프론트 searchMock·백엔드 acr-mock 공통 방어)
+- **홈 셸프 하이브리드 전환**(사용자 문제 제기 "어차피 기록에 남잖아" → 안 3종 중 하이브리드 확정): `useRecentFinds` 훅 — **로그인=서버 검색 기록**(matched만 곡 단위 dedup 후 3곡, 기기 간 일관·기록 삭제와 동기) / **게스트=localStorage 유지**(게스트 검색은 서버 기록에 안 남아 로컬이 유일한 원천, 게스트 우선 원칙 V). 하이드레이션 전엔 빈 목록(로컬→서버 셸프 깜빡임 방지). localStorage는 M2 임시 구조("서버 SearchHistory는 M3" 주석)의 게스트 폴백으로 역할 축소
+- **프로필 화면 + 아바타 업로드**(사용자 요청 — display_name=별명 확인): ①Supabase Storage `avatars` **공개 버킷**(2MB·jpeg/png/webp 한정) + 본인 폴더(`{user_id}/…`)만 쓰기/삭제 RLS(부록 A-2 "Storage만 RLS" 결정 준수, 마이그레이션 `create_avatars_bucket` 적용 + SQL 사본 `backend/db/migrations/`) ②backend `PATCH /api/users/me`(UpdateMeRequest — null=유지, 별명 트림·공백 400, avatarUrl https만, user 도메인 camelCase 계약 유지, UserServiceTest 4건) ③frontend `/profile` ProfilePage — 별명 수정 + 사진 변경(클라에서 512px 정사각 중앙 크롭 JPEG 변환 → supabase-js로 Storage 직접 업로드 → public URL을 PATCH로 저장). **파일명을 매번 새로**(같은 경로 덮어쓰기는 CDN 캐시로 구 이미지 잔존) 하고 이전 파일은 best-effort 삭제. 진입점: 프로필 시트 [프로필 관리](주 액션, 로그아웃은 outline 유지). ⚠️ 커스텀 아바타는 JIT 자가 치유(avatar null일 때만 Google 사진 주입)와 충돌 없음
+- **프로필 칩 전 탭 노출**(사용자 문제 제기 "어느 탭에서도 로그아웃 가능해야" — 동의): HomePage 내부에 있던 칩+시트를 `ProfileCorner`로 추출, 즐겨찾기·플레이리스트·기록 헤더 우측에도 배치. 탭 4개는 같은 층위라 계정 진입점을 공통화(게스트면 미렌더 — 로그인 유도는 화면별 가드 몫)
+- 검증: backend 전체 테스트 통과, frontend `tsc -b && vite build` 통과, oxlint 신규 경고 0
+
+### 남은 것
+
+- 운영 실화면 확인(생성→담기→순서→삭제 + 기록 ♡·담기 전 플로우)
+ — PR 8건(#4~#11) 전부 병합: 유튜브 링크 수정 + M2 측정 도구 완비 + M3 저장/목록/내비 개통
 
 유튜브 링크 미표시 제보에서 출발해, 하루에 M2 측정 잔여를 닫고 M3의 저장·목록·내비를 개통했다. 상세는 아래 (1)~(8) 항목.
 
