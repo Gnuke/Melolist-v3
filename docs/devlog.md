@@ -1,5 +1,16 @@
 # Development Log
 
+## 2026-07-21 — 프로필 사진 로딩 깜빡임 제거 (✅**PR #14 병합** `3fe250f`, 브랜치 `fix/profile-avatar-flicker`)
+
+- **증상**(07-20 제보 1순위): 화면 진입·새로고침마다 프로필 칩이 **기본 이니셜 → 실사진** 순서로 깜빡임.
+- **원인 2겹 + 구조 1**: ①주범 — `['me']` 쿼리 캐시가 페이지 로드마다 빈 상태라 `GET /users/me` 왕복(Render 콜드스타트 시 수 초) 동안 이니셜이 먼저 렌더된 뒤 실사진으로 교체 ②`avatarUrl`을 알아도 `<img>` 로드 완료 전 공백 구간 존재 ③같은 아바타 렌더 코드가 ProfileCorner·ProfileSheet·ProfilePage 3곳 중복(드리프트 온상).
+- **수정 3종**:
+  - **useMe** — 조회 성공 시 프로필을 localStorage(`melolist.me`) 사본으로 저장, 다음 진입부터 `placeholderData`로 즉시 렌더(백그라운드 조용히 최신화) + `staleTime` 5분(프로필은 ProfilePage에서만 바뀌고 그땐 setQueryData 직접 반영이라 안전). 계정 가드 `cached.id === session.user.id`(Profile.id는 JWT sub 미러 — UserService.provision 확인) + 로그아웃 시 `clearCachedMe()`(계정 전환 대비).
+  - **공용 `ProfileAvatar` 신설**(features/user) — 3곳 중복 렌더 통합. 사진 URL이 있으면 이미지 로드 전에도 **이니셜 대신 iris 원 배경만** 노출 → "이니셜→사진" 교체 자체가 발생하지 않음. 이니셜은 URL이 없을 때만.
+  - **ProfilePage** — 별명·사진 수정 반영(applyMe)이 쿼리 캐시와 로컬 사본을 함께 갱신(수정 직후 새로고침에 옛 사진 방지).
+- **검증**: `tsc -b && vite build`·oxlint 통과, 로컬 E2E 사용자 확인(첫 로드 1회 이니셜=사본 없음 정상, 이후 새로고침·탭 이동 무깜빡임). 프론트 전용 변경이라 Render 무관 — Vercel 자동 재배포만.
+- **남은 것**: ①운영 확인 — 깜빡임(두 번째 방문부터) + 07-20 대기분(플레이리스트 전 플로우·기록 ♡/담기·프로필 수정, Render 웜업 후) ②KR1 첫 실측(곡 셋 오디오 준비되면) ③KR2 재확인(meta 4s 이후 데이터).
+
 ## 2026-07-20 (2) — Render 배포 실패(exit 1) 진단: Supabase pooler 한도 소진 (PR #13)
 
 - **증상**: PR #12 병합 후 Render 배포가 원인 표시 없이 exit 1. 구버전은 계속 서빙(무중단 배포라 신 인스턴스만 사망).
