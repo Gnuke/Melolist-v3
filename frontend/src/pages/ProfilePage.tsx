@@ -6,7 +6,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/authStore'
-import { useMe, type Profile } from '@/features/user/useMe'
+import { cacheMe, useMe, type Profile } from '@/features/user/useMe'
+import { ProfileAvatar } from '@/features/user/ProfileAvatar'
 import { updateMe } from '@/features/user/api'
 import { uploadAvatar } from '@/features/user/avatar'
 
@@ -21,7 +22,10 @@ export function ProfilePage() {
   const [name, setName] = useState<string | null>(null) // null = 아직 입력 전(서버 값 표시)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const applyMe = (updated: Profile) => queryClient.setQueryData(['me'], updated)
+  const applyMe = (updated: Profile) => {
+    queryClient.setQueryData(['me'], updated)
+    cacheMe(updated) // 로컬 사본도 갱신 — 다음 새로고침에서 옛 사진이 먼저 뜨지 않게
+  }
 
   const nameSave = useMutation({
     mutationFn: (displayName: string) => updateMe({ displayName }),
@@ -101,22 +105,11 @@ export function ProfilePage() {
         <>
           <div className="mt-9 flex justify-center">
             <div className="relative">
-              {me.avatarUrl ? (
-                // Google 프로필 이미지는 referrer 있으면 403이 나는 경우가 있음
-                <img
-                  src={me.avatarUrl}
-                  alt="프로필 사진"
-                  referrerPolicy="no-referrer"
-                  className="size-24 rounded-full object-cover ring-1 ring-white/10"
-                />
-              ) : (
-                <span
-                  aria-hidden
-                  className="flex size-24 items-center justify-center rounded-full bg-iris/15 text-[34px] font-bold text-iris-soft"
-                >
-                  {(me.displayName?.[0] ?? me.email[0] ?? '?').toUpperCase()}
-                </span>
-              )}
+              <ProfileAvatar
+                avatarUrl={me.avatarUrl}
+                label={me.displayName || me.email}
+                className="size-24 text-[34px] ring-1 ring-white/10"
+              />
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}

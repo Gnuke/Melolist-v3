@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { useMe } from '@/features/user/useMe'
+import { ProfileAvatar } from '@/features/user/ProfileAvatar'
 import { ProfileSheet } from '@/features/user/ProfileSheet'
 
 /**
@@ -32,15 +33,5 @@ export function ProfileCorner() {
 function Chip({ fallbackEmail }: { fallbackEmail?: string }) {
   const { data: me } = useMe(true)
   const label = me?.displayName || me?.email || fallbackEmail || ''
-  return me?.avatarUrl ? (
-    // Google 프로필 이미지는 referrer 있으면 403이 나는 경우가 있음
-    <img src={me.avatarUrl} alt={label} referrerPolicy="no-referrer" className="size-7 rounded-full" />
-  ) : (
-    <span
-      aria-label={label}
-      className="flex size-7 items-center justify-center rounded-full bg-iris/15 text-[12px] font-bold text-iris-soft"
-    >
-      {(label[0] ?? '?').toUpperCase()}
-    </span>
-  )
+  return <ProfileAvatar avatarUrl={me?.avatarUrl} label={label} className="size-7 text-[12px]" />
 }

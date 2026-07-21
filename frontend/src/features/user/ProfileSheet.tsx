@@ -6,7 +6,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
-import { useMe, type Profile } from '@/features/user/useMe'
+import { clearCachedMe, useMe } from '@/features/user/useMe'
+import { ProfileAvatar } from '@/features/user/ProfileAvatar'
 
 interface Props {
   open: boolean
@@ -41,8 +42,9 @@ export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
       toast('로그아웃에 실패했어요. 잠시 후 다시 시도해주세요.')
       return
     }
-    // 다음 로그인이 다른 계정일 수 있으니 내 프로필 캐시를 비운다
+    // 다음 로그인이 다른 계정일 수 있으니 내 프로필 캐시(쿼리+로컬 사본)를 비운다
     queryClient.removeQueries({ queryKey: ['me'] })
+    clearCachedMe()
     onClose()
     toast('로그아웃되었어요')
   }
@@ -70,7 +72,7 @@ export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
           >
             <div className="mx-auto mb-5 h-1 w-9 rounded-full bg-white/15" />
             <div className="flex items-center gap-3.5">
-              <Avatar me={me} label={label} />
+              <ProfileAvatar avatarUrl={me?.avatarUrl} label={label} className="size-11 text-[17px]" />
               <div className="min-w-0">
                 <p className="truncate text-[17px] font-extrabold tracking-tight">{label}</p>
                 {me?.email && me.displayName && (
@@ -111,19 +113,5 @@ export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
         </div>
       )}
     </AnimatePresence>
-  )
-}
-
-function Avatar({ me, label }: { me: Profile | undefined; label: string }) {
-  return me?.avatarUrl ? (
-    // Google 프로필 이미지는 referrer 있으면 403이 나는 경우가 있음
-    <img src={me.avatarUrl} alt={label} referrerPolicy="no-referrer" className="size-11 shrink-0 rounded-full" />
-  ) : (
-    <span
-      aria-hidden
-      className="flex size-11 shrink-0 items-center justify-center rounded-full bg-iris/15 text-[17px] font-bold text-iris-soft"
-    >
-      {(label[0] ?? '?').toUpperCase()}
-    </span>
   )
 }
