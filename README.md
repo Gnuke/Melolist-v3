@@ -1,199 +1,124 @@
-> ### 🔭 Melolist-v3 (재플랫폼 진행 중)
-> 이 프로젝트는 기존 Nuxt 앱을 **React + Spring Boot(Java 21 LTS) + Supabase**로 재플랫폼 중입니다.
-> - `backend/` — Spring Boot 3.5 · **Java 21** · Gradle ([backend/README](backend/README.md))
-> - `frontend/` — React + TypeScript (예정)
-> - `nuxt-app/` — v2, 레퍼런스로 보존
-> - 상세 요구사항: [`PRD.md`](PRD.md)
->
-> 아래는 기존 v2(Nuxt) 문서입니다.
+# 🎵 Melolist
+
+**허밍이나 주변 음악 녹음만으로 노래를 찾는 음악 검색 서비스** — 찾은 곡은 즐겨찾기·플레이리스트로 저장하고, 검색 기록으로 다시 만납니다.
+
+기존 Nuxt 앱(v2)을 **React + Spring Boot(Java 21 LTS) + Supabase**로 재플랫폼한 v3 프로젝트입니다.
+v2는 5인 팀 프로젝트였고, **v3 재플랫폼은 1인 개발** — 설계·구현·리뷰 전 과정을 **Claude Code(AI 에이전트)** 와 협업해 진행합니다.
+
+| | |
+|---|---|
+| 🌐 Frontend | [melolist-v3.vercel.app](https://melolist-v3.vercel.app) (Vercel) |
+| ⚙️ Backend | [melolist-v3.onrender.com](https://melolist-v3.onrender.com) (Render 무료 티어 — 15분 유휴 시 슬립, 콜드스타트 30초+ 유의) |
 
 ---
 
-# 🎤 Dev 개요
+## ✨ 주요 기능
 
-교육 간 제출용 프로젝트
+#### 🔍 음악 검색 (게스트 포함 누구나)
+- **지문(Fingerprint) 검색**: 주변에서 흐르는 음악을 녹음해 인식
+- **허밍(Humming) 검색**: 직접 흥얼거린 멜로디로 인식 — ACRCloud 기반, Top-3 결과 + 매칭률 표시
+- 결과 화면: 커버 아트·유튜브 링크·미리듣기(wavesurfer 파형), 검색 중 취소 확인 시트(녹음 일시정지/재개)
+- 응답 최적화: 저장·기록은 비동기 후처리로 분리 — **허밍 p95 5.7s** (최적화 전 12.4s)
 
--------
+#### 👤 계정 (Google OAuth2 — Supabase Auth)
+- 별도 가입 없이 **로그인 성공 시 프로필 자동 생성(JIT 프로비저닝)**
+- 검색 결과 화면에서 로그인해도 **하던 맥락 그대로 복귀** (결과 화면 복원)
+- 프로필 관리: 별명 수정 + 아바타 업로드(클라 크롭 → Supabase Storage)
 
-## 💿 실행방법
+#### 💾 저장 & 탐색 (로그인)
+- **즐겨찾기 ♡**: 검색 결과·기록에서 토글, `/favorites` 목록
+- **검색 기록**: 조회·삭제 + 기록에서 ♡ 토글·플레이리스트 담기
+- **플레이리스트**: 생성·수정·삭제, 담기 시트(새로 만들고 바로 담기), 순서 편집, 공개/비공개(공개는 게스트도 조회)
+- **Bottom Navigation 4탭**: 홈 · 즐겨찾기 · 플레이리스트 · 기록
 
-#### 1. 프로젝트 클론
-- git clone
-
-- cd Melolist
-
-#### 2. Nuxt 애플리케이션 디렉토리로 이동
-- cd nuxt-app
-
-#### 3. 의존성 설치
-- npm install
-
-#### 4. 개발 서버 실행
-- npm run dev
-
---------
-
-# 🤝 Branch & PR 정책
-
-### 브랜치 구조
-
-- `main`: 운영(배포) / 최종 릴리즈 브랜치
-- `dev`: 통합 브랜치
-- `feature/*`: 개인 작업 브랜치
-
-###  협업 규칙
-
-- `main`: 배포/제출용 안정 브랜치 (직접 push 금지, PR로만 병합)
-- `dev`: 팀 개발 브랜치
-- 기능 단위 개발 시 개인 브랜치(`feature/*`) 생성 권장
-- 개인 브랜치(`feature/*`)에서 작업 후 `dev`로 PR을 생성하고, PR의 Preview URL로 기능을 확인
-
-### 작업 흐름
-
-1. `dev` 브랜치에서 기능 브랜치를 생성합니다.
-   ```bash
-   git checkout dev
-   git pull origin dev
-   git checkout -b feature/your-task
-
-2. 기능 브랜치에서 작업 후 변경사항을 push 합니다.
-
-3. Pull Request를 생성합니다: feature/* → dev
-
-4. Squash 방식으로 병합(Merge)합니다.
-
---------
-
-### 🏃 참여자
-
-- 정진욱
-- 진기성
-- 김은혜
-- 금규환
-- 이원우
-  
---------
-
-### 📌 프로젝트 목적
-
-- 교육 간 학습한 **Vue** 와 **Nuxt.js** 숙달
-- **데이터 설계 → 인증(OAuth) → API → 배포**까지 전 과정을 경험
-- ORM(Prisma)과 MariaDB를 활용한 **관계형 데이터 모델링 및 CRUD 구현**
-
---------
-
-### 🛠️ 기술 스택(Nuxt.js 마이그레이션 완료)                            
-
-| 구분 | 기술/라이브러리 | 버전 | 설명 |
-|---|---|---:|---|
-| **Framework** | Nuxt | ^4.2.2 | Vue 기반 풀스택 프레임워크(SSR/CSR, 파일 기반 라우팅, Nitro 서버) |
-| **UI** | Vue | ^3.5.26 | 컴포넌트 기반 UI |
-| **Routing** | vue-router | ^4.6.4 | (참고) Nuxt 라우팅의 내부 기반 |
-| **Audio** | wavesurfer.js | ^7.12.1 | 오디오 파형 시각화/재생 |
-| **Icons** | @fortawesome/fontawesome-free | ^6.7.2 | 아이콘 폰트 |
-| **Server Utils** | form-data | ^4.0.5 | 서버에서 multipart/form-data 구성(ACRCloud 요청용) |
-| **Dev** | @types/node | ^25.0.9 | Node 타입(IDE/TS 지원) |
-| **DB**   | MariaDB       |    ^12.1.2    | User data, 평가 data 저장                                          |
-| **API**| AcrCloud API       | -  | 음악 Fingerprint 및 Humming 기반 검색 기능 제공, Youtube Metadata API 연동                              |
-
--------
-
-### 📋 주요 기능
-
-#### 1) 회원/인증
-- **비회원도 검색 및 서비스 이용 가능**
-- 단, **평가(Board) 작성/수정/삭제는 로그인 필요**
-- 인증 방식: **OAuth2 (Google, Naver)**
-- 회원가입 정책:
-  - 별도 가입 폼 없이 **OAuth 로그인 성공 시 member 레코드 자동 생성(Just-in-time 가입)**
-
-#### 2) 서비스 평가(Board)
-- 앱/서비스 전반에 대한 평가 기능 제공
-- CRUD:
-  - Create/Update/Delete: 로그인 사용자만 가능
-  - Read: 비회원도 가능(선택)
-- 평가 데이터는 `board` 테이블에 저장, 작성자(`member`)와 연관
-
-#### 3) 평가 유도 UX
-- 비회원에게도 “서비스 평가 참여” UI를 노출하여 **로그인 유도**
-- “나중에” 선택 시 일정 기간 동안 평가 UI 미노출
-  - 비회원: 쿠키/LocalStorage로 제어
-  - 회원: DB에 상태 저장
+#### 📊 측정 기본 탑재
+- 전 화면 이벤트 계측(`event_log`) + KR 지표 산출 SQL(`backend/db/queries/kr_metrics.sql`) + 매칭률 측정 스크립트(`backend/scripts/match-rate/`)
 
 ---
 
-### 🗄️ 데이터 구조(요약)
+## 🛠️ 기술 스택
 
-#### member (회원)
-- OAuth 로그인 시 자동 생성
-- 사용자 식별 및 평가 작성자 관리
+### Frontend (`frontend/`)
 
-#### board (서비스 평가)
-- 앱/서비스에 대한 평가 게시판
-- 작성자(member)와 연관, CRUD 지원
+| 구분 | 기술 | 비고 |
+|---|---|---|
+| Core | React 19 · TypeScript · Vite 8 | SPA, react-router 7 |
+| 상태/데이터 | TanStack Query 5 · Zustand · axios | 서버 상태 캐싱, 인증 스토어 |
+| UI | Tailwind CSS 4 · Radix UI · lucide-react · motion | 자체 디자인 시스템(Flame/Iris 팔레트 + Pretendard) |
+| Audio | wavesurfer.js 7 | 녹음 파형·재생 |
+| Auth | @supabase/supabase-js | Google OAuth → JWT |
+| Lint | oxlint | |
 
-----
+### Backend (`backend/`)
 
-### 🔐 권한 정책
+| 구분 | 기술 | 비고 |
+|---|---|---|
+| Runtime | **Java 21 (LTS)** · Spring Boot 3.5 · Gradle | 도메인 중심 패키지 구조 |
+| Security | Spring Security | Supabase JWT(JWKS) Resource Server 검증 |
+| ORM/DB | Spring Data JPA · Supabase PostgreSQL | 테스트는 H2, Hikari 풀 상한 5(무료 pooler 한도 대응) |
+| 외부 API | ACRCloud (identify + Metadata) | 지문·허밍 인식, 커버·유튜브 링크 보강 |
+| 테스트 | JUnit · Mockito + **acr-mock 프로파일** | ACRCloud 실호출 없이 전 파이프라인 E2E 가능 |
 
-| 기능 | 비회원 | 로그인 |
-|------|--------|--------|
-음악 검색 / 결과 조회 | ✅ | ✅ |
-평가(Board) 조회 | ✅ | ✅ |
-평가(Board) 작성 | ❌ | ✅ |
-평가 수정/삭제 | ❌ | 작성자만 |
+### Infra
+
+- **Supabase** — PostgreSQL · Auth(Google OAuth) · Storage(아바타)
+- **Vercel**(프론트) · **Render**(백엔드 Docker) — GitHub 연동 자동 배포, CI는 backend/frontend 경로 분리
 
 ---
 
-### 🚀 배포 및 운영
+## 💿 실행 방법
 
-- Nuxt 단일 애플리케이션 구조로 배포
-- 외부 API 키 및 보안 정보는 **환경변수(Vercel Environment Variables)** 로 관리
-- 로컬 개발: `.env` 사용 / 운영 환경: Vercel env 사용
+### Backend
 
----
-
-### 📁 프로젝트 디렉토리 구조
-
+```bash
+cd backend
+cp .env.example .env      # Supabase·ACRCloud 키 입력 (커밋 금지)
+./gradlew bootRun          # http://localhost:8080
 ```
 
-Melolist
-├─ LICENSE
-├─ nuxt-app
-│  ├─ app
-│  │  ├─ app.vue
-│  │  ├─ components
-│  │  ├─ composables
-│  │  │  ├─ useAuthTest.js
-│  │  │  └─ useMusicSearch.ts
-│  │  ├─ layouts
-│  │  │  ├─ centered.vue
-│  │  │  └─ default.vue
-│  │  ├─ pages
-│  │  │  ├─ auth
-│  │  │  ├─ boards
-│  │  │  └─ index.vue
-│  │  └─ utils
-│  ├─ docs
-│  │  └─ plantuml
-│  ├─ mocks
-│  │  └─ db
-│  ├─ nuxt.config.ts
-│  ├─ prisma
-│  ├─ server
-│  │  ├─ api
-│  │  │  ├─ auth
-│  │  │  ├─ boards
-│  │  │  ├─ fingerprints.post.ts
-│  │  │  └─ humming.post.ts
-│  │  ├─ plugins
-│  │  │  └─ prisma.ts
-│  │  ├─ services
-│  │  │  └─ musicsearch
-│  │  └─ utils
-│  │     ├─ db.js
-│  │     └─ prisma.ts
-│  └─ tsconfig.json
-└─ README.md
+- JDK 21이 없어도 Gradle toolchain이 자동 프로비저닝합니다.
+- ACRCloud 키 없이 파이프라인을 확인하려면 **acr-mock 프로파일**: `SPRING_PROFILES_ACTIVE=acr-mock` (+ `ACR_MOCK_SCENARIO=hit|nomatch|lowscore|error`)
+- 상세: [backend/README](backend/README.md)
+
+### Frontend
+
+```bash
+cd frontend
+cp .env.example .env.local  # Supabase URL/anon key, API 주소
+npm install
+npm run dev                 # http://localhost:5173
+```
+
+---
+
+## 📁 프로젝트 구조
 
 ```
+Melolist-v3
+├─ backend/          # Spring Boot — 도메인 MVC (auth·user·music·search·playlist·community·event)
+│  ├─ db/            # 마이그레이션 SQL 사본 · KR 지표 쿼리
+│  └─ scripts/       # 매칭률 측정 스크립트 (match-rate)
+├─ frontend/         # React SPA — 검색·즐겨찾기·플레이리스트·기록·프로필
+├─ docs/             # backend-prd · frontend-prd · design-guideline · devlog · git-strategy
+├─ specs/            # spec-kit 명세 (001 Google OAuth2 로그인 등)
+├─ .specify/         # spec-kit constitution(원칙 6종) · 템플릿
+└─ nuxt-app/         # v2(Nuxt) — 레퍼런스로 보존
+```
+
+---
+
+## 🤝 개발 방식
+
+- **1인 개발 + AI 에이전트 협업**: 설계·구현·리뷰·운영 진단 전 과정을 **Claude Code**와 페어로 진행 — spec 명세와 [devlog](docs/devlog.md)로 세션 간 컨텍스트를 유지
+- **Spec-Driven Development**: [spec-kit](https://github.com/github/spec-kit) — constitution(도메인 중심 아키텍처 / 계약 동기화 / 측정 기본 탑재 / 프라이버시·저작권 가드레일 / 게스트 우선 / mock 테스트 가능성) 기반으로 기능별 spec 작성 후 구현
+- **브랜치**: GitHub Flow 단순화 — `main` 단일 + 기능별 `feat/*`·`fix/*`·`chore/*` 브랜치 → PR → CI 통과 후 병합 (상세: [docs/git-strategy.md](docs/git-strategy.md))
+- **문서 위계**: [PRD.md](PRD.md)(제품 요구사항) → [docs/backend-prd.md](docs/backend-prd.md)·[docs/frontend-prd.md](docs/frontend-prd.md)(실행 PRD) → [docs/devlog.md](docs/devlog.md)(개발 일지)
+
+---
+
+## 📜 v2 (Nuxt) — 레거시
+
+교육 과정 제출용으로 진행한 **5인 팀 프로젝트**입니다. Nuxt 4 + Prisma + MariaDB 구성이며, `nuxt-app/`에 레퍼런스로 보존되어 있습니다. (v3 재플랫폼은 위 명시대로 1인 개발로 별도 진행)
+
+- 실행: `cd nuxt-app && npm install && npm run dev`
+- v2 참여자: 정진욱 · 진기성 · 김은혜 · 금규환 · 이원우
