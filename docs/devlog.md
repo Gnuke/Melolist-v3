@@ -8,8 +8,8 @@
   - **useMe** — 조회 성공 시 프로필을 localStorage(`melolist.me`) 사본으로 저장, 다음 진입부터 `placeholderData`로 즉시 렌더(백그라운드 조용히 최신화) + `staleTime` 5분(프로필은 ProfilePage에서만 바뀌고 그땐 setQueryData 직접 반영이라 안전). 계정 가드 `cached.id === session.user.id`(Profile.id는 JWT sub 미러 — UserService.provision 확인) + 로그아웃 시 `clearCachedMe()`(계정 전환 대비).
   - **공용 `ProfileAvatar` 신설**(features/user) — 3곳 중복 렌더 통합. 사진 URL이 있으면 이미지 로드 전에도 **이니셜 대신 iris 원 배경만** 노출 → "이니셜→사진" 교체 자체가 발생하지 않음. 이니셜은 URL이 없을 때만.
   - **ProfilePage** — 별명·사진 수정 반영(applyMe)이 쿼리 캐시와 로컬 사본을 함께 갱신(수정 직후 새로고침에 옛 사진 방지).
-- **검증**: `tsc -b && vite build`·oxlint 통과, 로컬 E2E 사용자 확인(첫 로드 1회 이니셜=사본 없음 정상, 이후 새로고침·탭 이동 무깜빡임). 프론트 전용 변경이라 Render 무관 — Vercel 자동 재배포만.
-- **남은 것**: ①운영 확인 — 깜빡임(두 번째 방문부터) + 07-20 대기분(플레이리스트 전 플로우·기록 ♡/담기·프로필 수정, Render 웜업 후) ②KR1 첫 실측(곡 셋 오디오 준비되면) ③KR2 재확인(meta 4s 이후 데이터).
+- **검증**: `tsc -b && vite build`·oxlint 통과, 로컬 E2E 사용자 확인(첫 로드 1회 이니셜=사본 없음 정상, 이후 새로고침·탭 이동 무깜빡임). 프론트 전용 변경이라 Render 무관 — Vercel 자동 재배포만. ✅**운영 확인 완료(07-22)** — 깜빡임 미감지. 07-20 대기분(플레이리스트 전 플로우·기록 ♡/담기·프로필 수정)도 07-21 운영 실화면 확인 완료 → 운영 확인 전부 종료.
+- **남은 것**: ①KR1 첫 실측(곡 셋 오디오 준비되면) ②KR2 재확인(meta 4s 이후 데이터).
 
 ## 2026-07-20 (2) — Render 배포 실패(exit 1) 진단: Supabase pooler 한도 소진 (PR #13)
 
