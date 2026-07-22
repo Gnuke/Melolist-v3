@@ -61,6 +61,9 @@ public class MusicService {
 
     private Music newMusic(MusicUpsertCommand cmd) {
         Music m = new Music();
+        if (cmd.source() != null) {
+            m.setSource(cmd.source());
+        }
         m.setAcrid(cmd.acrid());
         m.setTitle(cmd.title());
         m.setArtist(cmd.artist());

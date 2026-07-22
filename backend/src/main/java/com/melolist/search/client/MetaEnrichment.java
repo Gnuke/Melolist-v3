@@ -7,4 +7,15 @@ package com.melolist.search.client;
 public record MetaEnrichment(String youtubeVideoId, String coverUrl) {
 
     public static final MetaEnrichment EMPTY = new MetaEnrichment(null, null);
+
+    /** 커버 3단 폴백(§5.2): album.covers.medium → ytimg → null. */
+    public String coverUrlOrFallback() {
+        if (coverUrl != null) {
+            return coverUrl;
+        }
+        if (youtubeVideoId != null) {
+            return "https://i.ytimg.com/vi/" + youtubeVideoId + "/mqdefault.jpg";
+        }
+        return null;
+    }
 }

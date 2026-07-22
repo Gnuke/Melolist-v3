@@ -25,6 +25,18 @@ spring:
       # 검색 오디오 업로드 상한(F1 크기 검증의 서버측 방어선) — 초과 시 400 표준 바디
       max-file-size: 10MB
       max-request-size: 12MB
+  ai:
+    openai:
+      # 키는 서버 env 전용(.env 미추적) — 커밋 금지(원칙 IV). ai-mock 프로파일에선 실호출 없음.
+      # 기본값이 빈 문자열이면 자동설정이 부팅을 거부한다 — ACRCloud 키와 동일하게
+      # "키 없이도 부팅, 실호출 시점에 실패(502)" 동작이 되도록 더미를 둔다.
+      api-key: ${OPENAI_API_KEY:dummy-key-not-set}
+      chat:
+        options:
+          # gpt-5-mini는 2026-12-11 서비스 종료(공식 대체 = gpt-5.4-mini, T030 확인)
+          model: ${AI_MODEL:gpt-5.4-mini}
+          # gpt-5 계열(reasoning)은 temperature 기본값(1)만 허용 — Spring AI 기본 0.7이 실리면 400
+          temperature: 1.0
   security:
     oauth2:
       resourceserver:
@@ -63,6 +75,21 @@ melolist:
       # acr-mock 프로파일 전용 — ACRCloud 실호출 없이 파이프라인 테스트.
       # 활성화: SPRING_PROFILES_ACTIVE=acr-mock · 시나리오: hit | nomatch | lowscore | error
       scenario: ${ACR_MOCK_SCENARIO:hit}
+  ai:
+    # AI 자연어 폴백 검색(spec 002). LLM 호출 컷 10s — meta 4s와 합쳐 프론트 15s 예산 안(SC-003)
+    timeout-ms: 10000
+    # 곡 식별은 지식 인출이라 추론 최소화(지연 절감). gpt-5.4 계열 지원값은
+    # none|low|medium|high|xhigh — 구 gpt-5의 'minimal'은 400(T030 확인).
+    # 비reasoning 모델로 교체 시 AI_REASONING_EFFORT=none 으로 옵션 자체를 끈다.
+    reasoning-effort: ${AI_REASONING_EFFORT:low}
+    quota:
+      # 일일 한도(Asia/Seoul 자정 리셋) — 게스트=세션, 로그인=계정 기준. event_log 카운트로 판정
+      guest-daily: ${AI_QUOTA_GUEST_DAILY:3}
+      user-daily: ${AI_QUOTA_USER_DAILY:10}
+    mock:
+      # ai-mock 프로파일 전용 — OpenAI 실호출 없이 폴백 흐름 E2E.
+      # 활성화: SPRING_PROFILES_ACTIVE=acr-mock,ai-mock · 시나리오: hit | empty | error | slow
+      scenario: ${AI_MOCK_SCENARIO:hit}
 
 management:
   endpoints:

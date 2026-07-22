@@ -161,7 +161,38 @@ multipart(audio) 수신
 // user_id는 JWT가 있으면 서버가 채움. IP는 저장하지 않음(게스트 PII 없음)
 ```
 
-**이벤트 사전 (M2 + spec 001 로그인 계측)**
+**`POST /api/search/text` · `POST /api/search/text/select`** — AI 자연어 폴백 검색(spec 002, ✅2026-07-21 개통). 인증 불요, **X-Session-Id 필수**(게스트 일일 한도 키 — 게스트 3회/로그인 10회, Asia/Seoul 자정 리셋)
+
+```jsonc
+// POST /api/search/text — 요청 { "query": "여자 보컬 드라마 OST, 가사에 '바람'" } (트림 후 2~200자)
+// 200 응답: 검색 결과와 동일 형태의 후보 0~5곡 (저장 없음 — 선택 시점에만 저장)
+{
+  "results": [
+    {
+      "acrid": "ai-3f9a1c2b8d4e7f01",    // ai-<hash16> 결정적 키 — select·즐겨찾기에 그대로 사용
+      "title": "바람이 불어오는 곳",
+      "artists": [{ "name": "김광석" }],
+      "album": { "name": "네 번째" },
+      "release_date": null,               // AI 후보는 항상 null
+      "score": null,                      // AI 후보는 항상 null → 일치율 배지 미표시
+      "youtube_video_id": "…",            // 메타 해석(기존 Metadata API 재사용) 실패 시 null
+      "youtube_url": "…",                 // videoId 파생, null 가능
+      "cover_url": "…"                    // 핫링크, null 가능
+    }
+  ]
+}
+// 무후보: 200 + { "results": [] } (오류 아님 — 단서 보완 안내 UX)
+// 400: 길이 위반 = VALIDATION_ERROR(기존 규약) · 429: AI_QUOTA_EXCEEDED + details { limit, reset_at }
+// 502: EXTERNAL_API_ERROR (LLM 실패·10s 컷) — 프론트는 F4 패턴 재시도
+
+// POST /api/search/text/select — 후보 선택 확정(유일한 저장 시점: music upsert(acrid=ai-key,
+// source=AI) + 로그인 시 search_history(TEXT/MATCHED) + ai_search_select 계측)
+// 요청 { "candidate": { …위 results[i] 그대로… }, "rank": 1 }  (rank 1~5)
+// 200: MusicResponse { id, title, artist, album, release_date, youtube_video_id, youtube_url, cover_url, duration_ms }
+// 400: acrid 재계산 불일치(위조) = BAD_REQUEST · 이후 즐겨찾기는 기존 POST /favorites(acrid=ai-key) 무변경
+```
+
+**이벤트 사전 (M2 + spec 001 로그인 계측 + spec 002 AI 폴백)**
 
 | type | 기록 주체 | properties |
 |---|---|---|
@@ -174,6 +205,10 @@ multipart(audio) 수신
 | `login_started` | 프론트 | `provider` — 로그인 버튼 클릭(OAuth 리다이렉트 직전) |
 | `login_succeeded` | 프론트 | `provider` — OAuth 복귀 후 세션 확인 시 |
 | `login_failed` | 프론트 | `provider`, `reason`(cancelled\|error), `error_code` — 사용자 취소는 `cancelled`(SC-002 산출 시 제외) |
+| `ai_fallback_open` | 프론트 | `from`(no_match\|mismatch) — 폴백 진입점 탭(spec 002 SC-001 분자) |
+| `ai_search_request` | **서버 전용** | `query_len`, `ai_ms`, `meta_ms`, `total_ms`, `candidates`, `outcome`(hit\|empty\|error\|quota) — **일일 한도 판정 원천**(outcome=quota는 카운트 제외) |
+| `ai_search_select` | **서버 전용** (select 처리 중 기록) | `rank`(1~5), `ai_key`, `resolved`(videoId 해석 성공 여부) — 채택률(SC-002) 원천 |
+| `ai_search_cancel` | 프론트 | `elapsed_ms` — 폴백 검색 중 취소(AbortController) |
 
 ### 6.2 전체 API — 마일스톤 매핑 (경로·의미는 PRD §7 유지)
 
@@ -186,7 +221,8 @@ multipart(audio) 수신
 | music | `GET /music/{id}`, `GET /music?query=` (로컬 캐시 검색) | M3 |
 | playlist | CRUD + tracks + reorder | M3 |
 | community | reviews(1인1건·409)/favorites/comments/공개 탐색 | ✅M3 favorites 실저장 개통(2026-07-16) — `POST /favorites`는 `music_id` **또는 `acrid`**(검색 결과 화면엔 musicId가 없음 — upsert 비동기라 404 시 클라 1회 재시도) 수용, 저장 행(`{id, music, created_at}`)을 반환(해제 DELETE에 music.id 사용). 나머지는 M4 |
-| recommendation | `/recommendations/*`, `/ai/chat`, `POST /search/text` | M5 |
+| search | `POST /search/text`·`/text/select` (AI 자연어 폴백 — spec 002) | ✅**M5 선행 개통(2026-07-21)** — §6.2의 recommendation 예정분을 search 도메인으로 이관 확정. Spring AI+OpenAI(gpt-5-mini, env 교체), 후보는 선택 시에만 저장(acrid=`ai-<hash16>`, source=AI), 게스트 3/로그인 10회 일일 한도 |
+| recommendation | `/recommendations/*`, `/ai/chat` | M5 |
 
 ---
 

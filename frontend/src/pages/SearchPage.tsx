@@ -14,6 +14,7 @@ import { LiveWaveform } from '@/features/search/LiveWaveform'
 import { PlaybackCard } from '@/features/search/PlaybackCard'
 import { ResultsView } from '@/features/search/ResultsView'
 import { FailureView } from '@/features/search/FailureView'
+import { FallbackSearchView } from '@/features/search/FallbackSearchView'
 import { FavoriteSheet } from '@/features/search/FavoriteSheet'
 import { QuitConfirmSheet } from '@/features/search/QuitConfirmSheet'
 import { addRecentFind } from '@/features/search/recentFinds'
@@ -40,6 +41,8 @@ type Phase =
   | { name: 'failure'; kind: 'F2' }
   | { name: 'failure'; kind: 'F4' }
   | { name: 'failure'; kind: 'MIC'; message: string }
+  // spec 002 AI 자연어 폴백 — back은 오매칭(mismatch) 진입 시 복귀할 원래 결과
+  | { name: 'fallback'; from: 'no_match' | 'mismatch'; back: { results: AcrResult[]; lowScore: boolean } | null }
 
 function formatElapsed(s: number): string {
   const m = Math.floor(s / 60)
@@ -203,6 +206,22 @@ function SearchFlow({ mode }: { mode: SearchType }) {
     else reRecord()
   }, [runSearch, reRecord])
 
+  // spec 002: AI 폴백 진입(미매칭 F2 / 오매칭 결과 화면) — 진입 계측은 클라 책임(FR-009)
+  const openFallback = useCallback((from: 'no_match' | 'mismatch', back: { results: AcrResult[]; lowScore: boolean } | null) => {
+    track('ai_fallback_open', { from })
+    setPhase({ name: 'fallback', from, back })
+  }, [])
+
+  // 폴백에서 뒤로 — 오매칭 진입이면 원래 결과 복원(US2 AS-2), 미매칭 진입이면 F2로
+  const closeFallback = useCallback(() => {
+    setPhase((p) => {
+      if (p.name !== 'fallback') return p
+      return p.back
+        ? { name: 'results', results: p.back.results, lowScore: p.back.lowScore, restored: true }
+        : { name: 'failure', kind: 'F2' }
+    })
+  }, [])
+
   // 취소 확정 공통 — 이 검색 시도를 접고 홈(검색 시작 화면)으로 나간다
   const quitToHome = useCallback(() => {
     setQuitSheet(null)
@@ -298,11 +317,12 @@ function SearchFlow({ mode }: { mode: SearchType }) {
           type="button"
           variant="ghost"
           size="sm"
-          // 녹음이 진행 중일 땐 바로 나가지 않고 일시정지 + 확인 시트를 거친다
-          onClick={isRecordingScreen ? askQuitRecording : () => navigate('/')}
+          // 녹음 중=일시정지+확인 시트 / 폴백=진입 전 화면 복귀 / 그 외=홈
+          onClick={isRecordingScreen ? askQuitRecording : phase.name === 'fallback' ? closeFallback : () => navigate('/')}
           className="-ml-2 rounded-full text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft /> {isRecordingScreen || phase.name === 'confirm' ? '취소' : '홈'}
+          <ChevronLeft />{' '}
+          {isRecordingScreen || phase.name === 'confirm' ? '취소' : phase.name === 'fallback' ? '뒤로' : '홈'}
         </Button>
       </header>
 
@@ -502,7 +522,22 @@ function SearchFlow({ mode }: { mode: SearchType }) {
               savedAcrids={savedAcridSet}
               onRetrySame={retrySame}
               onReRecord={reRecord}
+              onFallback={() => openFallback('mismatch', { results: phase.results, lowScore: phase.lowScore })}
             />
+          </motion.section>
+        )}
+
+        {/* ── AI 자연어 폴백 (spec 002) ── */}
+        {phase.name === 'fallback' && (
+          <motion.section
+            key="fallback"
+            className="flex flex-1 flex-col"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <FallbackSearchView onFavorite={onFavorite} savedAcrids={savedAcridSet} onBack={closeFallback} />
           </motion.section>
         )}
 
@@ -538,9 +573,14 @@ function SearchFlow({ mode }: { mode: SearchType }) {
                   mode === 'fingerprint'
                     ? [
                         { label: '허밍으로 시도', onClick: () => navigate('/search/humming'), primary: true },
+                        { label: '말로 설명해서 찾기', onClick: () => openFallback('no_match', null) },
                         { label: '다시 녹음', onClick: reRecord },
                       ]
-                    : [{ label: '다시 녹음', onClick: reRecord, primary: true }]
+                    : [
+                        // 허밍 미매칭 = 폴백의 핵심 진입점(spec 002 US1) — ACR 허밍 커버리지 한계의 구제 경로
+                        { label: '말로 설명해서 찾기', onClick: () => openFallback('no_match', null), primary: true },
+                        { label: '다시 녹음', onClick: reRecord },
+                      ]
                 }
               />
             )}

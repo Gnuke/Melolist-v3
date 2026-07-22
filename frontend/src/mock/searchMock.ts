@@ -19,6 +19,16 @@ export const MOCK_SEARCH_ENABLED = false
  */
 export const MOCK_SCENARIO: 'hit' | 'nomatch' | 'lowscore' | 'error' = 'hit'
 
+/**
+ * AI 폴백(spec 002) mock 시나리오 — 백엔드 ai-mock 프로파일(AI_MOCK_SCENARIO)과 같은 체계.
+ * - 'hit'   : 후보 3곡 (링크 있음/없음 케이스 혼합)
+ * - 'empty' : 무후보 → 단서 보완 안내(US3)
+ * - 'error' : 502 상당 → 오류 + 재시도
+ * - 'quota' : 429 일일 한도 초과 화면
+ * - 'slow'  : 16s 지연 → 클라 15s 타임아웃 확인
+ */
+export const MOCK_TEXT_SCENARIO: 'hit' | 'empty' | 'error' | 'quota' | 'slow' = 'hit'
+
 /** 실제 인식 지연 흉내 (스켈레톤 확인용) */
 const LATENCY_MS = 1200
 
@@ -87,6 +97,63 @@ const HUMMING_LOW: AcrResult[] = [
 ]
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** AI 폴백 후보 — acrid는 백엔드 ai-key 형태(`ai-` + 16 hex)를 흉내낸다 */
+const AI_CANDIDATES: AcrResult[] = [
+  { ...GOOD_DAY, acrid: 'ai-1111aaaa2222bbbb', score: null, release_date: null },
+  { ...DITTO, acrid: 'ai-3333cccc4444dddd', score: null, release_date: null },
+  {
+    acrid: 'ai-5555eeee6666ffff',
+    title: '밤편지',
+    artists: [{ name: '아이유' }],
+    album: { name: 'Palette' },
+    release_date: null,
+    score: null,
+    cover_url: null, // videoId도 없음 → 링크 없이 표시(FR-004) 확인용
+  },
+]
+
+/** mock 비활성 시 null 반환 → 호출부가 실제 API로 진행 */
+export async function maybeMockTextSearch(): Promise<AcrResult[] | null> {
+  if (!MOCK_SEARCH_ENABLED) return null
+
+  switch (MOCK_TEXT_SCENARIO) {
+    case 'slow':
+      await delay(16_000)
+      return AI_CANDIDATES
+    case 'empty':
+      await delay(LATENCY_MS)
+      return []
+    case 'error':
+      await delay(LATENCY_MS)
+      throw new Error('mock ai upstream error') // 화면에는 노출되지 않아야 한다(F4 규칙)
+    case 'quota': {
+      await delay(300)
+      // axios 429 형태를 흉내 — FallbackSearchView의 한도 분기 확인용
+      const err = new Error('mock quota exceeded') as Error & {
+        isAxiosError: boolean
+        response: { status: number; data: { code: string; details: { limit: number; reset_at: string } } }
+      }
+      err.isAxiosError = true
+      err.response = {
+        status: 429,
+        data: { code: 'AI_QUOTA_EXCEEDED', details: { limit: 3, reset_at: new Date(Date.now() + 86_400_000).toISOString() } },
+      }
+      throw err
+    }
+    case 'hit':
+    default:
+      await delay(LATENCY_MS)
+      return AI_CANDIDATES
+  }
+}
+
+/** AI 폴백 선택 확정 mock — 저장된 music id 흉내 */
+export async function maybeMockTextSelect(): Promise<{ id: number } | null> {
+  if (!MOCK_SEARCH_ENABLED) return null
+  await delay(300)
+  return { id: 999_001 }
+}
 
 /** mock 비활성 시 null 반환 → 호출부가 실제 API로 진행 */
 export async function maybeMockRecognize(type: SearchType): Promise<AcrResult[] | null> {
