@@ -33,7 +33,8 @@ spring:
       api-key: ${OPENAI_API_KEY:dummy-key-not-set}
       chat:
         options:
-          model: ${AI_MODEL:gpt-5-mini}
+          # gpt-5-mini는 2026-12-11 서비스 종료(공식 대체 = gpt-5.4-mini, T030 확인)
+          model: ${AI_MODEL:gpt-5.4-mini}
           # gpt-5 계열(reasoning)은 temperature 기본값(1)만 허용 — Spring AI 기본 0.7이 실리면 400
           temperature: 1.0
   security:
@@ -77,9 +78,10 @@ melolist:
   ai:
     # AI 자연어 폴백 검색(spec 002). LLM 호출 컷 10s — meta 4s와 합쳐 프론트 15s 예산 안(SC-003)
     timeout-ms: 10000
-    # gpt-5 계열 전용 — 곡 식별은 지식 인출이라 추론 최소화(지연 절감). 비reasoning 모델로
-    # 교체 시 AI_REASONING_EFFORT=none 으로 옵션 자체를 끈다.
-    reasoning-effort: ${AI_REASONING_EFFORT:minimal}
+    # 곡 식별은 지식 인출이라 추론 최소화(지연 절감). gpt-5.4 계열 지원값은
+    # none|low|medium|high|xhigh — 구 gpt-5의 'minimal'은 400(T030 확인).
+    # 비reasoning 모델로 교체 시 AI_REASONING_EFFORT=none 으로 옵션 자체를 끈다.
+    reasoning-effort: ${AI_REASONING_EFFORT:low}
     quota:
       # 일일 한도(Asia/Seoul 자정 리셋) — 게스트=세션, 로그인=계정 기준. event_log 카운트로 판정
       guest-daily: ${AI_QUOTA_GUEST_DAILY:3}

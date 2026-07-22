@@ -71,7 +71,7 @@ class TextSearchServiceTest {
 
     @BeforeEach
     void setUp() {
-        AiProperties props = new AiProperties(10_000, "minimal", new AiProperties.Quota(3, 10));
+        AiProperties props = new AiProperties(10_000, "low", new AiProperties.Quota(3, 10));
         textSearchService = new TextSearchService(
                 aiSongFinderClient, acrMetadataClient, aiQuotaService, props,
                 musicService, userService, eventService, searchHistoryRepository);

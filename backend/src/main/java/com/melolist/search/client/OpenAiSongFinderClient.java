@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Spring AI ChatClient 기반 곡 후보 식별(spec 002, R1·R2).
- * 모델·키는 {@code spring.ai.openai.*} 바인딩(기본 gpt-5-mini, env 교체 가능).
+ * 모델·키는 {@code spring.ai.openai.*} 바인딩(기본 gpt-5.4-mini, env 교체 가능).
  * 구조화 출력(entity 바인딩)으로 JSON 파싱을 Spring AI에 위임한다.
  */
 @Component

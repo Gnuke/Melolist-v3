@@ -11,8 +11,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 public record AiProperties(
         /* LLM 호출 컷(R7) — meta 4s와 합쳐 프론트 15s 예산 안(SC-003) */
         @DefaultValue("10000") int timeoutMs,
-        /* gpt-5 계열 reasoning 강도. "none"이면 옵션 자체를 보내지 않는다(비reasoning 모델용) */
-        @DefaultValue("minimal") String reasoningEffort,
+        /* reasoning 강도(gpt-5.4 계열: none~xhigh). "none"이면 옵션 자체를 보내지 않는다(비reasoning 모델용) */
+        @DefaultValue("low") String reasoningEffort,
         @DefaultValue Quota quota
 ) {
     /** 일일 한도(Asia/Seoul 자정 리셋) — 게스트=세션, 로그인=계정 기준(R6). */
