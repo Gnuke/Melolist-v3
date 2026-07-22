@@ -63,6 +63,10 @@ public class Music {
     @Column(nullable = false, length = 20)
     private String source = "ACRCLOUD";
 
+    /** 관리자 수동 정정 표시 — true면 자동 보강(fillMissing)이 이 곡을 덮어쓰지 않는다(spec 003 FR-007). */
+    @Column(name = "meta_locked", nullable = false)
+    private boolean metaLocked = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
