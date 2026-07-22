@@ -38,8 +38,9 @@ export function track(type: EventType, properties: Record<string, unknown> = {})
 
 const VISITED_KEY = 'melolist.visited'
 
-/** visit은 세션당 정확히 1회 (KR3 분모). */
+/** visit은 세션당 정확히 1회 (KR3 분모). 어드민 진입은 지표 오염 방지를 위해 계측하지 않는다(spec 003 FR-012 — 마킹도 남기지 않아 이후 일반 화면 방문은 정상 집계). */
 export function trackVisitOnce(): void {
+  if (window.location.pathname.startsWith('/admin')) return
   if (sessionStorage.getItem(VISITED_KEY)) return
   sessionStorage.setItem(VISITED_KEY, '1')
   track('visit', {

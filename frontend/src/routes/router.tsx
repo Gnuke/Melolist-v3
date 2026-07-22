@@ -33,4 +33,15 @@ export const router = createBrowserRouter([
   },
   { path: '/search/:mode', element: <SearchPage /> },
   { path: '/login', element: <LoginPage /> },
+  {
+    // 어드민(spec 003) — URL 직접 접근 전용(앱 내 진입점 없음), lazy로 청크 분리해
+    // 일반 사용자 번들 무영향. 접근 가드는 AdminLayout이 수행.
+    path: '/admin',
+    lazy: async () => ({ Component: (await import('@/pages/admin/AdminLayout')).AdminLayout }),
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('@/pages/admin/AdminDashboardPage')).AdminDashboardPage }) },
+      { path: 'music', lazy: async () => ({ Component: (await import('@/pages/admin/AdminMusicPage')).AdminMusicPage }) },
+      { path: 'users', lazy: async () => ({ Component: (await import('@/pages/admin/AdminUsersPage')).AdminUsersPage }) },
+    ],
+  },
 ])
