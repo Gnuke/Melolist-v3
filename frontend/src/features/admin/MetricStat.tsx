@@ -17,7 +17,7 @@ export function MetricStat({
   pass?: boolean
 }) {
   return (
-    <div className="rounded-2xl border border-white/7 bg-card/60 p-4">
+    <div className="rounded-2xl border border-border bg-card/60 p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-muted-foreground">{label}</p>
         {pass !== undefined && value !== null && (

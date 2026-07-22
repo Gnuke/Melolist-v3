@@ -57,7 +57,7 @@ export function CoverArt({ coverUrl, videoId, alt = '', className }: Props) {
         </div>
       )}
       {/* DS: 커버는 1px 내부 헤어라인 */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-inset ring-white/10" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-inset ring-foreground/10" />
     </div>
   )
 }

@@ -31,10 +31,12 @@ export function PlaybackCard({ url }: Props) {
     const audioEl = audioRef.current
     if (!url || !container || !audioEl) return
 
+    // 캔버스 렌더라 CSS 변수를 직접 못 쓴다 — 마운트 시점 테마의 --tick을 읽어 사용
+    const tick = getComputedStyle(document.documentElement).getPropertyValue('--tick').trim()
     const ws = WaveSurfer.create({
       container,
       media: audioEl,
-      waveColor: '#3a3a42', // ink-600
+      waveColor: tick || '#3a3a42',
       progressColor: '#8b7cff', // iris-400 — 인식 순간의 트레일
       cursorColor: '#ab9fff',
       barWidth: 2,
@@ -66,7 +68,7 @@ export function PlaybackCard({ url }: Props) {
   }, [url])
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-card p-4">
+    <div className="flex flex-col gap-3 rounded-2xl border border-input bg-card p-4">
       <div className="flex items-center gap-3">
         {/* DS: 플레이 버튼만 flame + 글로우를 가진다 */}
         <motion.button

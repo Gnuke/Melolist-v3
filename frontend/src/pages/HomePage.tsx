@@ -88,7 +88,7 @@ export function HomePage() {
           <Link to="/search/humming" className="group block focus-visible:outline-none">
             <motion.div
               whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-4 rounded-2xl border border-white/8 bg-card p-5 transition-colors group-hover:bg-accent group-focus-visible:ring-[3px] group-focus-visible:ring-ring/60"
+              className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 transition-colors group-hover:bg-accent group-focus-visible:ring-[3px] group-focus-visible:ring-ring/60"
             >
               <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-iris/15">
                 <AudioLines className="size-6 text-iris-soft" />
@@ -117,12 +117,12 @@ export function HomePage() {
                     href={f.youtubeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group rounded-xl border border-white/7 bg-card/60 p-2.5 transition-colors hover:bg-accent"
+                    className="group rounded-xl border border-border bg-card/60 p-2.5 transition-colors hover:bg-accent"
                   >
                     <RecentFindBody f={f} />
                   </a>
                 ) : (
-                  <div key={f.key} className="rounded-xl border border-white/7 bg-card/60 p-2.5">
+                  <div key={f.key} className="rounded-xl border border-border bg-card/60 p-2.5">
                     <RecentFindBody f={f} />
                   </div>
                 ),

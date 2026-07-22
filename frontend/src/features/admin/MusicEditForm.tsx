@@ -86,7 +86,7 @@ export function MusicEditForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-      <div className="rounded-xl bg-white/4 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
+      <div className="rounded-xl bg-foreground/4 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
         <p>
           id <span className="font-semibold text-foreground/80">{item.id}</span> · 출처{' '}
           <span className="font-semibold text-foreground/80">{item.source}</span>
@@ -104,9 +104,9 @@ export function MusicEditForm({
             disabled={pending}
             onChange={(e) => setValues((v) => ({ ...v, [field.name]: e.target.value }))}
             className={cn(
-              'h-10 rounded-xl border bg-white/4 px-3 text-sm font-medium outline-none transition-colors',
+              'h-10 rounded-xl border bg-foreground/4 px-3 text-sm font-medium outline-none transition-colors',
               'placeholder:text-muted-foreground/60 focus:border-ring/60',
-              errors[field.name] ? 'border-destructive/60' : 'border-white/10',
+              errors[field.name] ? 'border-destructive/60' : 'border-input',
             )}
           />
           {errors[field.name] && <span className="text-[11px] font-medium text-destructive">{errors[field.name]}</span>}

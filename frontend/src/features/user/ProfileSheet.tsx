@@ -64,13 +64,13 @@ export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
             onClick={onClose}
           />
           <motion.div
-            className="relative w-full max-w-md rounded-t-[24px] border-t border-white/10 bg-card px-6 pb-8 pt-3"
+            className="relative w-full max-w-md rounded-t-[24px] border-t border-input bg-card px-6 pb-8 pt-3"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 380, damping: 36 }}
           >
-            <div className="mx-auto mb-5 h-1 w-9 rounded-full bg-white/15" />
+            <div className="mx-auto mb-5 h-1 w-9 rounded-full bg-foreground/15" />
             <div className="flex items-center gap-3.5">
               <ProfileAvatar avatarUrl={me?.avatarUrl} label={label} className="size-11 text-[17px]" />
               <div className="min-w-0">

@@ -73,14 +73,14 @@ export function AdminUsersPage() {
           ))}
         </div>
       ) : query.isError ? (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/7 bg-card/60 py-16 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card/60 py-16 text-center">
           <p className="text-sm text-muted-foreground">목록을 불러오지 못했어요</p>
           <Button type="button" variant="outline" onClick={() => query.refetch()} className="rounded-full px-6 font-semibold">
             다시 시도
           </Button>
         </div>
       ) : items.length === 0 ? (
-        <p className="rounded-2xl border border-white/7 bg-card/60 py-16 text-center text-sm text-muted-foreground">
+        <p className="rounded-2xl border border-border bg-card/60 py-16 text-center text-sm text-muted-foreground">
           아직 가입한 사용자가 없어요
         </p>
       ) : (
@@ -155,7 +155,7 @@ function UserRow({
   const joined = new Date(u.created_at).toLocaleDateString('ko-KR')
 
   return (
-    <li className="flex flex-wrap items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5">
+    <li className="flex flex-wrap items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-[14px] font-bold">
@@ -165,7 +165,7 @@ function UserRow({
           <span
             className={cn(
               'flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold',
-              u.role === 'ADMIN' ? 'bg-success/15 text-success' : 'bg-white/6 text-muted-foreground',
+              u.role === 'ADMIN' ? 'bg-success/15 text-success' : 'bg-foreground/6 text-muted-foreground',
             )}
           >
             {u.role === 'ADMIN' && <ShieldCheck className="size-3" />}

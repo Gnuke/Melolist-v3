@@ -45,7 +45,7 @@ export function RecognitionRing({ levelRef, getProgress, active, children }: Pro
         const scale = 0.22 + level * wobble * 0.78
         el.style.transform = `rotate(${angle}deg) translateY(-${BAR_RADIUS}px) scaleY(${scale.toFixed(3)})`
         el.style.background =
-          i < head ? 'var(--iris-400)' : i === head ? 'var(--flame-500)' : 'var(--ink-600)'
+          i < head ? 'var(--iris-400)' : i === head ? 'var(--flame-500)' : 'var(--tick)'
       }
     }
     tick()
@@ -73,7 +73,7 @@ export function RecognitionRing({ levelRef, getProgress, active, children }: Pro
             }}
             className="absolute left-1/2 top-1/2 -ml-[1.5px] -mt-[17px] h-[34px] w-[3px] rounded-full"
             style={{
-              background: 'var(--ink-600)',
+              background: 'var(--tick)',
               transform: `rotate(${(i / BAR_COUNT) * 360}deg) translateY(-${BAR_RADIUS}px) scaleY(0.25)`,
             }}
           />
@@ -82,9 +82,9 @@ export function RecognitionRing({ levelRef, getProgress, active, children }: Pro
 
       {/* 코어 */}
       <div
-        className="relative z-10 flex size-32 flex-col items-center justify-center gap-1 rounded-full border border-white/10"
+        className="relative z-10 flex size-32 flex-col items-center justify-center gap-1 rounded-full border border-input"
         style={{
-          background: 'linear-gradient(165deg, var(--ink-800), var(--ink-900))',
+          background: 'linear-gradient(165deg, var(--popover), var(--muted))',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 48px rgba(0,0,0,0.55)',
         }}
       >

@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0a0a0c" />
     <title>Melolist</title>
+    <!-- 테마 부트스트랩: 기본 다크, 저장된 선택이 light면 첫 페인트 전에 전환 (키는 src/lib/theme.ts와 동일) -->
+    <script>
+      try {
+        if (localStorage.getItem('melolist.theme') === 'light') {
+          document.documentElement.classList.remove('dark')
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#faf7f4')
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

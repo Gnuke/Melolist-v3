@@ -90,7 +90,7 @@ export function PlaylistsPage() {
       {loading ? (
         <div className="mt-5 flex flex-col gap-2.5">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5">
+            <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5">
               <Skeleton className="size-14 shrink-0 rounded-[10px]" />
               <div className="flex w-full flex-col gap-2">
                 <Skeleton className="h-4 w-3/5" />
@@ -157,12 +157,12 @@ function PlaylistRow({ p }: { p: PlaylistSummary }) {
     <motion.li variants={itemVariants} layout>
       <Link
         to={`/playlists/${p.id}`}
-        className="flex items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5 transition-colors hover:bg-card"
+        className="flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5 transition-colors hover:bg-card"
       >
         {p.cover_url ? (
           <span className="relative size-14 shrink-0 overflow-hidden rounded-[10px] bg-secondary">
             <img src={p.cover_url} alt="" loading="lazy" className="size-full object-cover" />
-            <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-inset ring-white/10" />
+            <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-inset ring-foreground/10" />
           </span>
         ) : (
           <span className="flex size-14 shrink-0 items-center justify-center rounded-[10px] bg-secondary text-muted-foreground/60">

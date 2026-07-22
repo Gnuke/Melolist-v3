@@ -91,14 +91,14 @@ export function AdminMusicPage() {
                 value={queryText}
                 onChange={(e) => setQueryText(e.target.value)}
                 placeholder="제목·아티스트 검색"
-                className="h-9 w-56 rounded-full border border-white/10 bg-white/4 pl-9 pr-4 text-[13px] font-medium outline-none placeholder:text-muted-foreground/60 focus:border-ring/60"
+                className="h-9 w-56 rounded-full border border-input bg-foreground/4 pl-9 pr-4 text-[13px] font-medium outline-none placeholder:text-muted-foreground/60 focus:border-ring/60"
               />
             </div>
             <Button type="submit" variant="outline" size="sm" className="rounded-full px-4 font-semibold">
               검색
             </Button>
           </form>
-          <div className="flex items-center gap-1 rounded-full border border-white/7 bg-card/60 p-1">
+          <div className="flex items-center gap-1 rounded-full border border-border bg-card/60 p-1">
             {MISSING_FILTERS.map((f) => (
               <button
                 key={f.value}
@@ -123,14 +123,14 @@ export function AdminMusicPage() {
           ))}
         </div>
       ) : query.isError ? (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/7 bg-card/60 py-16 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card/60 py-16 text-center">
           <p className="text-sm text-muted-foreground">목록을 불러오지 못했어요</p>
           <Button type="button" variant="outline" onClick={() => query.refetch()} className="rounded-full px-6 font-semibold">
             다시 시도
           </Button>
         </div>
       ) : items.length === 0 ? (
-        <p className="rounded-2xl border border-white/7 bg-card/60 py-16 text-center text-sm text-muted-foreground">
+        <p className="rounded-2xl border border-border bg-card/60 py-16 text-center text-sm text-muted-foreground">
           조건에 맞는 곡이 없어요
         </p>
       ) : (
@@ -168,7 +168,7 @@ export function AdminMusicPage() {
             )}
           </div>
 
-          <aside className="rounded-2xl border border-white/7 bg-card/60 p-5 lg:sticky lg:top-6">
+          <aside className="rounded-2xl border border-border bg-card/60 p-5 lg:sticky lg:top-6">
             {selected ? (
               <>
                 <h3 className="mb-4 text-[15px] font-extrabold tracking-tight">곡 정보 수정</h3>
@@ -200,7 +200,7 @@ function MusicRow({ m, selected, onSelect }: { m: MusicAdminItem; selected: bool
       onClick={onSelect}
       className={cn(
         'flex w-full items-center gap-3.5 rounded-2xl border p-3 text-left transition-colors',
-        selected ? 'border-ring/50 bg-accent/60' : 'border-white/7 bg-card/60 hover:bg-accent/40',
+        selected ? 'border-ring/50 bg-accent/60' : 'border-border bg-card/60 hover:bg-accent/40',
       )}
     >
       <CoverArt coverUrl={m.cover_url} videoId={m.youtube_video_id ?? undefined} alt={m.title} className="size-12" />

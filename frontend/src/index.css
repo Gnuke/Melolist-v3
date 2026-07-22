@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* 다크 기본 (index.html에 class="dark") */
+/* 다크 기본 (index.html에 class="dark") — 라이트는 localStorage 'melolist.theme' 토글(src/lib/theme.ts) */
 @custom-variant dark (&:is(.dark *));
 
 /* ---- 디자인 토큰 ----
@@ -41,7 +41,7 @@
 
   --radius: 1rem;
 
-  /* 라이트(웜 크림) — 향후 토글용, 앱 기본은 다크 */
+  /* 라이트(웜 크림) — 프로필 화면 테마 토글로 진입, 앱 기본은 다크 */
   --background: #faf7f4;
   --foreground: #17120e;
   --card: #ffffff;
@@ -61,6 +61,8 @@
   --border: rgba(30, 20, 12, 0.1);
   --input: rgba(30, 20, 12, 0.12);
   --ring: var(--flame-600);
+  /* 비활성 게이지 눈금·파형 트랙 — 다크의 ink-600에 대응하는 은은한 대비 */
+  --tick: rgba(30, 20, 12, 0.18);
 
   --brand: var(--flame-500);
   --brand-hover: var(--flame-400);
@@ -90,6 +92,7 @@
   --border: rgba(255, 255, 255, 0.07);
   --input: rgba(255, 255, 255, 0.11);
   --ring: var(--flame-400);
+  --tick: var(--ink-600);
 
   --brand: var(--flame-500);
   --brand-hover: var(--flame-400);
