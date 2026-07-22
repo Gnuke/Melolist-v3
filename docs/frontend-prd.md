@@ -158,6 +158,7 @@ export interface AcrResult {
 
 - 엔드포인트: `POST /api/search/fingerprint`·`/humming` (multipart `audio`), `POST /api/events`
 - **AI 자연어 폴백(spec 002, ✅07-21)**: `POST /api/search/text` `{query}`(2~200자) → `{results: AcrResult[0..5]}` / `POST /api/search/text/select` `{candidate, rank}` → 저장된 곡(MusicResponse). X-Session-Id 필수(게스트 일일 한도 3회·로그인 10회). 429 = `AI_QUOTA_EXCEEDED`(details.limit·reset_at 안내), 502 = F4 패턴 재시도. **선택 확정이 유일한 저장 시점** — ♡는 선택 후에만 동작(선행 select), 클라 계측은 `ai_fallback_open`·`ai_search_cancel` 2종
+- **어드민(spec 003, ✅07-22)**: `/admin` 전용 화면(지표 대시보드·곡 카탈로그·사용자 관리)의 소비 계약은 **정본 `specs/003-admin-page-front/contracts/admin-api.md` 참조**(ADMIN 전용이라 본 절 공용 계약에 비전개). 인가는 기존 `GET /users/me`의 `role` 재사용(별도 API 없음), 비관리자·비로그인은 홈 조용 리다이렉트(R5 — 존재 비노출, 앱 내 진입점 0·URL 직접 진입 전용), 어드민 화면은 이벤트 계측 제외(FR-012 — KR3 오염 방지)
 - 오류 응답은 표준 바디 `{code, message, details}` — 화면에는 정제된 카피만, `message` 직접 렌더 금지 (F4)
 - 인증: Supabase 세션 JWT를 Axios 인터셉터로 첨부(비로그인 시 생략 — 검색·이벤트는 인증 불요)
 
