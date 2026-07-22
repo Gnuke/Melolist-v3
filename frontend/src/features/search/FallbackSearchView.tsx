@@ -164,7 +164,7 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack }: Props) {
               onChange={(e) => setQuery(e.target.value.slice(0, MAX_LEN))}
               rows={4}
               placeholder={"예) 여자 보컬 드라마 OST였고\n가사에 '바람'이 들어가요"}
-              className="w-full resize-none rounded-2xl border border-white/10 bg-card p-4 text-[15px] leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full resize-none rounded-2xl border border-input bg-card p-4 text-[15px] leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <span className="self-end text-xs tabular-nums text-muted-foreground">
               {trimmed.length}/{MAX_LEN}
@@ -193,7 +193,7 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack }: Props) {
           </div>
           <div className="flex flex-col gap-2.5">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5">
+              <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5">
                 <Skeleton className="size-14 shrink-0 rounded-[10px]" />
                 <div className="flex w-full flex-col gap-2">
                   <Skeleton className="h-4 w-3/5" />
@@ -233,7 +233,7 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack }: Props) {
                   className={
                     selected
                       ? 'flex items-center gap-3.5 rounded-2xl border border-iris/40 bg-card p-3.5'
-                      : 'flex items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5'
+                      : 'flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5'
                   }
                 >
                   <button
