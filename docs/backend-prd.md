@@ -221,7 +221,8 @@ multipart(audio) 수신
 | music | `GET /music/{id}`, `GET /music?query=` (로컬 캐시 검색) | M3 |
 | playlist | CRUD + tracks + reorder | M3 |
 | community | reviews(1인1건·409)/favorites/comments/공개 탐색 | ✅M3 favorites 실저장 개통(2026-07-16) — `POST /favorites`는 `music_id` **또는 `acrid`**(검색 결과 화면엔 musicId가 없음 — upsert 비동기라 404 시 클라 1회 재시도) 수용, 저장 행(`{id, music, created_at}`)을 반환(해제 DELETE에 music.id 사용). 나머지는 M4 |
-| search | `POST /search/text`·`/text/select` (AI 자연어 폴백 — spec 002) | ✅**M5 선행 개통(2026-07-21)** — §6.2의 recommendation 예정분을 search 도메인으로 이관 확정. Spring AI+OpenAI(gpt-5-mini, env 교체), 후보는 선택 시에만 저장(acrid=`ai-<hash16>`, source=AI), 게스트 3/로그인 10회 일일 한도 |
+| search | `POST /search/text`·`/text/select` (AI 자연어 폴백 — spec 002) | ✅**M5 선행 개통(2026-07-21, 운영 스모크 07-22)** — §6.2의 recommendation 예정분을 search 도메인으로 이관 확정. Spring AI+OpenAI(기본 gpt-5.4-mini+reasoning low, env 교체), 후보는 선택 시에만 저장(acrid=`ai-<hash16>`, source=AI), 게스트 3/로그인 10회 일일 한도 |
+| admin | `GET /admin/metrics?days=`, `GET /admin/music`·`PATCH /admin/music/{id}`, `GET /admin/users`·`PATCH /admin/users/{id}/role` (+프론트 미사용 초과분: 곡 상세/DELETE·사용자 상세·모더레이션 — 후속 화면용) | ✅**어드민 개통(2026-07-22, spec 003)** — **계약 정본은 `specs/003-admin-page-front/contracts/admin-api.md`**(ADMIN 전용이라 §6.1 공유 계약에 비전개). 인가=AdminAuthInterceptor(`/api/admin/**`, profiles.role DB 매요청 판정 — 회수 즉시 반영), 모든 변경은 `admin_audit_log` 동일 트랜잭션 감사, `music.meta_locked`로 관리자 정정 보호(자동 보강이 못 덮음 — §5.1 upsert 가드) |
 | recommendation | `/recommendations/*`, `/ai/chat` | M5 |
 
 ---
