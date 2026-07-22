@@ -87,7 +87,7 @@ export function AddToPlaylistSheet({ musicId, onClose }: Props) {
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="새 플레이리스트 제목"
             autoFocus
-            className="w-full rounded-xl border border-white/10 bg-secondary/60 px-4 py-3 text-[15px] outline-none placeholder:text-muted-foreground/60 focus:border-white/20"
+            className="w-full rounded-xl border border-input bg-secondary/60 px-4 py-3 text-[15px] outline-none placeholder:text-muted-foreground/60 focus:border-foreground/20"
           />
           <Button
             type="submit"
@@ -110,7 +110,7 @@ export function AddToPlaylistSheet({ musicId, onClose }: Props) {
       ) : query.isPending ? (
         <div className="mt-4 flex flex-col gap-2">
           {[0, 1].map((i) => (
-            <div key={i} className="flex items-center gap-3 rounded-xl border border-white/7 bg-card/60 p-3">
+            <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-card/60 p-3">
               <Skeleton className="size-10 shrink-0 rounded-[8px]" />
               <Skeleton className="h-4 w-1/2" />
             </div>
@@ -137,7 +137,7 @@ export function AddToPlaylistSheet({ musicId, onClose }: Props) {
                   type="button"
                   disabled={pending}
                   onClick={() => addition.mutate(p.id)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-white/7 bg-card/60 p-3 text-left transition-colors hover:bg-secondary/60 disabled:opacity-50"
+                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-card/60 p-3 text-left transition-colors hover:bg-secondary/60 disabled:opacity-50"
                 >
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-secondary text-muted-foreground/60">
                     <ListMusic className="size-4" />
@@ -156,7 +156,7 @@ export function AddToPlaylistSheet({ musicId, onClose }: Props) {
             type="button"
             disabled={pending}
             onClick={() => setNewTitle('')}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-white/25 hover:text-foreground"
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-foreground/15 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
           >
             <Plus className="size-4" /> 새 플레이리스트
           </button>

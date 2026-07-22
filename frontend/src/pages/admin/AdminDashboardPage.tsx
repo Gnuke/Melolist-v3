@@ -45,7 +45,7 @@ export function AdminDashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-extrabold tracking-tight">운영 지표</h2>
-        <div className="flex items-center gap-1 rounded-full border border-white/7 bg-card/60 p-1">
+        <div className="flex items-center gap-1 rounded-full border border-border bg-card/60 p-1">
           {PERIODS.map((p) => (
             <button
               key={p}
@@ -65,7 +65,7 @@ export function AdminDashboardPage() {
       {query.isPending ? (
         <DashboardSkeleton />
       ) : query.isError ? (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/7 bg-card/60 py-16 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card/60 py-16 text-center">
           <p className="text-sm text-muted-foreground">지표를 불러오지 못했어요</p>
           <Button type="button" variant="outline" onClick={() => query.refetch()} className="rounded-full px-6 font-semibold">
             다시 시도
@@ -188,7 +188,7 @@ function DashboardBody({ data }: { data: Awaited<ReturnType<typeof fetchAdminMet
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/7 bg-card/60 p-5">
+    <section className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="mb-4 flex items-baseline justify-between gap-3">
         <h3 className="text-[15px] font-extrabold tracking-tight">{title}</h3>
         {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
@@ -203,7 +203,7 @@ function Table({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-[13px]">
         <thead>
-          <tr className="border-b border-white/7 text-left text-muted-foreground">
+          <tr className="border-b border-border text-left text-muted-foreground">
             {head.map((h) => (
               <th key={h} className="px-2 py-2 font-semibold">
                 {h}
@@ -213,7 +213,7 @@ function Table({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
         </thead>
         <tbody>
           {rows.map((cells, i) => (
-            <tr key={i} className="border-b border-white/5 last:border-0">
+            <tr key={i} className="border-b border-foreground/5 last:border-0">
               {cells.map((c, j) => (
                 <td key={j} className="px-2 py-2.5 font-medium tabular-nums">
                   {c}

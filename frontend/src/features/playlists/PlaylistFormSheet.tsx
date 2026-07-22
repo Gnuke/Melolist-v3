@@ -52,17 +52,17 @@ export function PlaylistFormSheet({ open, onClose, initial, pending, onSubmit }:
           onChange={(e) => setTitle(e.target.value)}
           placeholder="제목 (예: 출근길 플레이리스트)"
           autoFocus
-          className="w-full rounded-xl border border-white/10 bg-secondary/60 px-4 py-3 text-[15px] outline-none placeholder:text-muted-foreground/60 focus:border-white/20"
+          className="w-full rounded-xl border border-input bg-secondary/60 px-4 py-3 text-[15px] outline-none placeholder:text-muted-foreground/60 focus:border-foreground/20"
         />
         <textarea
           value={description}
           rows={2}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="설명 (선택)"
-          className="w-full resize-none rounded-xl border border-white/10 bg-secondary/60 px-4 py-3 text-[15px] outline-none placeholder:text-muted-foreground/60 focus:border-white/20"
+          className="w-full resize-none rounded-xl border border-input bg-secondary/60 px-4 py-3 text-[15px] outline-none placeholder:text-muted-foreground/60 focus:border-foreground/20"
         />
 
-        <label className="flex items-center justify-between rounded-xl border border-white/7 bg-card/60 px-4 py-3">
+        <label className="flex items-center justify-between rounded-xl border border-border bg-card/60 px-4 py-3">
           <span>
             <span className="block text-[15px] font-semibold">공개 플레이리스트</span>
             <span className="mt-0.5 block text-xs text-muted-foreground">링크가 있는 누구나 볼 수 있어요</span>
@@ -76,7 +76,7 @@ export function PlaylistFormSheet({ open, onClose, initial, pending, onSubmit }:
             onClick={() => setIsPublic((v) => !v)}
             className={cn(
               'relative h-7 w-12 shrink-0 rounded-full transition-colors',
-              isPublic ? 'bg-foreground' : 'bg-white/12',
+              isPublic ? 'bg-foreground' : 'bg-input',
             )}
           >
             <span

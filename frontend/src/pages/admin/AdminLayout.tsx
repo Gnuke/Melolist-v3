@@ -40,7 +40,7 @@ export function AdminLayout() {
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Melolist</p>
           <h1 className="mt-0.5 text-[26px] font-black leading-tight tracking-[-0.02em]">어드민</h1>
         </div>
-        <nav className="flex items-center gap-1 rounded-full border border-white/7 bg-card/60 p-1">
+        <nav className="flex items-center gap-1 rounded-full border border-border bg-card/60 p-1">
           {TABS.map((tab) => (
             <NavLink
               key={tab.to}

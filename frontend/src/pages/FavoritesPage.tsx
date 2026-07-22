@@ -93,7 +93,7 @@ export function FavoritesPage() {
       {loading ? (
         <div className="mt-5 flex flex-col gap-2.5">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5">
+            <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5">
               <Skeleton className="size-14 shrink-0 rounded-[10px]" />
               <div className="flex w-full flex-col gap-2">
                 <Skeleton className="h-4 w-3/5" />
@@ -185,7 +185,7 @@ function FavoriteRow({
     <motion.li
       variants={itemVariants}
       layout
-      className="flex items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5"
+      className="flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5"
     >
       <CoverArt coverUrl={m.cover_url} videoId={m.youtube_video_id ?? undefined} alt={m.title ?? ''} className="size-14" />
       <div className="min-w-0 flex-1">

@@ -132,7 +132,7 @@ export function ResultsView({ mode, results, lowScore, onFavorite, savedAcrids, 
           {/* 히어로 카드 (1j) — 지문은 score 숨김(확정) */}
           <motion.div
             variants={itemVariants}
-            className="flex flex-col gap-4 rounded-2xl border border-white/12 bg-card p-4"
+            className="flex flex-col gap-4 rounded-2xl border border-foreground/12 bg-card p-4"
           >
             <div className="flex items-center gap-4">
               <CoverArt coverUrl={first.cover_url} videoId={first.youtube_video_id} alt={first.title ?? ''} className="size-20" />
@@ -156,7 +156,7 @@ export function ResultsView({ mode, results, lowScore, onFavorite, savedAcrids, 
               {rest.map((r, i) => (
                 <div
                   key={rowKey(r, i + 1)}
-                  className="flex items-center gap-3 rounded-xl border border-white/7 bg-card/60 p-2.5"
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card/60 p-2.5"
                 >
                   <CoverArt coverUrl={r.cover_url} videoId={r.youtube_video_id} alt={r.title ?? ''} className="size-10" />
                   <div className="min-w-0 flex-1">
@@ -179,8 +179,8 @@ export function ResultsView({ mode, results, lowScore, onFavorite, savedAcrids, 
               variants={itemVariants}
               className={
                 i === 0
-                  ? 'flex items-center gap-3.5 rounded-2xl border border-white/15 bg-card p-3.5'
-                  : 'flex items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5'
+                  ? 'flex items-center gap-3.5 rounded-2xl border border-foreground/15 bg-card p-3.5'
+                  : 'flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5'
               }
             >
               <CoverArt coverUrl={r.cover_url} videoId={r.youtube_video_id} alt={r.title ?? ''} className="size-14" />

@@ -19,7 +19,7 @@ export function BarList({ items, unit }: { items: BarListItem[]; unit?: string }
             <p className="truncate text-[13px] font-semibold">{item.label}</p>
             {item.sub && <p className="truncate text-[11px] text-muted-foreground">{item.sub}</p>}
           </div>
-          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/5">
+          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-foreground/5">
             <div
               className="h-full rounded-full bg-foreground/25"
               style={{ width: `${Math.max(2, Math.round((item.count / max) * 100))}%` }}

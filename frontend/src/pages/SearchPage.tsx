@@ -333,9 +333,9 @@ function SearchFlow({ mode }: { mode: SearchType }) {
               ) : (
                 <div className="flex flex-col items-center gap-6">
                   <div
-                    className="flex size-32 flex-col items-center justify-center gap-1 rounded-full border border-white/10"
+                    className="flex size-32 flex-col items-center justify-center gap-1 rounded-full border border-input"
                     style={{
-                      background: 'linear-gradient(165deg, var(--ink-800), var(--ink-900))',
+                      background: 'linear-gradient(165deg, var(--popover), var(--muted))',
                       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 48px rgba(0,0,0,0.55)',
                     }}
                   >
@@ -460,7 +460,7 @@ function SearchFlow({ mode }: { mode: SearchType }) {
             </div>
             <div className="flex flex-col gap-2.5">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-white/7 bg-card/60 p-3.5">
+                <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5">
                   <Skeleton className="size-14 shrink-0 rounded-[10px]" />
                   <div className="flex w-full flex-col gap-2">
                     <Skeleton className="h-4 w-3/5" />
