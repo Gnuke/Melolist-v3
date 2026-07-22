@@ -1,6 +1,9 @@
 <!--
 Sync Impact Report
 - Version change: (템플릿, 미제정) → 1.0.0 (최초 제정)
+- 1.0.1 (2026-07-22): PATCH — docs/ 목적별 재구성에 따른 경로 갱신(prd/·guides/·archive/,
+  마스터 PRD는 archive 스냅숏화·OKR은 docs/prd/okr-2026q3.md 승격) + 위계 문구 명확화.
+  원칙 변경 없음.
 - Modified principles: 없음 (신규 제정 — 원칙 6개 신설)
 - Added sections:
   - Core Principles: I. 도메인 중심 아키텍처 / II. 계약 우선·문서 위계 /
@@ -16,8 +19,8 @@ Sync Impact Report
   - ✅ .specify/templates/tasks-template.md — constitution 참조 없음(수정 불필요)
   - ✅ .specify/templates/checklist-template.md — constitution 참조 없음(수정 불필요)
 - Follow-up TODOs: 없음
-- 근거 문서: docs/PRD.md(마스터 v0.1) · docs/backend-prd.md(v1.0) ·
-  docs/frontend-prd.md · docs/git-strategy.md · PRD 부록 A(2026-07-04 확정)
+- 근거 문서: docs/archive/PRD-master-v0.1.md(마스터 v0.1) · docs/prd/backend-prd.md(v1.0) ·
+  docs/prd/frontend-prd.md · docs/guides/git-strategy.md · PRD 부록 A(2026-07-04 확정)
 -->
 
 # Melolist-v3 Constitution
@@ -43,8 +46,9 @@ Sync Impact Report
 
 - API 계약·이벤트 사전·에러 바디는 `backend-prd.md` §6.1과 `frontend-prd.md` §8이
   **동일해야 하며**, 한쪽 변경 시 양쪽을 같은 PR에서 함께 갱신해야 한다(MUST).
-- 문서 위계: `PRD.md`(제품 총괄 마스터) → `backend-prd.md`/`frontend-prd.md`(실행 PRD).
-  충돌 시 실행 PRD(최신 결정 반영)가 우선한다.
+- 문서 위계: `docs/prd/backend-prd.md`/`docs/prd/frontend-prd.md`(실행 PRD)가 **정본**이며,
+  마스터 PRD는 `docs/archive/PRD-master-v0.1.md` 스냅숏이다. 충돌 시 실행 PRD(최신 결정
+  반영)가 우선한다. 문서 트리 색인·작업 규칙: `docs/README.md`.
 - API와 화면을 함께 바꾸는 기능은 **한 브랜치·한 PR**로 진행한다 — 모노레포 유지의 이유.
 
 **근거:** 1인 개발에서 계약 불일치는 발견이 늦다. 문서 동기화 규칙이 통합 테스트를 대신하는
@@ -131,7 +135,7 @@ mock 경계가 없으면 회귀 검증 비용이 기능 추가를 막는다.
 ## Governance
 
 - 이 constitution은 프로젝트의 다른 관행·문서보다 **우선**한다. 단, 제품 요구사항의 상세는
-  원칙 II의 문서 위계(PRD → 실행 PRD)를 따르며, constitution은 그 위계 규칙 자체를 정의한다.
+  원칙 II의 문서 위계(실행 PRD 정본)를 따르며, constitution은 그 위계 규칙 자체를 정의한다.
 - **개정 절차:** 개정은 커밋(또는 PR)으로 수행하며, 변경 내용 문서화 + 버전 증가 +
   Sync Impact Report 갱신을 포함해야 한다.
 - **버전 정책(semver):**
@@ -141,7 +145,7 @@ mock 경계가 없으면 회귀 검증 비용이 기능 추가를 막는다.
 - **준수 검토:** 모든 PR은 constitution 준수를 확인한다. 특히 원칙 IV(가드레일)는
   예외 없이 적용하며, 그 외 원칙의 예외는 plan의 Complexity Tracking에 정당화 사유를
   기록해야 한다.
-- **런타임 가이드:** 구현 세부 지침은 `docs/PRD.md`·`docs/backend-prd.md`·
-  `docs/frontend-prd.md`·`docs/git-strategy.md`를 참조한다.
+- **런타임 가이드:** 구현 세부 지침은 `docs/archive/PRD-master-v0.1.md`·`docs/prd/backend-prd.md`·
+  `docs/prd/frontend-prd.md`·`docs/guides/git-strategy.md`를 참조한다.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-13 | **Last Amended**: 2026-07-13
+**Version**: 1.0.1 | **Ratified**: 2026-07-13 | **Last Amended**: 2026-07-22

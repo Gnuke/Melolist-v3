@@ -97,7 +97,7 @@
 
 - [x] T029 전체 게이트 `./gradlew build` in `backend/` — 신규 테스트 포함 전체 GREEN + 기존 테스트 회귀 0건(SC-005, 원칙 VI)
 - [x] T030 quickstart 전체 실행(§2~§7) — ✅2026-07-22 실 JWT E2E 완료: 인가 매트릭스(무토큰 401/관리자 200/기존 API 무영향)·지표 SC-006 실 SQL 대조 일치·days 검증 400·FR-014(days=90 0.54s)·곡 부분수정/비우기/잠금/409/404·역할 변경(승격·복귀·자기해제 409·허용외 400)·모더레이션(리뷰·대댓글 동반 삭제·unpublish 멱등)·감사 8행 누락 0건. 검증 중 발견한 missing 필터 500(JPQL null 바인딩 타입 추론 실패)은 빈 문자열 센티널로 수정 후 재검증 통과. 일반 사용자 403은 인터셉터 단위 테스트로 커버(tester1 토큰 없음)
-- [x] T031 실행 PRD 계약 반영 — ✅2026-07-22 완료(별도 docs PR — spec 002·003 양쪽 병합 후): `docs/backend-prd.md` §6.2에 admin 행 추가 + `docs/frontend-prd.md` §8에 어드민 계약 참조 추가(정본은 계속 contracts/admin-api.md)
+- [x] T031 실행 PRD 계약 반영 — ✅2026-07-22 완료(별도 docs PR — spec 002·003 양쪽 병합 후): `docs/prd/backend-prd.md` §6.2에 admin 행 추가 + `docs/prd/frontend-prd.md` §8에 어드민 계약 참조 추가(정본은 계속 contracts/admin-api.md)
 - [x] T032 커밋 정리·PR 생성 — ✅2026-07-22 완료: 가드 독립 커밋(`53f88f4`) 확인, **PR #16 병합(머지 커밋 `6aa7809`)** — 002와 순서를 뒤집어 admin 선병합(002는 Render 키 대기), 충돌은 `.specify/feature.json` 1건만 해소
 
 ---

@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Q3 OKR KR 산출 SQL (backend-prd §10) — Supabase SQL Editor에서 수동 실행
 --
--- 대상 KR (docs/brainstorming.md 0장, 안A):
+-- 대상 KR (docs/prd/okr-2026q3.md, 안A):
 --   KR2 검색 응답 시간  : search_request.total_ms 의 p95 ≤ 6,000ms
 --   KR3 첫 방문 검색 완료율 : search_result_shown 세션 ÷ visit 세션 ≥ 70%
 --   (KR1 매칭률은 측정 스크립트(C6) 소관 — 이 파일 범위 아님)

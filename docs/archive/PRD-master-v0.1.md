@@ -1,6 +1,8 @@
 # Melolist-v3 PRD (Product Requirements Document)
 
-> **문서 상태:** 초안 (Draft v0.1) · `prd.txt` 요청서 + 기존 Melolist-v2(Nuxt) 코드 분석 기반
+> **📦 아카이브 (2026-07-22 이동):** 초기 설계 스냅숏 — 더 이상 갱신하지 않는다. 현행 정본은 실행 PRD([`../prd/backend-prd.md`](../prd/backend-prd.md) · [`../prd/frontend-prd.md`](../prd/frontend-prd.md)), 문서 색인은 [`../README.md`](../README.md).
+>
+> **문서 상태:** 초안 (Draft v0.1) · `prd-request.txt` 요청서 + 기존 Melolist-v2(Nuxt) 코드 분석 기반
 > **작성 원칙:** 기존 코드를 그대로 이식하지 않고, 더 나은 구조로 **재설계**. UX·유지보수성 최우선.
 > **표기:** `(신규 제안)` = 기존에 없던 추가 제안 · `(확인 필요)` = 사용자 결정 대기 항목
 

@@ -109,7 +109,7 @@ backend/
 └── (DB) Supabase 마이그레이션: add_admin_audit_and_music_lock
      — alter table music add meta_locked / create table admin_audit_log
 
-docs/backend-prd.md · docs/frontend-prd.md      # △ PR 마무리 시 §6.2·§8 계약 반영(002 병합 후 rebase — D9)
+docs/prd/backend-prd.md · docs/prd/frontend-prd.md      # △ PR 마무리 시 §6.2·§8 계약 반영(002 병합 후 rebase — D9)
 ```
 
 **Structure Decision**: 기존 모노레포 `backend/` 안에 도메인 중심 구조 그대로

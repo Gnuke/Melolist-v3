@@ -3,7 +3,7 @@
 **Date**: 2026-07-21 | **Feature**: [spec.md](../spec.md)
 
 > **동기화 의무 (constitution 원칙 II)**: 이 계약은 구현 PR에서
-> `docs/backend-prd.md` §6.1과 `docs/frontend-prd.md` §8에 **동일 내용으로 반영**되어야
+> `docs/prd/backend-prd.md` §6.1과 `docs/prd/frontend-prd.md` §8에 **동일 내용으로 반영**되어야
 > 한다(같은 PR). §6.2 로드맵 표의 `POST /search/text` 행(M5·recommendation 예정)은
 > 본 기능(search 도메인)으로 이관 확정.
 

@@ -1,7 +1,7 @@
 # Melolist-v3 · Backend
 
 Melolist-v3의 백엔드. 기존 Nuxt(Nitro) 서버를 **Spring Boot + Supabase**로 재플랫폼한다.
-자세한 제품 요구사항은 레포 루트 [`PRD.md`](../PRD.md) 참고.
+자세한 제품 요구사항은 [`docs/prd/backend-prd.md`](../docs/prd/backend-prd.md)(백엔드 실행 PRD) 참고.
 
 ## 기술 스택
 
