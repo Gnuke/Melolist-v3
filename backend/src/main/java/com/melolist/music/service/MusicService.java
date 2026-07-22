@@ -73,6 +73,9 @@ public class MusicService {
     }
 
     private Music fillMissing(Music existing, MusicUpsertCommand cmd) {
+        if (existing.isMetaLocked()) {
+            return existing; // 관리자 수동 정정 보호 — 자동 보강이 덮어쓰지 않는다(spec 003 FR-007)
+        }
         if (existing.getYoutubeVideoId() == null && cmd.youtubeVideoId() != null) {
             existing.setYoutubeVideoId(cmd.youtubeVideoId());
         }
