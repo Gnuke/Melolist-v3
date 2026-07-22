@@ -1,5 +1,28 @@
 # Development Log
 
+## 2026-07-22 총괄 — PR 6건(#15~#20) 전부 병합: 어드민 개통(프론트+백) + 라이트 모드 + AI 폴백 검색(spec 002) + 딥링크 핫픽스
+
+워크트리 병렬 개발 첫날 — 어드민 프론트/백·라이트 모드를 각각 워크트리에서, spec 002 마무리를 원본에서 동시에 진행하고 저녁까지 전부 main 병합·운영 검증 종료. 이후 체제는 **원본=main 상주, 기능 작업=워크트리**(작업 종료 시 정리). 종료 시점 리포는 main 단일(`c517354`), 워크트리 0.
+
+| PR | 내용 | 갈래 |
+|---|---|---|
+| #15 | **어드민 프론트**(spec 003) — `/admin` 지표 대시보드·곡 카탈로그·사용자 관리. 앱 내 진입점 0·URL 직접 진입 전용(R5 존재 비노출), 가드는 기존 `/users/me` role 재사용, 신규 의존성 0(차트=CSS 바), mock 토글은 프로덕션 미포함 | speckit |
+| #16 | **어드민 백엔드**(spec 003) — admin 도메인 신설: AdminAuthInterceptor(`/api/admin/**`, profiles.role DB 매요청 판정 — SecurityConfig 무수정), admin 한정 어드바이스, `admin_audit_log` 동일 트랜잭션 감사, `music.meta_locked` 잠금(자동 보강이 관리자 정정 못 덮음). 실 JWT E2E(감사 8행 누락 0·SC-006 SQL 대조 일치)·테스트 49건. 계약 정본(`specs/003-admin-page-front/contracts/admin-api.md`) 전 항목 일치 | speckit |
+| #17 | **라이트 모드** — 프로필 "화면 테마" 토글(localStorage, 기본 다크 유지) + FOUC 방지 부트스트랩 + 하드코딩 다크색 25파일 시맨틱 토큰화(다크 픽셀 동일 매핑, `--tick` 신설) + next-themes 제거 | UI |
+| #18 | 🐛 **딥링크 404 핫픽스** — `frontend/vercel.json` SPA rewrite 한 줄. **배포 첫날(07-10)부터 루트 외 전 경로가 URL 직접 진입·새로고침 시 404**였음(클라 내비만 써서 잠복 → URL 전용 /admin에서 표면화). 병합 후 전 라우트 200 실증 | 결함 |
+| #19 | **AI 자연어 폴백 검색**(spec 002) — 미매칭/오매칭 시 자연어로 곡 찾기: OpenAI 후보 추천(0~5곡) → 선택 확정이 유일한 저장 시점(acrid=`ai-<hash16>`, source=AI). 일일 쿼터(게스트 3·로그인 10, KST 자정 리셋) + LLM 10s·meta 4s 컷(15s 예산). ai-mock 프로파일 E2E 18항목 | speckit |
+| #20 | T031 문서 — 실행 PRD에 어드민 반영(backend-prd §6.2 행·frontend-prd §8 참조) → **spec 003 백 37/37 종결** | docs |
+
+**핵심 발견·진단**:
+
+- **딥링크 404의 정체**: `X-Vercel-Error: NOT_FOUND`(text/plain)로 Vercel 정적 라우팅 계층 확정 — 앱 미로드라 OAuth/Supabase 리디렉션 URI와 무관(쿠키 없는 curl로도 재현). SPA는 진입만 `/`면 이후 전부 클라 라우팅이라 지금까지 안 들켰던 것.
+- **모델 교체(T030 실키 스모크)**: gpt-5-mini는 2026-12-11 서비스 종료 예고 + 5.4 계열은 reasoning_effort `minimal` 미지원(400) → 기본값 **gpt-5.4-mini + low**(쿼리당 ~3원). 실쿼리 7건 전부 정답 1순위.
+- **운영 스모크(병합 후, 사용자 키 등록)**: 1차 호출 웜업 타임아웃(`ai_ms=10133` → 502, 계약대로) → 2차 벚꽃엔딩 hit(서버 9.5s) → 3차 Ditto hit(4.8s) → 4차 429 quota(limit 3·reset_at 자정). **Render 슬립 후 첫 AI 검색은 10s 컷 타임아웃 가능 — 프론트 F4 재시도로 커버, 베타 때 Starter 전환과 같이 볼 것**. 테스트 이벤트 4행 삭제.
+- **병합 순서 역전**: 계획(002 먼저)과 달리 002가 Render 키 등록 대기라 **admin 선병합** — 충돌면 격리 커밋(`53f88f4` MusicService 가드 독립) 덕에 002 rebase 3회 전부 사실상 자동 병합(`.specify/feature.json` 포인터 정도). FallbackSearchView만 라이트 스윕 이전 작성이라 하드코딩 보더 3곳 후속 치환.
+- **T021 어드민 실서버 검증 완료(사용자)** — 딥링크 핫픽스 후 /admin 운영 정상.
+
+**남은 것**: KR1 첫 실측(곡 셋 오디오 대기)·KR2 재확인(실사용 데이터). 후속 후보: 라이트 모드 게스트 토글 진입점·OS prefers-color-scheme 추종, 어드민 후속 화면(백 초과분 API — 곡 상세/삭제·사용자 상세·모더레이션).
+
 ## 2026-07-21 — 프로필 사진 로딩 깜빡임 제거 (✅**PR #14 병합** `3fe250f`, 브랜치 `fix/profile-avatar-flicker`)
 
 - **증상**(07-20 제보 1순위): 화면 진입·새로고침마다 프로필 칩이 **기본 이니셜 → 실사진** 순서로 깜빡임.
