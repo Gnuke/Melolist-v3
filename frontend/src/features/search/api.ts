@@ -40,3 +40,56 @@ function extensionOf(blob: Blob): string {
   if (blob.type.includes('mp4')) return 'mp4'
   return 'webm'
 }
+
+/** AI 폴백 선택 확정 응답 — 백엔드 MusicResponse(id가 music PK). */
+export interface SelectedMusic {
+  id: number
+  title?: string
+  youtube_url?: string | null
+  [key: string]: unknown
+}
+
+/**
+ * AI 자연어 폴백 검색(spec 002 contracts §1) — 후보 최대 5곡, 서버 저장 없음.
+ * 타임아웃은 인식 검색과 동일 15s(서버 예산: LLM 10s + meta 4s).
+ * 429(일일 한도)·502(AI 실패)는 호출부에서 상태로 분기한다.
+ */
+export async function textSearch(query: string, signal?: AbortSignal): Promise<AcrResult[]> {
+  if (import.meta.env.DEV) {
+    const { maybeMockTextSearch } = await import('@/mock/searchMock')
+    const mocked = await maybeMockTextSearch()
+    if (mocked) return mocked
+  }
+
+  const { data } = await api.post<RecognizeResponse>(
+    '/search/text',
+    { query },
+    { timeout: RECOGNIZE_TIMEOUT_MS, signal },
+  )
+  return Array.isArray(data?.results) ? data.results : []
+}
+
+/**
+ * AI 폴백 후보 선택 확정(contracts §2) — 유일한 저장 시점. 이후 즐겨찾기(acrid=ai-key)가
+ * 기존 흐름 그대로 동작한다. rank는 1부터(후보 목록 순위, 계측용).
+ */
+export async function selectCandidate(candidate: AcrResult, rank: number): Promise<SelectedMusic> {
+  if (import.meta.env.DEV) {
+    const { maybeMockTextSelect } = await import('@/mock/searchMock')
+    const mocked = await maybeMockTextSelect()
+    if (mocked) return mocked
+  }
+
+  const { data } = await api.post<SelectedMusic>('/search/text/select', {
+    candidate: {
+      acrid: candidate.acrid,
+      title: candidate.title,
+      artists: candidate.artists ?? [],
+      album: candidate.album ?? null,
+      youtube_video_id: candidate.youtube_video_id ?? null,
+      cover_url: candidate.cover_url ?? null,
+    },
+    rank,
+  })
+  return data
+}

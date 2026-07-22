@@ -84,6 +84,16 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("FILE_TOO_LARGE", "업로드 파일이 허용 크기를 초과했습니다."));
     }
 
+    /** AI 폴백 일일 한도 초과 → 429 + limit/reset_at (spec 002 contracts §1). */
+    @ExceptionHandler(AiQuotaExceededException.class)
+    public ResponseEntity<ErrorResponse> handleAiQuota(AiQuotaExceededException e) {
+        Map<String, String> details = new HashMap<>();
+        details.put("limit", String.valueOf(e.getLimit()));
+        details.put("reset_at", e.getResetAt().format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ErrorResponse.of("AI_QUOTA_EXCEEDED", e.getMessage(), details));
+    }
+
     /** 외부 API(ACRCloud) 실패 → 502. raw 에러는 로그로만, 응답에는 담지 않는다(F4). */
     @ExceptionHandler(ExternalApiException.class)
     public ResponseEntity<ErrorResponse> handleExternalApi(ExternalApiException e) {

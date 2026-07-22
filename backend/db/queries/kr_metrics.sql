@@ -111,3 +111,79 @@ where event_type = 'search_failed'
   and created_at >= now() - interval '14 days'
 group by 1, 2
 order by n desc;
+
+
+-- ============================================================================
+-- spec 002 — AI 자연어 폴백 검색 SC 산출 (2026-07-21 추가, contracts §3)
+--   SC-001 폴백 시도율 : 미매칭 세션 중 ai_fallback_open(from=no_match) 세션 ≥ 30%
+--   SC-002 채택률      : ai_search_select ÷ ai_search_request(hit·empty) ≥ 40%
+--   SC-003 응답 p95    : ai_search_request.total_ms p95 ≤ 15,000ms
+--   SC-004 전환율      : 미매칭 세션 중 ai_search_select 발생 세션 ≥ 25%
+-- 해석 주의: outcome=quota 는 한도 거절(수요 신호) — 시도·채택 분모에서 제외.
+-- ============================================================================
+
+
+-- ── SC-001·SC-004. 미매칭 세션의 폴백 시도율·전환율 ────────────────────────
+with no_match_sessions as (
+  select distinct session_id
+  from event_log
+  where event_type = 'search_failed'
+    and properties->>'reason' = 'no_match'
+    and created_at >= now() - interval '14 days'
+), fallback as (
+  select
+    count(distinct session_id) filter (where event_type = 'ai_fallback_open'
+      and properties->>'from' = 'no_match')                          as opened_sessions,
+    count(distinct session_id) filter (where event_type = 'ai_search_select') as selected_sessions
+  from event_log
+  where created_at >= now() - interval '14 days'
+    and session_id in (select session_id from no_match_sessions)
+)
+select
+  (select count(*) from no_match_sessions)                                        as no_match_sessions,
+  opened_sessions,
+  selected_sessions,
+  round(100.0 * opened_sessions   / nullif((select count(*) from no_match_sessions), 0), 1) as sc001_try_pct,
+  round(100.0 * selected_sessions / nullif((select count(*) from no_match_sessions), 0), 1) as sc004_convert_pct
+from fallback;
+
+
+-- ── SC-002. 채택률 + SC-003. 응답 p95 (outcome 분포 포함) ──────────────────
+with req as (
+  select
+    properties->>'outcome'              as outcome,
+    (properties->>'total_ms')::numeric  as total_ms
+  from event_log
+  where event_type = 'ai_search_request'
+    and created_at >= now() - interval '14 days'
+), sel as (
+  select count(*) as n
+  from event_log
+  where event_type = 'ai_search_select'
+    and created_at >= now() - interval '14 days'
+)
+select
+  count(*) filter (where outcome in ('hit', 'empty'))               as attempts,
+  count(*) filter (where outcome = 'hit')                           as hits,
+  count(*) filter (where outcome = 'error')                         as errors,
+  count(*) filter (where outcome = 'quota')                         as quota_rejected,
+  (select n from sel)                                               as selects,
+  round(100.0 * (select n from sel)
+        / nullif(count(*) filter (where outcome in ('hit', 'empty')), 0), 1) as sc002_select_pct,
+  round(percentile_cont(0.95) within group (order by total_ms)
+        filter (where outcome in ('hit', 'empty')))                 as sc003_p95_ms,
+  round(percentile_cont(0.95) within group (order by total_ms)
+        filter (where outcome in ('hit', 'empty'))) <= 15000        as sc003_pass
+from req;
+
+
+-- ── 참고. 채택 순위 분포 (후보 정렬 품질 — rank 1 채택이 많을수록 좋다) ────
+select
+  properties->>'rank'                  as rank,
+  count(*)                             as n,
+  count(*) filter (where (properties->>'resolved')::boolean) as resolved_n
+from event_log
+where event_type = 'ai_search_select'
+  and created_at >= now() - interval '14 days'
+group by 1
+order by 1;

@@ -16,6 +16,8 @@ interface Props {
   savedAcrids: ReadonlySet<string>
   onRetrySame: () => void
   onReRecord: () => void
+  /** spec 002 US2: 오매칭 → AI 자연어 폴백 전환 진입점 */
+  onFallback?: () => void
 }
 
 function artistName(artists?: AcrResult['artists']) {
@@ -103,7 +105,7 @@ function FavoriteButton({
  * 검색 결과(C2·C3) — Top-3 고정.
  * 지문 = 히어로형(1j, score 숨김) / 허밍 = 동등 리스트형(1i, 일치율 노출) — 모드별 혼합안.
  */
-export function ResultsView({ mode, results, lowScore, onFavorite, savedAcrids, onRetrySame, onReRecord }: Props) {
+export function ResultsView({ mode, results, lowScore, onFavorite, savedAcrids, onRetrySame, onReRecord, onFallback }: Props) {
   const top3 = results.slice(0, 3)
   const [first, ...rest] = top3
   if (!first) return null
@@ -232,6 +234,19 @@ export function ResultsView({ mode, results, lowScore, onFavorite, savedAcrids, 
           <RefreshCw /> 같은 녹음으로 재검색
         </Button>
       </motion.div>
+
+      {/* 오매칭 폴백 진입점(spec 002 US2) — 결과가 전부 아니면 텍스트로 이어서 찾는다 */}
+      {onFallback && (
+        <motion.div variants={itemVariants} className="flex justify-center pt-3">
+          <button
+            type="button"
+            onClick={onFallback}
+            className="text-[13px] font-semibold text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            찾는 곡이 아닌가요? 말로 설명해서 찾기
+          </button>
+        </motion.div>
+      )}
     </motion.div>
   )
 }

@@ -33,8 +33,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 헬스체크(Docker/CI)
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        // 게스트 허용: 음악 검색
-                        .requestMatchers(HttpMethod.POST, "/api/search/fingerprint", "/api/search/humming", "/api/search/text").permitAll()
+                        // 게스트 허용: 음악 검색 (text/select = AI 폴백 후보 선택 확정, spec 002)
+                        .requestMatchers(HttpMethod.POST, "/api/search/fingerprint", "/api/search/humming",
+                                "/api/search/text", "/api/search/text/select").permitAll()
                         // 게스트 허용: 이벤트 수집(익명 계측, backend-prd §9-6)
                         .requestMatchers(HttpMethod.POST, "/api/events").permitAll()
                         // 게스트 허용: 곡/리뷰/공개 플레이리스트 조회
