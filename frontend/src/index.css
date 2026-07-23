@@ -152,6 +152,10 @@
   * {
     border-color: var(--border);
   }
+  html {
+    /* 탭 전환 시 스크롤바 유무로 중앙 컨테이너가 좌우로 밀리지 않게 자리를 항상 예약 */
+    scrollbar-gutter: stable;
+  }
   body {
     background-color: var(--background);
     color: var(--foreground);

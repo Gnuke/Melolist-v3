@@ -35,13 +35,14 @@ export function HomePage() {
       </div>
 
       <motion.div
-        className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-28 pt-6"
+        className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-28 pt-4"
         variants={containerVariants}
         initial="hidden"
         animate="show"
       >
-        {/* 워드마크 — 로고 없음: 플레인 타입 + flame 마침표 (DS) */}
-        <motion.header variants={itemVariants} className="flex items-center justify-between">
+        {/* 워드마크 — 로고 없음: 플레인 타입 + flame 마침표 (DS)
+            높이 h-8은 탭 화면 공통 헤더 규격 — 애니메이션 없이 고정해 탭 전환 시 아바타가 점프하지 않게 한다 */}
+        <header className="flex h-8 items-center justify-between">
           <h1 className="text-[21px] font-black tracking-[-0.02em]">
             Melolist<span className="text-brand">.</span>
           </h1>
@@ -52,10 +53,10 @@ export function HomePage() {
               <Link to="/login">로그인</Link>
             </Button>
           )}
-        </motion.header>
+        </header>
 
         {/* 헤드라인 */}
-        <motion.div variants={itemVariants} className="mt-12">
+        <motion.div variants={itemVariants} className="mt-14">
           <h2 className="text-[30px] font-black leading-[1.18] tracking-[-0.03em]">
             어떤 노래였는지
             <br />
