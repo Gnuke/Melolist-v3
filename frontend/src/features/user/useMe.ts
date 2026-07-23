@@ -24,12 +24,8 @@ export function cacheMe(profile: Profile) {
   }
 }
 
-/** 로그아웃 시 호출 — 다음 로그인이 다른 계정일 수 있다. */
-export function clearCachedMe() {
-  localStorage.removeItem(CACHE_KEY)
-}
-
-/** 현재 로그인 계정의 사본일 때만 돌려준다 — 계정 전환 직후 남의 프로필 노출 방지. */
+/** 현재 로그인 계정의 사본일 때만 돌려준다 — 로그아웃 후에도 사본은 남으므로(같은 계정
+ *  재로그인 즉시 표시용) 계정 전환 시 남의 프로필이 보이지 않게 하는 유일한 가드다. */
 function readCachedMe(): Profile | undefined {
   try {
     const raw = localStorage.getItem(CACHE_KEY)

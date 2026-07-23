@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
-import { clearCachedMe, useMe } from '@/features/user/useMe'
+import { useMe } from '@/features/user/useMe'
 import { ProfileAvatar } from '@/features/user/ProfileAvatar'
 
 interface Props {
@@ -42,9 +42,9 @@ export function ProfileSheet({ open, onClose, fallbackEmail }: Props) {
       toast('로그아웃에 실패했어요. 잠시 후 다시 시도해주세요.')
       return
     }
-    // 다음 로그인이 다른 계정일 수 있으니 내 프로필 캐시(쿼리+로컬 사본)를 비운다
+    // 메모리 쿼리만 비운다 — 로컬 사본(melolist.me)은 남겨 같은 계정 재로그인의 첫 렌더가
+    // 즉시 채워지게 한다. 다른 계정으로 로그인하면 readCachedMe의 id 가드가 걸러낸다.
     queryClient.removeQueries({ queryKey: ['me'] })
-    clearCachedMe()
     onClose()
     toast('로그아웃되었어요')
   }
