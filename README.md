@@ -17,6 +17,7 @@ v2는 5인 팀 프로젝트였고, **v3 재플랫폼은 1인 개발** — 설계
 #### 🔍 음악 검색 (게스트 포함 누구나)
 - **지문(Fingerprint) 검색**: 주변에서 흐르는 음악을 녹음해 인식
 - **허밍(Humming) 검색**: 직접 흥얼거린 멜로디로 인식 — ACRCloud 기반, Top-3 결과 + 매칭률 표시
+- **AI 자연어 폴백 검색**: 인식 실패("말로 설명해서 찾기")·오매칭("찾는 곡이 아닌가요?") 시 가사 조각·분위기·상황 묘사로 이어서 검색 — 후보 최대 5곡을 같은 카드로 표시 (OpenAI gpt-5.4-mini)
 - 결과 화면: 커버 아트·유튜브 링크·미리듣기(wavesurfer 파형), 검색 중 취소 확인 시트(녹음 일시정지/재개)
 - 응답 최적화: 저장·기록은 비동기 후처리로 분리 — **허밍 p95 5.7s** (최적화 전 12.4s)
 
@@ -31,6 +32,12 @@ v2는 5인 팀 프로젝트였고, **v3 재플랫폼은 1인 개발** — 설계
 - **플레이리스트**: 생성·수정·삭제, 담기 시트(새로 만들고 바로 담기), 순서 편집, 공개/비공개(공개는 게스트도 조회)
 - **Bottom Navigation 4탭**: 홈 · 즐겨찾기 · 플레이리스트 · 기록
 
+#### 🎨 테마
+- **라이트/다크 전환**: 탭 화면 헤더의 토글로 게스트 포함 누구나 — 기본 다크, 선택은 localStorage에 유지(첫 페인트 깜빡임 방지 부트스트랩)
+
+#### 🛡️ 어드민 (ADMIN 역할)
+- `/admin` — 지표 대시보드 · 유저 역할 관리(자기 강등 방지) · 음악 메타 수정+잠금(`meta_locked`) · 모든 변경은 감사 로그(`admin_audit_log`) 기록
+
 #### 📊 측정 기본 탑재
 - 전 화면 이벤트 계측(`event_log`) + KR 지표 산출 SQL(`backend/db/queries/kr_metrics.sql`) + 매칭률 측정 스크립트(`backend/scripts/match-rate/`)
 
@@ -44,7 +51,7 @@ v2는 5인 팀 프로젝트였고, **v3 재플랫폼은 1인 개발** — 설계
 |---|---|---|
 | Core | React 19 · TypeScript · Vite 8 | SPA, react-router 7 |
 | 상태/데이터 | TanStack Query 5 · Zustand · axios | 서버 상태 캐싱, 인증 스토어 |
-| UI | Tailwind CSS 4 · Radix UI · lucide-react · motion | 자체 디자인 시스템(Flame/Iris 팔레트 + Pretendard) |
+| UI | Tailwind CSS 4 · Radix UI · lucide-react · motion | 자체 디자인 시스템(Flame/Iris 팔레트 + Pretendard), 라이트/다크 테마 |
 | Audio | wavesurfer.js 7 | 녹음 파형·재생 |
 | Auth | @supabase/supabase-js | Google OAuth → JWT |
 | Lint | oxlint | |
@@ -57,6 +64,7 @@ v2는 5인 팀 프로젝트였고, **v3 재플랫폼은 1인 개발** — 설계
 | Security | Spring Security | Supabase JWT(JWKS) Resource Server 검증 |
 | ORM/DB | Spring Data JPA · Supabase PostgreSQL | 테스트는 H2, Hikari 풀 상한 5(무료 pooler 한도 대응) |
 | 외부 API | ACRCloud (identify + Metadata) | 지문·허밍 인식, 커버·유튜브 링크 보강 |
+| AI | Spring AI 1.1 + OpenAI (gpt-5.4-mini) | 자연어 폴백 검색 — 키 미설정 시에도 부팅 가능(더미 기본값) |
 | 테스트 | JUnit · Mockito + **acr-mock 프로파일** | ACRCloud 실호출 없이 전 파이프라인 E2E 가능 |
 
 ### Infra
@@ -95,10 +103,10 @@ npm run dev                 # http://localhost:5173
 
 ```
 Melolist-v3
-├─ backend/          # Spring Boot — 도메인 MVC (auth·user·music·search·playlist·community·event)
+├─ backend/          # Spring Boot — 도메인 MVC (auth·user·music·search·playlist·community·event·admin)
 │  ├─ db/            # 마이그레이션 SQL 사본 · KR 지표 쿼리
 │  └─ scripts/       # 매칭률 측정 스크립트 (match-rate)
-├─ frontend/         # React SPA — 검색·즐겨찾기·플레이리스트·기록·프로필
+├─ frontend/         # React SPA — 검색·즐겨찾기·플레이리스트·기록·프로필·어드민
 ├─ docs/             # 문서 색인(README) · prd(실행 PRD·OKR) · guides · devlog(월별) · archive
 ├─ specs/            # spec-kit 명세 (001 Google OAuth2 로그인 등)
 ├─ .specify/         # spec-kit constitution(원칙 6종) · 템플릿
