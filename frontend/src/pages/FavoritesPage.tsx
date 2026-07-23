@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import type { Variants } from 'motion/react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -12,6 +12,7 @@ import { CoverArt } from '@/features/search/CoverArt'
 import { getFavorites, removeFavorite, type FavoriteResponse, type FavoritesPage as Page } from '@/features/favorites/api'
 import { AddToPlaylistSheet } from '@/features/playlists/AddToPlaylistSheet'
 import { ProfileCorner } from '@/features/user/ProfileCorner'
+import { GuestPrompt } from '@/features/user/GuestPrompt'
 
 const PAGE_SIZE = 20
 
@@ -59,10 +60,8 @@ export function FavoritesPage() {
     onError: () => toast('해제하지 못했어요 — 잠시 후 다시 시도해주세요'),
   })
 
-  // 세션 하이드레이션 전에는 판단 보류(스켈레톤) — 새로고침 직후 오판 방지
-  if (initialized && !session) {
-    return <Navigate to="/login" state={{ next: '/favorites' }} replace />
-  }
+  // 게스트는 /login으로 튕기지 않고 탭 셸을 유지한 채 인라인 유도 — 하이드레이션 전엔 스켈레톤(오판 방지)
+  const guest = initialized && !session
 
   const items = query.data?.pages.flatMap((p) => p.items) ?? []
   const totalItems = query.data?.pages[0]?.total_items ?? 0
@@ -86,11 +85,29 @@ export function FavoritesPage() {
       <div className="pt-4">
         <h1 className="text-[26px] font-black leading-tight tracking-[-0.02em]">즐겨찾기</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {loading ? '불러오는 중…' : totalItems > 0 ? `저장한 곡 ${totalItems}곡` : '찾은 곡을 모아두는 곳이에요'}
+          {guest || (!loading && totalItems === 0)
+            ? '찾은 곡을 모아두는 곳이에요'
+            : loading
+              ? '불러오는 중…'
+              : `저장한 곡 ${totalItems}곡`}
         </p>
       </div>
 
-      {loading ? (
+      {guest ? (
+        <GuestPrompt
+          icon={Heart}
+          iconClassName="bg-brand/12 text-brand"
+          title="로그인하면 곡을 저장할 수 있어요"
+          description={
+            <>
+              검색 결과에서 ♡를 누르면
+              <br />
+              계정에 차곡차곡 모여요
+            </>
+          }
+          next="/favorites"
+        />
+      ) : loading ? (
         <div className="mt-5 flex flex-col gap-2.5">
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5">

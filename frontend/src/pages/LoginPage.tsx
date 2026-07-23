@@ -36,9 +36,10 @@ export function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-4">
       <header>
+        {/* 뒤로가기도 로그인을 유도한 화면으로 — 탭에서 왔다가 로그인 없이 나가도 그 탭으로 복귀 */}
         <Button asChild variant="ghost" size="sm" className="-ml-2 rounded-full text-muted-foreground hover:text-foreground">
-          <Link to="/">
-            <ChevronLeft /> 홈
+          <Link to={next}>
+            <ChevronLeft /> {next === '/' ? '홈' : '뒤로'}
           </Link>
         </Button>
       </header>
