@@ -114,6 +114,8 @@ async function main() {
         hit: verdict.hit,
         rank: verdict.rank,
         matchedBy: verdict.matchedBy,
+        // 표기 차이 MISS 시 리포트에서 확인·검증해 manifest acrid로 채우는 용도(HIT면 매칭 결과, MISS면 top1)
+        resultAcrid: verdict.r?.acrid ?? null,
         topResult: verdict.r ? `${verdict.r.title} — ${(verdict.r.artists ?? [])[0]?.name ?? '?'}` : '(무결과)',
         topScore: results[0]?.score ?? null,
         resultCount: results.length,
