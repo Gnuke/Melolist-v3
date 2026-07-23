@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import type { Variants } from 'motion/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { createPlaylist, getPlaylists, type PlaylistSummary } from '@/features/playlists/api'
 import { PlaylistFormSheet } from '@/features/playlists/PlaylistFormSheet'
 import { ProfileCorner } from '@/features/user/ProfileCorner'
+import { GuestPrompt } from '@/features/user/GuestPrompt'
 
 const listVariants: Variants = {
   hidden: {},
@@ -45,10 +46,8 @@ export function PlaylistsPage() {
     onError: () => toast('만들지 못했어요 — 잠시 후 다시 시도해주세요'),
   })
 
-  // 세션 하이드레이션 전에는 판단 보류(스켈레톤) — 새로고침 직후 오판 방지
-  if (initialized && !session) {
-    return <Navigate to="/login" state={{ next: '/playlists' }} replace />
-  }
+  // 게스트는 /login으로 튕기지 않고 탭 셸을 유지한 채 인라인 유도 — 하이드레이션 전엔 스켈레톤(오판 방지)
+  const guest = initialized && !session
 
   const items = query.data ?? []
   const loading = !initialized || query.isPending
@@ -72,7 +71,11 @@ export function PlaylistsPage() {
         <div>
           <h1 className="text-[26px] font-black leading-tight tracking-[-0.02em]">플레이리스트</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {loading ? '불러오는 중…' : items.length > 0 ? `${items.length}개` : '찾은 곡을 주제별로 모아보세요'}
+            {guest || (!loading && items.length === 0)
+              ? '찾은 곡을 주제별로 모아보세요'
+              : loading
+                ? '불러오는 중…'
+                : `${items.length}개`}
           </p>
         </div>
         {!loading && items.length > 0 && (
@@ -87,7 +90,21 @@ export function PlaylistsPage() {
         )}
       </div>
 
-      {loading ? (
+      {guest ? (
+        <GuestPrompt
+          icon={ListMusic}
+          iconClassName="bg-brand/12 text-brand"
+          title="로그인하면 플레이리스트를 만들 수 있어요"
+          description={
+            <>
+              찾은 곡을 주제별로 모아
+              <br />
+              나만의 리스트로 정리해보세요
+            </>
+          }
+          next="/playlists"
+        />
+      ) : loading ? (
         <div className="mt-5 flex flex-col gap-2.5">
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex items-center gap-3.5 rounded-2xl border border-border bg-card/60 p-3.5">
