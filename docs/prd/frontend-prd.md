@@ -1,7 +1,7 @@
 # Melolist-v3 Frontend PRD (React SPA)
 
-> **문서 상태:** v1.0 (2026-07-08) · 근거: `PRD.md`(마스터 v0.1) + `brainstorming.md`(0장 OKR · 6장 M2 설계 · 7장 이미지 소싱)
-> **문서 위계:** `PRD.md` = 제품 전반(비전·마일스톤 총괄). 본 문서 = **프론트엔드 실행 PRD** — 화면·UX·계측의 요구사항을 확정한다. 충돌 시 본 문서가 최신(브레인스토밍 결정 반영).
+> **문서 상태:** v1.0 (2026-07-08) · 근거: 마스터 PRD(`../archive/PRD-master-v0.1.md`) + 브레인스토밍(`../archive/brainstorming-2026q3.md` — 0장 OKR은 `okr-2026q3.md`로 승격 · 6장 M2 설계 · 7장 이미지 소싱)
+> **문서 위계:** 마스터 PRD(아카이브) = 제품 전반(비전·마일스톤 총괄) 스냅숏. 본 문서 = **프론트엔드 실행 PRD(정본)** — 화면·UX·계측의 요구사항을 확정한다. 충돌 시 본 문서가 최신(브레인스토밍 결정 반영). 색인: `../README.md`.
 > **계약 동기화:** §8의 API 계약·이벤트 사전은 `backend-prd.md` §6.1과 동일해야 하며, 변경 시 양쪽을 함께 갱신한다.
 
 ---
@@ -26,7 +26,7 @@
 
 ## 2. 기존 PRD 대비 변경/유지 결정
 
-### 2.1 변경 (brainstorming.md 반영)
+### 2.1 변경 (brainstorming-2026q3.md 반영)
 
 | # | 항목 | 기존 PRD / 현재 구현 | 변경 | 상태 |
 |---|---|---|---|---|
@@ -39,7 +39,7 @@
 | C7 | 사전 검증 | 없음 | 업로드 전 길이(지문 3초/허밍 8초 미만 경고) + RMS 음량 체크 — **서버 왕복 없이 F1 차단** | ✅ 확정 |
 | C8 | 듣기 버튼 | 유튜브 새 탭 | **유지 확정** — `youtube_url`(watch?v=) 새 탭. 인라인 임베드·미니플레이어는 M3 | ✅ v2 계승 |
 
-### 2.2 유지 (변경 없음 — PRD.md가 계속 유효)
+### 2.2 유지 (변경 없음 — 마스터 PRD가 계속 유효)
 
 - 기술 스택 전체: React 19 + TS + Vite, React Router, TanStack Query, Zustand, Axios(JWT 인터셉터), wavesurfer, Tailwind v4 + shadcn/ui(Radix), Framer Motion(`motion`), Lucide, Inter (PRD §3)
 - **디자인 시스템 §10.1 전부**: 프리미엄 다크 기본, 팔레트(#090909/#161616/#5B8CFF, red=오류·녹음만), 모션 원칙, MicButton = Siri급 인터랙션
@@ -177,7 +177,7 @@ export interface AcrResult {
 
 ## 10. 디자인 시스템 (2026-07-16 갱신 — 07-09 M2 화면 개편에서 교체된 DS 반영)
 
-> **정본**: claude.ai/design 프로젝트(`_ds/melolist-design-system-*` 토큰·readme) + `docs/design-guideline.md`(적용 철학 — "감상 앱이 아니라 발견/검색/기록 앱"). 이 절은 요약이며 충돌 시 정본 우선.
+> **정본**: claude.ai/design 프로젝트(`_ds/melolist-design-system-*` 토큰·readme) + `docs/guides/design-guideline.md`(적용 철학 — "감상 앱이 아니라 발견/검색/기록 앱"). 이 절은 요약이며 충돌 시 정본 우선.
 > (구 팔레트 `#090909`/`#5B8CFF`/Inter는 07-09에 아래 DS로 대체됨 — PRD §10.1의 해당 기술은 구식)
 
 - **Ink 뉴트럴 스케일**: 배경 `--ink-950 #0a0a0c`(프리미엄 다크 기본) ~ `--ink-50`, 카드/서피스는 ink 스케일 + 흰색 저투명 보더(`border-white/7~15`)

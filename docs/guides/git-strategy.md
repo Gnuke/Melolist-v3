@@ -1,7 +1,7 @@
 # Melolist-v3 Git 전략
 
-> 원격 저장소: `https://github.com/Gnuke/Melolist-v3.git` (아직 미연결)
-> 구성: 1인 개발 · 모노레포(`frontend/` React SPA, `backend/` Spring Boot, `PRD.md` 등 공통 문서) · `nuxt-app/`은 레거시 v2 참고용으로 git 추적 제외(.gitignore)
+> 원격 저장소: `https://github.com/Gnuke/Melolist-v3.git` (2026-07-10 연결됨)
+> 구성: 1인 개발 · 모노레포(`frontend/` React SPA, `backend/` Spring Boot, `docs/` 공통 문서) · `nuxt-app/`은 레거시 v2 참고용으로 git 추적 제외(.gitignore)
 > 마일스톤: M1(기반) → M2(검색) → M3(저장) → M4(커뮤니티) → M5(AI) → M6(하드닝/운영 배포)
 
 ---

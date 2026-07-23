@@ -1,5 +1,7 @@
 # Melolist-v3 PRD Generation Request
 
+[아카이브 2026-07-22] PRD 최초 생성 요청서 스냅숏 — 갱신하지 않음. 현행 문서는 docs/README.md 색인 참조.
+
 ## Project Overview
 
 Melolist-v3는 기존 Melolist-v2(Vue + Node.js)를

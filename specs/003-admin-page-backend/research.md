@@ -124,7 +124,7 @@ Technical Context에 NEEDS CLARIFICATION은 없다. 아래는 충돌 회피 제�
 ## D9. 계약·문서 동기화 — contracts가 정본, 실행 PRD는 병합 순서 관리
 
 - **Decision**: `specs/003-admin-page-backend/contracts/admin-api.md`를 프론트 트리가
-  소비하는 **계약 정본**으로 삼는다. `docs/backend-prd.md` §6.2·`docs/frontend-prd.md` §8
+  소비하는 **계약 정본**으로 삼는다. `docs/prd/backend-prd.md` §6.2·`docs/prd/frontend-prd.md` §8
   갱신은 구현 완료 후 PR 마무리 태스크로 두되, 두 문서 모두 spec 002가 수정 중이므로
   **spec 002 병합 → 본 브랜치 rebase → 문서 갱신 커밋** 순서로 진행한다.
 - **Rationale**: 원칙 II의 취지(계약 불일치 조기 발견)는 contracts 선확정으로 충족하면서,

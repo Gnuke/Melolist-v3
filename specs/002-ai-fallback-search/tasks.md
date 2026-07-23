@@ -104,7 +104,7 @@ TextSearchService 단위 테스트, mock E2E 검증).
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [X] T028 [P] 계약 동기화(원칙 II — 구현과 같은 PR): docs/backend-prd.md §6.1에 엔드포인트 2개+이벤트 사전 4종 병합·§6.2의 `/search/text` 행 이관 확정, docs/frontend-prd.md §8에 AcrResult 완화·API 함수 반영 (contracts/search-text-api.md 그대로)
+- [X] T028 [P] 계약 동기화(원칙 II — 구현과 같은 PR): docs/prd/backend-prd.md §6.1에 엔드포인트 2개+이벤트 사전 4종 병합·§6.2의 `/search/text` 행 이관 확정, docs/prd/frontend-prd.md §8에 AcrResult 완화·API 함수 반영 (contracts/search-text-api.md 그대로)
 - [X] T029 [P] backend/db/queries/kr_metrics.sql에 SC-001~004 산출 쿼리 추가 (contracts §3의 SQL 스케치 기반)
 - [X] T030 실키 스모크(quickstart §6) — ✅07-22 로컬 완료: 실쿼리 7건(한국곡 4·팝 1·다후보 1·무후보 1) **전부 정답 1순위**, ai_ms 0.9~3.9s·total_ms 최대 7.3s(15s 예산 내). **발견: gpt-5-mini는 2026-12-11 종료 예정(deprecated) + 5.4 계열은 reasoning_effort 'minimal' 미지원(400)** → 기본값을 gpt-5.4-mini + low로 상향(yml·AiProperties). 단가 재확인: gpt-5.4-mini $0.75/$4.50 per 1M → 쿼리당 ~3원(여전히 무시 가능). 테스트 이벤트 13건 DB 정리함. ⏳잔여: Render 환경변수 OPENAI_API_KEY 등록(배포 시점, AI_MODEL은 기본값이 5.4-mini라 불필요) 및 웜업 후 운영 확인
 - [X] T031 병합 게이트 최종 확인 — ✅07-22 완료: T030 후 backend build+테스트 33건 재통과(기본값 변경 포함), 나머지(frontend build, mock E2E 18건, 시크릿 미추적, 텍스트 전용 페이로드)는 07-21 확인분 유효. 시크릿은 backend/.env(미추적)에만 존재 재확인

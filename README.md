@@ -99,7 +99,7 @@ Melolist-v3
 │  ├─ db/            # 마이그레이션 SQL 사본 · KR 지표 쿼리
 │  └─ scripts/       # 매칭률 측정 스크립트 (match-rate)
 ├─ frontend/         # React SPA — 검색·즐겨찾기·플레이리스트·기록·프로필
-├─ docs/             # backend-prd · frontend-prd · design-guideline · devlog · git-strategy
+├─ docs/             # 문서 색인(README) · prd(실행 PRD·OKR) · guides · devlog(월별) · archive
 ├─ specs/            # spec-kit 명세 (001 Google OAuth2 로그인 등)
 ├─ .specify/         # spec-kit constitution(원칙 6종) · 템플릿
 └─ nuxt-app/         # v2(Nuxt) — 레퍼런스로 보존
@@ -109,10 +109,10 @@ Melolist-v3
 
 ## 🤝 개발 방식
 
-- **1인 개발 + AI 에이전트 협업**: 설계·구현·리뷰·운영 진단 전 과정을 **Claude Code**와 페어로 진행 — spec 명세와 [devlog](docs/devlog.md)로 세션 간 컨텍스트를 유지
+- **1인 개발 + AI 에이전트 협업**: 설계·구현·리뷰·운영 진단 전 과정을 **Claude Code**와 페어로 진행 — spec 명세와 [devlog](docs/devlog/)로 세션 간 컨텍스트를 유지
 - **Spec-Driven Development**: [spec-kit](https://github.com/github/spec-kit) — constitution(도메인 중심 아키텍처 / 계약 동기화 / 측정 기본 탑재 / 프라이버시·저작권 가드레일 / 게스트 우선 / mock 테스트 가능성) 기반으로 기능별 spec 작성 후 구현
-- **브랜치**: GitHub Flow 단순화 — `main` 단일 + 기능별 `feat/*`·`fix/*`·`chore/*` 브랜치 → PR → CI 통과 후 병합 (상세: [docs/git-strategy.md](docs/git-strategy.md))
-- **문서 위계**: [PRD.md](PRD.md)(제품 요구사항) → [docs/backend-prd.md](docs/backend-prd.md)·[docs/frontend-prd.md](docs/frontend-prd.md)(실행 PRD) → [docs/devlog.md](docs/devlog.md)(개발 일지)
+- **브랜치**: GitHub Flow 단순화 — `main` 단일 + 기능별 `feat/*`·`fix/*`·`chore/*` 브랜치 → PR → CI 통과 후 병합 (상세: [docs/guides/git-strategy.md](docs/guides/git-strategy.md))
+- **문서 위계**: [docs/README.md](docs/README.md)(색인) 참조 — 정본은 실행 PRD([backend](docs/prd/backend-prd.md)·[frontend](docs/prd/frontend-prd.md)) + [OKR](docs/prd/okr-2026q3.md), 일지는 [devlog](docs/devlog/)(월별). 초기 마스터 PRD·브레인스토밍은 [docs/archive/](docs/archive/) 스냅숏
 
 ---
 
