@@ -13,6 +13,7 @@ Melolist-v3의 프론트엔드 (React SPA). 제품 요구사항은 [`docs/prd/fr
 | HTTP | Axios (요청 시 Supabase JWT 자동 주입) |
 | 스타일 | Tailwind CSS v4 + shadcn/ui — 라이트/다크 테마(기본 다크, 헤더 토글) |
 | Auth | Supabase JS SDK |
+| 테스트 | Vitest + Testing Library (jsdom) — `vitest.config.ts`는 vite.config와 분리 |
 
 ## 폴더 구조
 
@@ -38,6 +39,7 @@ cp .env.example .env.local   # Supabase URL/anon key, API base URL 채우기
 npm install
 npm run dev                  # http://localhost:5173
 npm run build                # tsc -b && vite build
+npm test                     # vitest run — 단위 테스트 (watch는 npm run test:watch)
 ```
 
 ## shadcn/ui 컴포넌트 추가

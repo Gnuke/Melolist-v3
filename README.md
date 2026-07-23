@@ -54,6 +54,7 @@ v2는 5인 팀 프로젝트였고, **v3 재플랫폼은 1인 개발** — 설계
 | UI | Tailwind CSS 4 · Radix UI · lucide-react · motion | 자체 디자인 시스템(Flame/Iris 팔레트 + Pretendard), 라이트/다크 테마 |
 | Audio | wavesurfer.js 7 | 녹음 파형·재생 |
 | Auth | @supabase/supabase-js | Google OAuth → JWT |
+| 테스트 | Vitest 4 · Testing Library | jsdom — 결과 스태시·프로필 캐시 가드 등 순수 로직 단위 테스트 |
 | Lint | oxlint | |
 
 ### Backend (`backend/`)
