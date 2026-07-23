@@ -1,22 +1,16 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Camera, ChevronLeft, Moon, Sun } from 'lucide-react'
+import { Camera, ChevronLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
-import { setTheme, useTheme, type Theme } from '@/lib/theme'
 import { useAuthStore } from '@/stores/authStore'
 import { cacheMe, useMe, type Profile } from '@/features/user/useMe'
 import { ProfileAvatar } from '@/features/user/ProfileAvatar'
 import { updateMe } from '@/features/user/api'
 import { uploadAvatar } from '@/features/user/avatar'
-
-const THEME_OPTIONS: { value: Theme; label: string; Icon: typeof Moon }[] = [
-  { value: 'dark', label: '다크', Icon: Moon },
-  { value: 'light', label: '라이트', Icon: Sun },
-]
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 /** 프로필 화면(M3) — 별명·프로필 사진 수정. 진입점: 홈 프로필 시트 [프로필 관리]. */
 export function ProfilePage() {
@@ -28,7 +22,6 @@ export function ProfilePage() {
   const me = query.data
   const [name, setName] = useState<string | null>(null) // null = 아직 입력 전(서버 값 표시)
   const fileRef = useRef<HTMLInputElement>(null)
-  const theme = useTheme()
 
   const applyMe = (updated: Profile) => {
     queryClient.setQueryData(['me'], updated)
@@ -75,7 +68,7 @@ export function ProfilePage() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-28 pt-4">
-      <header className="mb-2 flex h-8 items-center">
+      <header className="mb-2 flex h-8 items-center justify-between">
         <Button
           type="button"
           variant="ghost"
@@ -85,6 +78,8 @@ export function ProfilePage() {
         >
           <ChevronLeft /> 홈
         </Button>
+        {/* 화면 테마는 헤더 공용 토글로 승격 — 탭 화면들과 동일한 위치 */}
+        <ThemeToggle />
       </header>
 
       <div className="pt-4">
@@ -178,28 +173,6 @@ export function ProfilePage() {
           </div>
         </>
       )}
-
-      {/* 화면 테마 — 기기 설정이라 프로필 로딩과 무관하게 항상 노출 */}
-      <div className="mt-9">
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">화면 테마</p>
-        <div className="mt-3 inline-flex items-center gap-1 self-start rounded-full border border-border bg-card/60 p-1">
-          {THEME_OPTIONS.map(({ value, label, Icon }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setTheme(value)}
-              aria-pressed={theme === value}
-              className={cn(
-                'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors',
-                theme === value ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <Icon className="size-3.5" />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

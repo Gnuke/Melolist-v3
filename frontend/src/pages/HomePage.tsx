@@ -8,6 +8,7 @@ import type { RecentFind } from '@/features/search/recentFinds'
 import { useRecentFinds } from '@/features/search/useRecentFinds'
 import { useAuthStore } from '@/stores/authStore'
 import { ProfileCorner } from '@/features/user/ProfileCorner'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const containerVariants: Variants = {
   hidden: {},
@@ -46,13 +47,16 @@ export function HomePage() {
           <h1 className="text-[21px] font-black tracking-[-0.02em]">
             Melolist<span className="text-brand">.</span>
           </h1>
-          {session ? (
-            <ProfileCorner />
-          ) : (
-            <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-foreground">
-              <Link to="/login">로그인</Link>
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            {session ? (
+              <ProfileCorner />
+            ) : (
+              <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-foreground">
+                <Link to="/login">로그인</Link>
+              </Button>
+            )}
+          </div>
         </header>
 
         {/* 헤드라인 */}

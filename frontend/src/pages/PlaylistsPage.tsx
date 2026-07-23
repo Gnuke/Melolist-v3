@@ -12,6 +12,7 @@ import { createPlaylist, getPlaylists, type PlaylistSummary } from '@/features/p
 import { PlaylistFormSheet } from '@/features/playlists/PlaylistFormSheet'
 import { ProfileCorner } from '@/features/user/ProfileCorner'
 import { GuestPrompt } from '@/features/user/GuestPrompt'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const listVariants: Variants = {
   hidden: {},
@@ -64,7 +65,10 @@ export function PlaylistsPage() {
         >
           <ChevronLeft /> 홈
         </Button>
-        <ProfileCorner />
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <ProfileCorner />
+        </div>
       </header>
 
       <div className="flex items-end justify-between pt-4">

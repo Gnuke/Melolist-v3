@@ -13,6 +13,7 @@ import { getFavorites, removeFavorite, type FavoriteResponse, type FavoritesPage
 import { AddToPlaylistSheet } from '@/features/playlists/AddToPlaylistSheet'
 import { ProfileCorner } from '@/features/user/ProfileCorner'
 import { GuestPrompt } from '@/features/user/GuestPrompt'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const PAGE_SIZE = 20
 
@@ -79,7 +80,10 @@ export function FavoritesPage() {
         >
           <ChevronLeft /> 홈
         </Button>
-        <ProfileCorner />
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <ProfileCorner />
+        </div>
       </header>
 
       <div className="pt-4">

@@ -14,6 +14,7 @@ import { addFavoriteByMusicId, removeFavorite } from '@/features/favorites/api'
 import { AddToPlaylistSheet } from '@/features/playlists/AddToPlaylistSheet'
 import { ProfileCorner } from '@/features/user/ProfileCorner'
 import { GuestPrompt } from '@/features/user/GuestPrompt'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   getHistory,
   removeHistory,
@@ -121,7 +122,10 @@ export function HistoryPage() {
         >
           <ChevronLeft /> 홈
         </Button>
-        <ProfileCorner />
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <ProfileCorner />
+        </div>
       </header>
 
       <div className="pt-4">
