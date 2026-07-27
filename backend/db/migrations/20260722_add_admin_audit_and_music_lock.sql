@@ -18,6 +18,6 @@ create table admin_audit_log (
   created_at  timestamptz not null default now()
 );
 create index on admin_audit_log (created_at);
--- RLS: 전 테이블 정책(RLS on·정책 없음)에 맞춰 포함. data-model §5의 적용 SQL에는 이 줄이 기록되어 있지 않으므로
---      운영 DB의 relrowsecurity 반영 여부는 별도 확인 필요.
+-- RLS: 전 테이블 정책(RLS on·정책 없음)에 맞춰 포함. data-model §5의 적용 SQL에는 이 줄이 누락되어
+--      운영 DB도 비활성 상태였음 — 2026-07-27 운영 DB에서 활성화 적용 및 rowsecurity=true 확인 완료.
 alter table admin_audit_log enable row level security;
