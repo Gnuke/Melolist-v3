@@ -8,6 +8,11 @@ public record MetaEnrichment(String youtubeVideoId, String coverUrl) {
 
     public static final MetaEnrichment EMPTY = new MetaEnrichment(null, null);
 
+    /** 카탈로그 대조 성공 여부 — 실존 근거(videoId·커버) 중 하나라도 있으면 true. */
+    public boolean verified() {
+        return youtubeVideoId != null || coverUrl != null;
+    }
+
     /** 커버 3단 폴백(§5.2): album.covers.medium → ytimg → null. */
     public String coverUrlOrFallback() {
         if (coverUrl != null) {

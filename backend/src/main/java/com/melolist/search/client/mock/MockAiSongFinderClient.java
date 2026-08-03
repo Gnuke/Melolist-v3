@@ -14,7 +14,8 @@ import java.util.List;
  * AI 곡 후보 식별 목업 — {@code ai-mock} 프로파일 전용(spec 002, R9).
  * OpenAI 실호출 없이(비용 0) 폴백 흐름 전체(후보→메타 보강→선택→저장)를 검증한다.
  * 로컬 E2E는 {@code SPRING_PROFILES_ACTIVE=acr-mock,ai-mock} 병행 활성화 —
- * 좋은 날/Ditto는 MockAcrMetadataClient가 보강하고, 밤편지는 미등록이라 링크 null 케이스.
+ * 좋은 날/Ditto는 MockAcrMetadataClient가 보강하고, 밤편지는 미등록이라
+ * 메타 대조 실패 → 응답에서 제외되는 케이스(환각 필터 검증용).
  *
  * <p>시나리오 전환: 환경변수 {@code AI_MOCK_SCENARIO} = hit | empty | error | slow (기본 hit).
  * slow는 12s 지연으로 서비스 10s 컷(502)을 검증한다.</p>

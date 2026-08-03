@@ -123,12 +123,69 @@ class TextSearchServiceTest {
                 new AiSongCandidate("S3", List.of("A"), null),
                 new AiSongCandidate("S4", List.of("A"), null),
                 new AiSongCandidate("S5", List.of("A"), null)));
-        when(acrMetadataClient.lookup(anyString(), anyString(), any())).thenReturn(MetaEnrichment.EMPTY);
+        when(acrMetadataClient.lookup(anyString(), anyString(), any()))
+                .thenReturn(new MetaEnrichment("vid00000000", null));
 
         SearchResponse response = textSearchService.searchByText("dup test", SESSION_ID, null);
 
         assertThat(response.results()).hasSize(5);
         assertThat(response.results().get(0).title()).isEqualTo("Same Song");
+    }
+
+    @Test
+    void 메타_대조_실패_후보는_제외하고_대조_성공_후보만_반환한다() {
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("좋은 날", List.of("아이유"), "Real"),
+                new AiSongCandidate("흔적", List.of("윤종신"), null)));
+        when(acrMetadataClient.lookup(eq("좋은 날"), eq("아이유"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(new MetaEnrichment("jeqdYqsrsA0", null));
+        when(acrMetadataClient.lookup(eq("흔적"), eq("윤종신"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(MetaEnrichment.EMPTY);
+
+        SearchResponse response = textSearchService.searchByText("아이유 발라드", SESSION_ID, null);
+
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).title()).isEqualTo("좋은 날");
+
+        ArgumentCaptor<Map<String, Object>> props = ArgumentCaptor.forClass(Map.class);
+        verify(eventService).recordSilently(eq("ai_search_request"), eq(SESSION_ID), eq(null), props.capture());
+        assertThat(props.getValue())
+                .containsEntry("outcome", "hit")
+                .containsEntry("candidates", 1)
+                .containsEntry("filtered", 1);
+    }
+
+    @Test
+    void 커버만_있는_후보도_실존_확인으로_보고_유지한다() {
+        // 카탈로그에 있으나 유튜브 매핑만 없는 곡 — videoId 기준으로 자르면 실존곡이 사라진다
+        when(aiSongFinderClient.findCandidates(anyString()))
+                .thenReturn(List.of(new AiSongCandidate("Old Song", List.of("Artist"), null)));
+        when(acrMetadataClient.lookup(eq("Old Song"), eq("Artist"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(new MetaEnrichment(null, "https://cover/medium.jpg"));
+
+        SearchResponse response = textSearchService.searchByText("옛날 노래", SESSION_ID, null);
+
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).youtubeUrl()).isNull();
+        assertThat(response.results().get(0).coverUrl()).isEqualTo("https://cover/medium.jpg");
+    }
+
+    @Test
+    void 전부_메타_대조_실패면_빈배열이고_outcome_empty로_기록된다() {
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("가공의 곡", List.of("A"), null),
+                new AiSongCandidate("없는 곡", List.of("B"), null)));
+        when(acrMetadataClient.lookup(anyString(), anyString(), any())).thenReturn(MetaEnrichment.EMPTY);
+
+        SearchResponse response = textSearchService.searchByText("환각 유발 설명", SESSION_ID, null);
+
+        assertThat(response.results()).isEmpty();
+        ArgumentCaptor<Map<String, Object>> props = ArgumentCaptor.forClass(Map.class);
+        verify(eventService).recordSilently(eq("ai_search_request"), eq(SESSION_ID), eq(null), props.capture());
+        assertThat(props.getValue())
+                .containsEntry("outcome", "empty")
+                .containsEntry("candidates", 0)
+                .containsEntry("filtered", 2);
     }
 
     @Test

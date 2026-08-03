@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  *
  * <pre>
  * quota 검사 → [ai_ms] LLM 후보 식별(10s 컷) → [meta_ms] 메타 보강(병렬, 기존 클라이언트 재사용)
- *   → 응답(저장 없음) → (사용자 선택 시) select: upsert 1곡 + 기록 + 계측
+ *   → 대조 실패 후보 제외 → 응답(저장 없음) → (사용자 선택 시) select: upsert 1곡 + 기록 + 계측
  * </pre>
  *
  * 후보는 응답 시점에 저장하지 않는다 — 환각 곡의 DB 오염 방지(R5). 오디오는 이 경로에
@@ -78,7 +78,7 @@ public class TextSearchService {
             aiQuotaService.checkQuota(sessionId, userId);
         } catch (com.melolist.common.error.AiQuotaExceededException e) {
             // 한도 거절도 수요 측정을 위해 기록하되, 카운트에서는 제외된다(outcome=quota)
-            recordRequest(sessionId, userId, query, 0, 0, 0, 0, "quota");
+            recordRequest(sessionId, userId, query, 0, 0, 0, 0, "quota", 0);
             throw e;
         }
 
@@ -88,7 +88,7 @@ public class TextSearchService {
             candidates = findWithTimeout(query);
         } catch (Exception e) {
             long elapsed = elapsedMs(t0);
-            recordRequest(sessionId, userId, query, elapsed, 0, elapsed, 0, "error");
+            recordRequest(sessionId, userId, query, elapsed, 0, elapsed, 0, "error", 0);
             throw asExternalApiException(e);
         }
         long aiMs = elapsedMs(t0);
@@ -98,12 +98,23 @@ public class TextSearchService {
         long metaStart = System.nanoTime();
         List<MetaEnrichment> enrichments = enrichInParallel(top);
         long metaMs = elapsedMs(metaStart);
+
+        // 메타 대조 실패 후보 제외 — 카탈로그에서 실존 근거를 못 찾은 곡(환각 의심)은
+        // 노출하지 않는다. 메타 API 장애 시에도 전부 EMPTY라 빈 결과가 되는 트레이드오프.
+        List<AiSongCandidate> verified = new ArrayList<>();
+        List<MetaEnrichment> verifiedMeta = new ArrayList<>();
+        for (int i = 0; i < top.size(); i++) {
+            if (enrichments.get(i).verified()) {
+                verified.add(top.get(i));
+                verifiedMeta.add(enrichments.get(i));
+            }
+        }
         long totalMs = elapsedMs(t0);
 
-        recordRequest(sessionId, userId, query, aiMs, metaMs, totalMs, top.size(),
-                top.isEmpty() ? "empty" : "hit");
+        recordRequest(sessionId, userId, query, aiMs, metaMs, totalMs, verified.size(),
+                verified.isEmpty() ? "empty" : "hit", top.size() - verified.size());
 
-        return buildResponse(top, enrichments);
+        return buildResponse(verified, verifiedMeta);
     }
 
     /**
@@ -230,7 +241,8 @@ public class TextSearchService {
     }
 
     private void recordRequest(UUID sessionId, UUID userId, String query,
-                               long aiMs, long metaMs, long totalMs, int candidates, String outcome) {
+                               long aiMs, long metaMs, long totalMs, int candidates, String outcome,
+                               int filtered) {
         Map<String, Object> props = new HashMap<>();
         props.put("query_len", query.length());
         props.put("ai_ms", aiMs);
@@ -238,6 +250,7 @@ public class TextSearchService {
         props.put("total_ms", totalMs);
         props.put("candidates", candidates);
         props.put("outcome", outcome);
+        props.put("filtered", filtered);
         eventService.recordSilently("ai_search_request", sessionId, userId, props);
     }
 
