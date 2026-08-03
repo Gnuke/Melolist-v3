@@ -39,7 +39,8 @@ import java.util.concurrent.TimeUnit;
  * AI 자연어 폴백 검색(spec 002) — 허밍/지문 실패 경로의 구제 파이프라인.
  *
  * <pre>
- * quota 검사 → [ai_ms] LLM 후보 식별(10s 컷) → [meta_ms] 메타 보강(병렬, 기존 클라이언트 재사용)
+ * quota 검사 → [ai_ms] LLM 후보 식별(2회 병렬 샘플링·각 10s 컷·순위 교차 병합)
+ *   → [meta_ms] 메타 보강(병렬, 기존 클라이언트 재사용)
  *   → 대조 실패 후보 제외 → 응답(저장 없음) → (사용자 선택 시) select: upsert 1곡 + 기록 + 계측
  * </pre>
  *
@@ -53,6 +54,8 @@ import java.util.concurrent.TimeUnit;
 public class TextSearchService {
 
     private static final int MAX_CANDIDATES = 5;
+    /** 리콜 변동 보정용 병렬 샘플 수 — 쿼터는 요청 1회로 계산(모델 호출 비용만 배수). */
+    private static final int AI_SAMPLES = 2;
     /** 메타 보강 토큰은 지문(music) 프로젝트 것을 쓴다 — TEXT 전용 토큰은 없다. */
     private static final SearchMode META_LOOKUP_MODE = SearchMode.FINGERPRINT;
 
@@ -85,7 +88,7 @@ public class TextSearchService {
         long t0 = System.nanoTime();
         List<AiSongCandidate> candidates;
         try {
-            candidates = findWithTimeout(query);
+            candidates = findWithSampling(query);
         } catch (Exception e) {
             long elapsed = elapsedMs(t0);
             recordRequest(sessionId, userId, query, elapsed, 0, elapsed, 0, "error", 0);
@@ -163,16 +166,46 @@ public class TextSearchService {
         return MusicResponse.from(music);
     }
 
-    /** LLM 호출 10s 컷(R7) — 가상 스레드 + orTimeout, 기존 파이프라인 컷 패턴과 동일. */
-    private List<AiSongCandidate> findWithTimeout(String query) {
-        try {
-            return CompletableFuture
+    /**
+     * 리콜 변동 보정 — 동일 질의 {@value #AI_SAMPLES}회 병렬 샘플링 후 순위 교차 병합
+     * (실측: 단발 포함률 ~80% → 두 샘플 동시 누락 ~4%). 지연은 병렬이라 max(호출들),
+     * 각 호출은 10s 컷(R7). 일부 실패는 성공 샘플로 진행, 전부 실패면 예외 전파.
+     */
+    private List<AiSongCandidate> findWithSampling(String query) {
+        List<CompletableFuture<List<AiSongCandidate>>> futures = new ArrayList<>();
+        for (int i = 0; i < AI_SAMPLES; i++) {
+            futures.add(CompletableFuture
                     .supplyAsync(() -> aiSongFinderClient.findCandidates(query), PIPELINE_EXECUTOR)
-                    .orTimeout(aiProperties.timeoutMs(), TimeUnit.MILLISECONDS)
-                    .join();
-        } catch (CompletionException e) {
-            throw e.getCause() instanceof RuntimeException re ? re : e;
+                    .orTimeout(aiProperties.timeoutMs(), TimeUnit.MILLISECONDS));
         }
+
+        List<List<AiSongCandidate>> samples = new ArrayList<>();
+        RuntimeException failure = null;
+        for (CompletableFuture<List<AiSongCandidate>> f : futures) {
+            try {
+                samples.add(f.join());
+            } catch (CompletionException e) {
+                failure = e.getCause() instanceof RuntimeException re ? re : e;
+            }
+        }
+        if (samples.isEmpty()) {
+            throw failure;
+        }
+        return interleaveByRank(samples);
+    }
+
+    /** 순위 교차 병합(각 샘플 1위 → 각 2위 …) — 한 샘플이 패딩이어도 정답이 상위에 든다. */
+    private static List<AiSongCandidate> interleaveByRank(List<List<AiSongCandidate>> samples) {
+        List<AiSongCandidate> merged = new ArrayList<>();
+        int maxSize = samples.stream().mapToInt(List::size).max().orElse(0);
+        for (int rank = 0; rank < maxSize; rank++) {
+            for (List<AiSongCandidate> sample : samples) {
+                if (rank < sample.size()) {
+                    merged.add(sample.get(rank));
+                }
+            }
+        }
+        return merged;
     }
 
     private ExternalApiException asExternalApiException(Exception e) {

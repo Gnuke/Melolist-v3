@@ -260,6 +260,43 @@ class TextSearchServiceTest {
     }
 
     @Test
+    void 모델을_2회_병렬_샘플링하고_각_샘플의_1순위가_상위_2위_안에_온다() {
+        // 리콜 변동 보정 — 한 샘플이 유명곡 패딩이어도 다른 샘플의 정답이 상위에 들어야 한다
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(
+                List.of(new AiSongCandidate("거리에서", List.of("성시경"), null),
+                        new AiSongCandidate("좋을텐데", List.of("성시경"), null)),
+                List.of(new AiSongCandidate("미소천사", List.of("성시경"), null),
+                        new AiSongCandidate("넌 감동이었어", List.of("성시경"), null)));
+        when(acrMetadataClient.lookup(anyString(), anyString(), any()))
+                .thenReturn(new MetaEnrichment("vid00000000", null));
+
+        SearchResponse response = textSearchService.searchByText("성시경 노랜데 댄스곡", SESSION_ID, null);
+
+        verify(aiSongFinderClient, times(2)).findCandidates(anyString());
+        assertThat(response.results()).hasSize(4);
+        List<String> top2 = List.of(response.results().get(0).title(), response.results().get(1).title());
+        assertThat(top2).contains("미소천사");
+        assertThat(top2).contains("거리에서");
+    }
+
+    @Test
+    void 한쪽_샘플이_실패해도_다른_샘플로_응답한다() {
+        when(aiSongFinderClient.findCandidates(anyString()))
+                .thenThrow(new RuntimeException("sample fail"))
+                .thenReturn(List.of(new AiSongCandidate("미소천사", List.of("성시경"), null)));
+        when(acrMetadataClient.lookup(anyString(), anyString(), any()))
+                .thenReturn(new MetaEnrichment("ro1knsWzgjQ", null));
+
+        SearchResponse response = textSearchService.searchByText("성시경 노랜데 댄스곡", SESSION_ID, null);
+
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).title()).isEqualTo("미소천사");
+        ArgumentCaptor<Map<String, Object>> props = ArgumentCaptor.forClass(Map.class);
+        verify(eventService).recordSilently(eq("ai_search_request"), eq(SESSION_ID), eq(null), props.capture());
+        assertThat(props.getValue()).containsEntry("outcome", "hit");
+    }
+
+    @Test
     void 무후보는_200_빈배열이며_outcome_empty로_기록된다() {
         when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of());
 
