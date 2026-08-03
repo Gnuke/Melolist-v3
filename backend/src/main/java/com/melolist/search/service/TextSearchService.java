@@ -106,11 +106,20 @@ public class TextSearchService {
         // 노출하지 않는다. 메타 API 장애 시에도 전부 EMPTY라 빈 결과가 되는 트레이드오프.
         List<AiSongCandidate> verified = new ArrayList<>();
         List<MetaEnrichment> verifiedMeta = new ArrayList<>();
+        List<AiSongCandidate> dropped = new ArrayList<>();
         for (int i = 0; i < top.size(); i++) {
             if (enrichments.get(i).verified()) {
                 verified.add(top.get(i));
                 verifiedMeta.add(enrichments.get(i));
+            } else {
+                dropped.add(top.get(i));
             }
+        }
+        if (!dropped.isEmpty()) {
+            // 잘린 후보가 뭐였는지 없이는 오살(실존곡 탈락) 진단이 불가능하다 — 곡명 로그 필수
+            log.info("AI 후보 메타 대조 탈락 {}건 — {}", dropped.size(), dropped.stream()
+                    .map(d -> d.title() + "/" + d.joinedArtists() + " (alt " + d.titleAlt() + "/" + d.artistAlt() + ")")
+                    .collect(java.util.stream.Collectors.joining(", ")));
         }
         long totalMs = elapsedMs(t0);
 
@@ -231,12 +240,17 @@ public class TextSearchService {
         return unique;
     }
 
-    /** 후보 전건 메타 보강 병렬 실행 — 기존 enrich 패턴(§5.3). 실패는 EMPTY. */
+    /**
+     * 후보 전건 메타 보강 병렬 실행 — 기존 enrich 패턴(§5.3). 실패는 EMPTY.
+     * 후보별 3단 체인은 최악 12s(4s×3)라 소프트 데드라인으로 꼬리를 잘라
+     * 클라 15s 예산을 보호한다 — 넘긴 후보는 미검증 처리(제외).
+     */
     private List<MetaEnrichment> enrichInParallel(List<AiSongCandidate> candidates) {
         List<CompletableFuture<MetaEnrichment>> futures = candidates.stream()
                 .map(c -> CompletableFuture.supplyAsync(
                         () -> lookupWithAltFallback(c),
-                        PIPELINE_EXECUTOR))
+                        PIPELINE_EXECUTOR)
+                        .orTimeout(aiProperties.metaDeadlineMs(), TimeUnit.MILLISECONDS))
                 .toList();
         return futures.stream()
                 .map(f -> {
@@ -257,7 +271,7 @@ public class TextSearchService {
      * 전부 실패하는 후보는 최대 3회 조회라 meta_ms가 늘어나는 트레이드오프.
      */
     private MetaEnrichment lookupWithAltFallback(AiSongCandidate c) {
-        MetaEnrichment result = acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE);
+        MetaEnrichment result = accept(c, acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE));
         if (result.verified()) {
             return result;
         }
@@ -267,15 +281,63 @@ public class TextSearchService {
         String titleAlt = normalized(c.titleAlt());
 
         if (artistAlt != null && (artist == null || !artistAlt.equalsIgnoreCase(artist))) {
-            result = acrMetadataClient.lookup(c.title(), artistAlt, META_LOOKUP_MODE);
+            result = accept(c, acrMetadataClient.lookup(c.title(), artistAlt, META_LOOKUP_MODE));
             if (result.verified()) {
                 return result;
             }
         }
         if (titleAlt != null && !titleAlt.equalsIgnoreCase(c.title())) {
-            result = acrMetadataClient.lookup(titleAlt, artistAlt != null ? artistAlt : artist, META_LOOKUP_MODE);
+            result = accept(c, acrMetadataClient.lookup(titleAlt, artistAlt != null ? artistAlt : artist, META_LOOKUP_MODE));
         }
         return result;
+    }
+
+    /**
+     * fuzzy 대조가 다른 가수의 동명곡을 반환하는 오염 차단(실측: 흔적/Yoon Jong Shin 요청에
+     * 윤정아 동명곡 반환) — 반환 아티스트가 후보의 어떤 표기와도 안 맞으면 미검증 처리.
+     * 반환 아티스트가 없으면 비교 불가라 통과(과잉 필터 방지, mock 포함).
+     */
+    private MetaEnrichment accept(AiSongCandidate c, MetaEnrichment meta) {
+        if (meta.verified() && !artistMatches(c, meta)) {
+            log.info("메타 대조 동명이곡 의심 — 후보 {}/{} vs 반환 아티스트 {}",
+                    c.title(), c.joinedArtists(), meta.artists());
+            return MetaEnrichment.EMPTY;
+        }
+        return meta;
+    }
+
+    private static boolean artistMatches(AiSongCandidate c, MetaEnrichment meta) {
+        if (meta.artists() == null || meta.artists().isEmpty()) {
+            return true;
+        }
+        List<String> expected = new ArrayList<>();
+        if (c.artists() != null) {
+            expected.addAll(c.artists());
+        }
+        if (c.artistAlt() != null) {
+            expected.add(c.artistAlt());
+        }
+        if (expected.isEmpty()) {
+            return true;
+        }
+        for (String returned : meta.artists()) {
+            String r = normalizeName(returned);
+            if (r.isEmpty()) {
+                continue;
+            }
+            for (String e : expected) {
+                String n = normalizeName(e);
+                if (!n.isEmpty() && (n.equals(r) || n.contains(r) || r.contains(n))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** 표기 변형(대소문자·공백·하이픈·마침표) 흡수용 정규화. */
+    private static String normalizeName(String s) {
+        return s == null ? "" : s.toLowerCase().replaceAll("[\\s\\-._]", "");
     }
 
     private static String normalized(String s) {

@@ -72,7 +72,7 @@ class TextSearchServiceTest {
 
     @BeforeEach
     void setUp() {
-        AiProperties props = new AiProperties(10_000, "low", new AiProperties.Quota(3, 10));
+        AiProperties props = new AiProperties(10_000, "low", 8_000, new AiProperties.Quota(3, 10));
         textSearchService = new TextSearchService(
                 aiSongFinderClient, acrMetadataClient, aiQuotaService, props,
                 musicService, userService, eventService, searchHistoryRepository);
@@ -239,6 +239,55 @@ class TextSearchServiceTest {
 
         assertThat(response.results()).isEmpty();
         verify(acrMetadataClient, times(1)).lookup(anyString(), anyString(), any());
+    }
+
+    @Test
+    void 대조_반환_아티스트가_후보와_다르면_동명이곡_오염으로_제외한다() {
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("흔적", List.of("윤종신"), null, null, "Yoon Jong Shin")));
+        // 실측 사례: 요청 아티스트와 다른 가수의 동명곡이 링크와 함께 반환되는 경우
+        when(acrMetadataClient.lookup(eq("흔적"), eq("윤종신"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(new MetaEnrichment("wrongVid0001", null, List.of("Yoon Jeong ah")));
+        when(acrMetadataClient.lookup(eq("흔적"), eq("Yoon Jong Shin"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(MetaEnrichment.EMPTY);
+
+        SearchResponse response = textSearchService.searchByText("발라드 흔적", SESSION_ID, null);
+
+        assertThat(response.results()).isEmpty();
+    }
+
+    @Test
+    void 반환_아티스트는_로마자_표기와_정규화_비교로_일치_판정한다() {
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("미소천사", List.of("성시경"), null, null, "Sung Si Kyung")));
+        when(acrMetadataClient.lookup(eq("미소천사"), eq("성시경"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(MetaEnrichment.EMPTY);
+        // 표기 변형(대소문자·하이픈)이어도 정규화 비교로 일치해야 한다
+        when(acrMetadataClient.lookup(eq("미소천사"), eq("Sung Si Kyung"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(new MetaEnrichment("ro1knsWzgjQ", null, List.of("SUNG SI-KYUNG")));
+
+        SearchResponse response = textSearchService.searchByText("성시경 댄스곡", SESSION_ID, null);
+
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).title()).isEqualTo("미소천사");
+    }
+
+    @Test
+    void 메타_대조가_데드라인을_넘긴_후보는_제외된다() {
+        AiProperties fast = new AiProperties(10_000, "low", 200, new AiProperties.Quota(3, 10));
+        TextSearchService svc = new TextSearchService(
+                aiSongFinderClient, acrMetadataClient, aiQuotaService, fast,
+                musicService, userService, eventService, searchHistoryRepository);
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("느린 곡", List.of("A"), null)));
+        when(acrMetadataClient.lookup(anyString(), anyString(), any())).thenAnswer(inv -> {
+            Thread.sleep(1_000);
+            return new MetaEnrichment("vid00000000", null);
+        });
+
+        SearchResponse response = svc.searchByText("느린 메타 응답", SESSION_ID, null);
+
+        assertThat(response.results()).isEmpty();
     }
 
     @Test
