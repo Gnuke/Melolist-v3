@@ -39,8 +39,9 @@ import java.util.concurrent.TimeUnit;
  * AI 자연어 폴백 검색(spec 002) — 허밍/지문 실패 경로의 구제 파이프라인.
  *
  * <pre>
- * quota 검사 → [ai_ms] LLM 후보 식별(10s 컷) → [meta_ms] 메타 보강(병렬, 기존 클라이언트 재사용)
- *   → 응답(저장 없음) → (사용자 선택 시) select: upsert 1곡 + 기록 + 계측
+ * quota 검사 → [ai_ms] LLM 후보 식별(2회 병렬 샘플링·각 10s 컷·순위 교차 병합)
+ *   → [meta_ms] 메타 보강(병렬, 기존 클라이언트 재사용)
+ *   → 대조 실패 후보 제외 → 응답(저장 없음) → (사용자 선택 시) select: upsert 1곡 + 기록 + 계측
  * </pre>
  *
  * 후보는 응답 시점에 저장하지 않는다 — 환각 곡의 DB 오염 방지(R5). 오디오는 이 경로에
@@ -53,6 +54,8 @@ import java.util.concurrent.TimeUnit;
 public class TextSearchService {
 
     private static final int MAX_CANDIDATES = 5;
+    /** 리콜 변동 보정용 병렬 샘플 수 — 쿼터는 요청 1회로 계산(모델 호출 비용만 배수). */
+    private static final int AI_SAMPLES = 2;
     /** 메타 보강 토큰은 지문(music) 프로젝트 것을 쓴다 — TEXT 전용 토큰은 없다. */
     private static final SearchMode META_LOOKUP_MODE = SearchMode.FINGERPRINT;
 
@@ -78,17 +81,17 @@ public class TextSearchService {
             aiQuotaService.checkQuota(sessionId, userId);
         } catch (com.melolist.common.error.AiQuotaExceededException e) {
             // 한도 거절도 수요 측정을 위해 기록하되, 카운트에서는 제외된다(outcome=quota)
-            recordRequest(sessionId, userId, query, 0, 0, 0, 0, "quota");
+            recordRequest(sessionId, userId, query, 0, 0, 0, 0, "quota", 0);
             throw e;
         }
 
         long t0 = System.nanoTime();
         List<AiSongCandidate> candidates;
         try {
-            candidates = findWithTimeout(query);
+            candidates = findWithSampling(query);
         } catch (Exception e) {
             long elapsed = elapsedMs(t0);
-            recordRequest(sessionId, userId, query, elapsed, 0, elapsed, 0, "error");
+            recordRequest(sessionId, userId, query, elapsed, 0, elapsed, 0, "error", 0);
             throw asExternalApiException(e);
         }
         long aiMs = elapsedMs(t0);
@@ -98,12 +101,32 @@ public class TextSearchService {
         long metaStart = System.nanoTime();
         List<MetaEnrichment> enrichments = enrichInParallel(top);
         long metaMs = elapsedMs(metaStart);
+
+        // 메타 대조 실패 후보 제외 — 카탈로그에서 실존 근거를 못 찾은 곡(환각 의심)은
+        // 노출하지 않는다. 메타 API 장애 시에도 전부 EMPTY라 빈 결과가 되는 트레이드오프.
+        List<AiSongCandidate> verified = new ArrayList<>();
+        List<MetaEnrichment> verifiedMeta = new ArrayList<>();
+        List<AiSongCandidate> dropped = new ArrayList<>();
+        for (int i = 0; i < top.size(); i++) {
+            if (enrichments.get(i).verified()) {
+                verified.add(top.get(i));
+                verifiedMeta.add(enrichments.get(i));
+            } else {
+                dropped.add(top.get(i));
+            }
+        }
+        if (!dropped.isEmpty()) {
+            // 잘린 후보가 뭐였는지 없이는 오살(실존곡 탈락) 진단이 불가능하다 — 곡명 로그 필수
+            log.info("AI 후보 메타 대조 탈락 {}건 — {}", dropped.size(), dropped.stream()
+                    .map(d -> d.title() + "/" + d.joinedArtists() + " (alt " + d.titleAlt() + "/" + d.artistAlt() + ")")
+                    .collect(java.util.stream.Collectors.joining(", ")));
+        }
         long totalMs = elapsedMs(t0);
 
-        recordRequest(sessionId, userId, query, aiMs, metaMs, totalMs, top.size(),
-                top.isEmpty() ? "empty" : "hit");
+        recordRequest(sessionId, userId, query, aiMs, metaMs, totalMs, verified.size(),
+                verified.isEmpty() ? "empty" : "hit", top.size() - verified.size());
 
-        return buildResponse(top, enrichments);
+        return buildResponse(verified, verifiedMeta);
     }
 
     /**
@@ -152,16 +175,46 @@ public class TextSearchService {
         return MusicResponse.from(music);
     }
 
-    /** LLM 호출 10s 컷(R7) — 가상 스레드 + orTimeout, 기존 파이프라인 컷 패턴과 동일. */
-    private List<AiSongCandidate> findWithTimeout(String query) {
-        try {
-            return CompletableFuture
+    /**
+     * 리콜 변동 보정 — 동일 질의 {@value #AI_SAMPLES}회 병렬 샘플링 후 순위 교차 병합
+     * (실측: 단발 포함률 ~80% → 두 샘플 동시 누락 ~4%). 지연은 병렬이라 max(호출들),
+     * 각 호출은 10s 컷(R7). 일부 실패는 성공 샘플로 진행, 전부 실패면 예외 전파.
+     */
+    private List<AiSongCandidate> findWithSampling(String query) {
+        List<CompletableFuture<List<AiSongCandidate>>> futures = new ArrayList<>();
+        for (int i = 0; i < AI_SAMPLES; i++) {
+            futures.add(CompletableFuture
                     .supplyAsync(() -> aiSongFinderClient.findCandidates(query), PIPELINE_EXECUTOR)
-                    .orTimeout(aiProperties.timeoutMs(), TimeUnit.MILLISECONDS)
-                    .join();
-        } catch (CompletionException e) {
-            throw e.getCause() instanceof RuntimeException re ? re : e;
+                    .orTimeout(aiProperties.timeoutMs(), TimeUnit.MILLISECONDS));
         }
+
+        List<List<AiSongCandidate>> samples = new ArrayList<>();
+        RuntimeException failure = null;
+        for (CompletableFuture<List<AiSongCandidate>> f : futures) {
+            try {
+                samples.add(f.join());
+            } catch (CompletionException e) {
+                failure = e.getCause() instanceof RuntimeException re ? re : e;
+            }
+        }
+        if (samples.isEmpty()) {
+            throw failure;
+        }
+        return interleaveByRank(samples);
+    }
+
+    /** 순위 교차 병합(각 샘플 1위 → 각 2위 …) — 한 샘플이 패딩이어도 정답이 상위에 든다. */
+    private static List<AiSongCandidate> interleaveByRank(List<List<AiSongCandidate>> samples) {
+        List<AiSongCandidate> merged = new ArrayList<>();
+        int maxSize = samples.stream().mapToInt(List::size).max().orElse(0);
+        for (int rank = 0; rank < maxSize; rank++) {
+            for (List<AiSongCandidate> sample : samples) {
+                if (rank < sample.size()) {
+                    merged.add(sample.get(rank));
+                }
+            }
+        }
+        return merged;
     }
 
     private ExternalApiException asExternalApiException(Exception e) {
@@ -187,12 +240,17 @@ public class TextSearchService {
         return unique;
     }
 
-    /** 후보 전건 메타 보강 병렬 실행 — 기존 enrich 패턴(§5.3). 실패는 EMPTY(링크 없이 표시). */
+    /**
+     * 후보 전건 메타 보강 병렬 실행 — 기존 enrich 패턴(§5.3). 실패는 EMPTY.
+     * 후보별 3단 체인은 최악 12s(4s×3)라 소프트 데드라인으로 꼬리를 잘라
+     * 클라 15s 예산을 보호한다 — 넘긴 후보는 미검증 처리(제외).
+     */
     private List<MetaEnrichment> enrichInParallel(List<AiSongCandidate> candidates) {
         List<CompletableFuture<MetaEnrichment>> futures = candidates.stream()
                 .map(c -> CompletableFuture.supplyAsync(
-                        () -> acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE),
-                        PIPELINE_EXECUTOR))
+                        () -> lookupWithAltFallback(c),
+                        PIPELINE_EXECUTOR)
+                        .orTimeout(aiProperties.metaDeadlineMs(), TimeUnit.MILLISECONDS))
                 .toList();
         return futures.stream()
                 .map(f -> {
@@ -204,6 +262,86 @@ public class TextSearchService {
                     }
                 })
                 .toList();
+    }
+
+    /**
+     * 카탈로그 표기 혼재 대응 3단 대조(전부 실측 유형) — 성공 즉시 중단, null·동일 조합 생략:
+     * ① 원표기 → ② 원제목+로마자 아티스트(최다 유형 추정 — ACR 아티스트 로마자 우세,
+     * 예: 미소천사/Sung Si Kyung) → ③ 영문 제목+로마자 아티스트(예: 흔적→Trace).
+     * 전부 실패하는 후보는 최대 3회 조회라 meta_ms가 늘어나는 트레이드오프.
+     */
+    private MetaEnrichment lookupWithAltFallback(AiSongCandidate c) {
+        MetaEnrichment result = accept(c, acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE));
+        if (result.verified()) {
+            return result;
+        }
+
+        String artist = c.firstArtist();
+        String artistAlt = normalized(c.artistAlt());
+        String titleAlt = normalized(c.titleAlt());
+
+        if (artistAlt != null && (artist == null || !artistAlt.equalsIgnoreCase(artist))) {
+            result = accept(c, acrMetadataClient.lookup(c.title(), artistAlt, META_LOOKUP_MODE));
+            if (result.verified()) {
+                return result;
+            }
+        }
+        if (titleAlt != null && !titleAlt.equalsIgnoreCase(c.title())) {
+            result = accept(c, acrMetadataClient.lookup(titleAlt, artistAlt != null ? artistAlt : artist, META_LOOKUP_MODE));
+        }
+        return result;
+    }
+
+    /**
+     * fuzzy 대조가 다른 가수의 동명곡을 반환하는 오염 차단(실측: 흔적/Yoon Jong Shin 요청에
+     * 윤정아 동명곡 반환) — 반환 아티스트가 후보의 어떤 표기와도 안 맞으면 미검증 처리.
+     * 반환 아티스트가 없으면 비교 불가라 통과(과잉 필터 방지, mock 포함).
+     */
+    private MetaEnrichment accept(AiSongCandidate c, MetaEnrichment meta) {
+        if (meta.verified() && !artistMatches(c, meta)) {
+            log.info("메타 대조 동명이곡 의심 — 후보 {}/{} vs 반환 아티스트 {}",
+                    c.title(), c.joinedArtists(), meta.artists());
+            return MetaEnrichment.EMPTY;
+        }
+        return meta;
+    }
+
+    private static boolean artistMatches(AiSongCandidate c, MetaEnrichment meta) {
+        if (meta.artists() == null || meta.artists().isEmpty()) {
+            return true;
+        }
+        List<String> expected = new ArrayList<>();
+        if (c.artists() != null) {
+            expected.addAll(c.artists());
+        }
+        if (c.artistAlt() != null) {
+            expected.add(c.artistAlt());
+        }
+        if (expected.isEmpty()) {
+            return true;
+        }
+        for (String returned : meta.artists()) {
+            String r = normalizeName(returned);
+            if (r.isEmpty()) {
+                continue;
+            }
+            for (String e : expected) {
+                String n = normalizeName(e);
+                if (!n.isEmpty() && (n.equals(r) || n.contains(r) || r.contains(n))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** 표기 변형(대소문자·공백·하이픈·마침표) 흡수용 정규화. */
+    private static String normalizeName(String s) {
+        return s == null ? "" : s.toLowerCase().replaceAll("[\\s\\-._]", "");
+    }
+
+    private static String normalized(String s) {
+        return s == null || s.isBlank() ? null : s;
     }
 
     /** 기존 검색 결과와 동일 형태(R10) — acrid=ai-key, score/release_date는 항상 null. */
@@ -230,7 +368,8 @@ public class TextSearchService {
     }
 
     private void recordRequest(UUID sessionId, UUID userId, String query,
-                               long aiMs, long metaMs, long totalMs, int candidates, String outcome) {
+                               long aiMs, long metaMs, long totalMs, int candidates, String outcome,
+                               int filtered) {
         Map<String, Object> props = new HashMap<>();
         props.put("query_len", query.length());
         props.put("ai_ms", aiMs);
@@ -238,6 +377,7 @@ public class TextSearchService {
         props.put("total_ms", totalMs);
         props.put("candidates", candidates);
         props.put("outcome", outcome);
+        props.put("filtered", filtered);
         eventService.recordSilently("ai_search_request", sessionId, userId, props);
     }
 

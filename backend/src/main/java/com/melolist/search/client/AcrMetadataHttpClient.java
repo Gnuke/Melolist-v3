@@ -104,7 +104,15 @@ public class AcrMetadataHttpClient implements AcrMetadataClient {
         if (coverUrl != null && coverUrl.isBlank()) {
             coverUrl = null;
         }
-        return new MetaEnrichment(videoId, coverUrl);
+        // 반환 아티스트 — AI 폴백의 동명이곡 오염 판정용(TextSearchService.artistMatches)
+        java.util.List<String> artists = new java.util.ArrayList<>();
+        for (JsonNode a : first.path("artists")) {
+            String name = a.path("name").asText(null);
+            if (name != null && !name.isBlank()) {
+                artists.add(name);
+            }
+        }
+        return new MetaEnrichment(videoId, coverUrl, java.util.List.copyOf(artists));
     }
 
     /** {@code youtube[].id}만 읽되, link가 있으면 유튜브 계열 도메인인지 검증한다(§7.1-5 오염 대비). */

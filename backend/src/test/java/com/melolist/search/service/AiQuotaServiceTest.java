@@ -42,7 +42,7 @@ class AiQuotaServiceTest {
     @BeforeEach
     void setUp() {
         aiQuotaService = new AiQuotaService(eventLogRepository,
-                new AiProperties(10_000, "low", new AiProperties.Quota(3, 10)));
+                new AiProperties(10_000, "low", 8_000, new AiProperties.Quota(3, 10)));
     }
 
     @Test

@@ -33,6 +33,9 @@ public class OpenAiSongFinderClient implements AiSongFinderClient {
                바로 그 곡"이라는 확신이 낮은 것은 기권 사유가 아니다(순위로 표현한다).
             4. 단서와 맞는 실존 곡을 하나도 떠올릴 수 없을 때만 빈 목록을 반환한다.
             5. title은 공식 곡명, artists는 아티스트 이름 배열, album은 모르면 null.
+            6. titleAlt·artistAlt에는 해외 스트리밍/유튜브 카탈로그에 등재되는 공식 영문(로마자)
+               표기를 넣는다(예: 흔적→Trace, 윤종신→Yoon Jong Shin). 원표기가 이미
+               영문이거나 영문 표기를 모르면 null.
             """;
 
     /** 진단 로그의 원응답 길이 상한 — 로그 폭주 방지. */
