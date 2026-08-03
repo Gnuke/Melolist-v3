@@ -198,11 +198,11 @@ public class TextSearchService {
         return unique;
     }
 
-    /** 후보 전건 메타 보강 병렬 실행 — 기존 enrich 패턴(§5.3). 실패는 EMPTY(링크 없이 표시). */
+    /** 후보 전건 메타 보강 병렬 실행 — 기존 enrich 패턴(§5.3). 실패는 EMPTY. */
     private List<MetaEnrichment> enrichInParallel(List<AiSongCandidate> candidates) {
         List<CompletableFuture<MetaEnrichment>> futures = candidates.stream()
                 .map(c -> CompletableFuture.supplyAsync(
-                        () -> acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE),
+                        () -> lookupWithAltFallback(c),
                         PIPELINE_EXECUTOR))
                 .toList();
         return futures.stream()
@@ -215,6 +215,25 @@ public class TextSearchService {
                     }
                 })
                 .toList();
+    }
+
+    /**
+     * 원표기 대조 0건이면 영문(로마자) 표기로 2차 대조 — ACR 카탈로그 표기 혼재 대응
+     * (실측: "흔적/윤종신" 0건, "Trace/Yoon Jong Shin" 히트). 동일 표기면 재시도 무의미라 생략.
+     */
+    private MetaEnrichment lookupWithAltFallback(AiSongCandidate c) {
+        MetaEnrichment primary = acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE);
+        if (primary.verified()) {
+            return primary;
+        }
+        String alt = c.titleAlt();
+        if (alt == null || alt.isBlank() || alt.equalsIgnoreCase(c.title())) {
+            return primary;
+        }
+        String altArtist = c.artistAlt() == null || c.artistAlt().isBlank()
+                ? c.firstArtist()
+                : c.artistAlt();
+        return acrMetadataClient.lookup(alt, altArtist, META_LOOKUP_MODE);
     }
 
     /** 기존 검색 결과와 동일 형태(R10) — acrid=ai-key, score/release_date는 항상 null. */

@@ -60,9 +60,10 @@ public class MockAiSongFinderClient implements AiSongFinderClient {
 
     private List<AiSongCandidate> hit() {
         return List.of(
-                new AiSongCandidate("좋은 날", List.of("아이유"), "Real"),
+                new AiSongCandidate("좋은 날", List.of("아이유"), "Real", "Good Day", "IU"),
                 new AiSongCandidate("Ditto", List.of("NewJeans"), "OMG"),
-                new AiSongCandidate("밤편지", List.of("아이유"), "Palette")
+                // 영문 표기도 mock 메타에 미등록 — 2차 대조까지 실패해 제외되는 케이스
+                new AiSongCandidate("밤편지", List.of("아이유"), "Palette", "Through the Night", "IU")
         );
     }
 

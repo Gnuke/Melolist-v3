@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -168,6 +169,53 @@ class TextSearchServiceTest {
         assertThat(response.results()).hasSize(1);
         assertThat(response.results().get(0).youtubeUrl()).isNull();
         assertThat(response.results().get(0).coverUrl()).isEqualTo("https://cover/medium.jpg");
+    }
+
+    @Test
+    void 한글_대조_0건이면_영문_표기로_2차_대조해_살린다() {
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("흔적", List.of("윤종신"), null, "Trace", "Yoon Jong Shin")));
+        when(acrMetadataClient.lookup(eq("흔적"), eq("윤종신"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(MetaEnrichment.EMPTY);
+        when(acrMetadataClient.lookup(eq("Trace"), eq("Yoon Jong Shin"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(new MetaEnrichment("XPxqh7pzxHE", null));
+
+        SearchResponse response = textSearchService.searchByText("예전에 들었던 발라드", SESSION_ID, null);
+
+        assertThat(response.results()).hasSize(1);
+        SearchResponse.TrackResult r = response.results().get(0);
+        assertThat(r.title()).isEqualTo("흔적");   // 표시·ai_key는 원표기 유지
+        assertThat(r.youtubeUrl()).isEqualTo("https://www.youtube.com/watch?v=XPxqh7pzxHE");
+
+        ArgumentCaptor<Map<String, Object>> props = ArgumentCaptor.forClass(Map.class);
+        verify(eventService).recordSilently(eq("ai_search_request"), eq(SESSION_ID), eq(null), props.capture());
+        assertThat(props.getValue()).containsEntry("candidates", 1).containsEntry("filtered", 0);
+    }
+
+    @Test
+    void 일차_대조_성공이면_이차_조회는_하지_않는다() {
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("좋은 날", List.of("아이유"), null, "Good Day", "IU")));
+        when(acrMetadataClient.lookup(eq("좋은 날"), eq("아이유"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(new MetaEnrichment("jeqdYqsrsA0", null));
+
+        textSearchService.searchByText("아이유 노래", SESSION_ID, null);
+
+        verify(acrMetadataClient, times(1)).lookup(anyString(), anyString(), any());
+    }
+
+    @Test
+    void 영문_표기가_원표기와_같으면_이차_조회를_생략한다() {
+        // 영문 곡은 1차와 동일 조회가 되므로 재시도 무의미 — 4s 타임아웃 낭비 방지
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("Dynamite", List.of("BTS"), null, "dynamite", "BTS")));
+        when(acrMetadataClient.lookup(eq("Dynamite"), eq("BTS"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(MetaEnrichment.EMPTY);
+
+        SearchResponse response = textSearchService.searchByText("신나는 노래", SESSION_ID, null);
+
+        assertThat(response.results()).isEmpty();
+        verify(acrMetadataClient, times(1)).lookup(anyString(), anyString(), any());
     }
 
     @Test
