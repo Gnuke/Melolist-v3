@@ -172,10 +172,13 @@ class TextSearchServiceTest {
     }
 
     @Test
-    void 한글_대조_0건이면_영문_표기로_2차_대조해_살린다() {
+    void 한글_대조_0건이면_영문_표기로_최종_대조해_살린다() {
+        // ②(원제목+로마자 아티스트)도 실패하고 ③(영문 제목)에서 살아나는 흔적→Trace 유형
         when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
                 new AiSongCandidate("흔적", List.of("윤종신"), null, "Trace", "Yoon Jong Shin")));
         when(acrMetadataClient.lookup(eq("흔적"), eq("윤종신"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(MetaEnrichment.EMPTY);
+        when(acrMetadataClient.lookup(eq("흔적"), eq("Yoon Jong Shin"), eq(SearchMode.FINGERPRINT)))
                 .thenReturn(MetaEnrichment.EMPTY);
         when(acrMetadataClient.lookup(eq("Trace"), eq("Yoon Jong Shin"), eq(SearchMode.FINGERPRINT)))
                 .thenReturn(new MetaEnrichment("XPxqh7pzxHE", null));
@@ -190,6 +193,26 @@ class TextSearchServiceTest {
         ArgumentCaptor<Map<String, Object>> props = ArgumentCaptor.forClass(Map.class);
         verify(eventService).recordSilently(eq("ai_search_request"), eq(SESSION_ID), eq(null), props.capture());
         assertThat(props.getValue()).containsEntry("candidates", 1).containsEntry("filtered", 0);
+    }
+
+    @Test
+    void 원제목_로마자_아티스트_교차_대조로_살린다() {
+        // ACR 최다 유형(관측): 한글 제목 + 로마자 아티스트 등재 — 미소천사/Sung Si Kyung
+        when(aiSongFinderClient.findCandidates(anyString())).thenReturn(List.of(
+                new AiSongCandidate("미소천사", List.of("성시경"), null, "Smile Angel", "Sung Si Kyung")));
+        when(acrMetadataClient.lookup(eq("미소천사"), eq("성시경"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(MetaEnrichment.EMPTY);
+        when(acrMetadataClient.lookup(eq("미소천사"), eq("Sung Si Kyung"), eq(SearchMode.FINGERPRINT)))
+                .thenReturn(new MetaEnrichment("ro1knsWzgjQ", null));
+
+        SearchResponse response = textSearchService.searchByText("성시경 노랜데 댄스곡", SESSION_ID, null);
+
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).title()).isEqualTo("미소천사");
+        assertThat(response.results().get(0).youtubeUrl())
+                .isEqualTo("https://www.youtube.com/watch?v=ro1knsWzgjQ");
+        // ②에서 성공 — ③(영문 제목) 조회까지 가지 않는다
+        verify(acrMetadataClient, never()).lookup(eq("Smile Angel"), anyString(), any());
     }
 
     @Test

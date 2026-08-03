@@ -218,22 +218,35 @@ public class TextSearchService {
     }
 
     /**
-     * 원표기 대조 0건이면 영문(로마자) 표기로 2차 대조 — ACR 카탈로그 표기 혼재 대응
-     * (실측: "흔적/윤종신" 0건, "Trace/Yoon Jong Shin" 히트). 동일 표기면 재시도 무의미라 생략.
+     * 카탈로그 표기 혼재 대응 3단 대조(전부 실측 유형) — 성공 즉시 중단, null·동일 조합 생략:
+     * ① 원표기 → ② 원제목+로마자 아티스트(최다 유형 추정 — ACR 아티스트 로마자 우세,
+     * 예: 미소천사/Sung Si Kyung) → ③ 영문 제목+로마자 아티스트(예: 흔적→Trace).
+     * 전부 실패하는 후보는 최대 3회 조회라 meta_ms가 늘어나는 트레이드오프.
      */
     private MetaEnrichment lookupWithAltFallback(AiSongCandidate c) {
-        MetaEnrichment primary = acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE);
-        if (primary.verified()) {
-            return primary;
+        MetaEnrichment result = acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE);
+        if (result.verified()) {
+            return result;
         }
-        String alt = c.titleAlt();
-        if (alt == null || alt.isBlank() || alt.equalsIgnoreCase(c.title())) {
-            return primary;
+
+        String artist = c.firstArtist();
+        String artistAlt = normalized(c.artistAlt());
+        String titleAlt = normalized(c.titleAlt());
+
+        if (artistAlt != null && (artist == null || !artistAlt.equalsIgnoreCase(artist))) {
+            result = acrMetadataClient.lookup(c.title(), artistAlt, META_LOOKUP_MODE);
+            if (result.verified()) {
+                return result;
+            }
         }
-        String altArtist = c.artistAlt() == null || c.artistAlt().isBlank()
-                ? c.firstArtist()
-                : c.artistAlt();
-        return acrMetadataClient.lookup(alt, altArtist, META_LOOKUP_MODE);
+        if (titleAlt != null && !titleAlt.equalsIgnoreCase(c.title())) {
+            result = acrMetadataClient.lookup(titleAlt, artistAlt != null ? artistAlt : artist, META_LOOKUP_MODE);
+        }
+        return result;
+    }
+
+    private static String normalized(String s) {
+        return s == null || s.isBlank() ? null : s;
     }
 
     /** 기존 검색 결과와 동일 형태(R10) — acrid=ai-key, score/release_date는 항상 null. */
