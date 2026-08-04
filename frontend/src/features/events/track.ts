@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 /**
  * backend-prd §6.1 이벤트 사전 + favorite_click(C6 게스트→가입 전환 원천) + 로그인 3종(spec 001 FR-009)
  * + AI 폴백 클라 2종(spec 002 FR-009 — ai_search_request/select는 서버가 기록)
+ * + 심층 탐색 클라 2종(spec 004 FR-009 — deep_search_request/select는 서버가 기록)
  */
 export type EventType =
   | 'visit'
@@ -17,6 +18,8 @@ export type EventType =
   | 'login_failed'
   | 'ai_fallback_open'
   | 'ai_search_cancel'
+  | 'deep_search_open'
+  | 'deep_search_cancel'
 
 export type SearchFailReason = 'bad_audio' | 'no_match' | 'low_score' | 'error' | 'timeout' | 'cancelled'
 

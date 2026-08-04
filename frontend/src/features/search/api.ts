@@ -69,6 +69,56 @@ export async function textSearch(query: string, signal?: AbortSignal): Promise<A
   return Array.isArray(data?.results) ? data.results : []
 }
 
+/** 심층 탐색 클라 하드컷(spec 004 R3) — 서버 예산 웹 22s + 메타 8s ≈ 30s + 전송 여유. */
+const DEEP_TIMEOUT_MS = 35_000
+
+/** 심층 탐색 잔여 횟수(spec 004 contracts §1) — 확인 단계 UI 원천. 로그인 전용(401). */
+export interface DeepQuota {
+  limit: number
+  used: number
+  remaining: number
+  reset_at: string | null
+}
+
+export async function deepQuota(): Promise<DeepQuota> {
+  const { data } = await api.get<DeepQuota>('/search/deep/quota')
+  return data
+}
+
+/**
+ * 웹검색 심층 탐색(spec 004 contracts §2) — 로그인 전용, 후보 최대 5곡(미확인 라벨 포함),
+ * 서버 저장 없음. 발동 시 오래 걸린다(실측 19~21.5s) — 진행 표시·취소는 호출부 책임.
+ * 429(일일 한도 2회)·502는 호출부에서 상태로 분기한다.
+ */
+export async function deepSearch(query: string, signal?: AbortSignal): Promise<AcrResult[]> {
+  const { data } = await api.post<RecognizeResponse>(
+    '/search/deep',
+    { query },
+    { timeout: DEEP_TIMEOUT_MS, signal },
+  )
+  return Array.isArray(data?.results) ? data.results : []
+}
+
+/**
+ * 심층 후보 선택 확정(contracts §3) — 저장 시점. 미확인 곡도 웹 근거 링크·커버가
+ * 후보 카드 값 그대로 저장까지 유지된다(FR-006).
+ */
+export async function selectDeepCandidate(candidate: AcrResult, rank: number): Promise<SelectedMusic> {
+  const { data } = await api.post<SelectedMusic>('/search/deep/select', {
+    candidate: {
+      acrid: candidate.acrid,
+      title: candidate.title,
+      artists: candidate.artists ?? [],
+      album: candidate.album ?? null,
+      youtube_video_id: candidate.youtube_video_id ?? null,
+      cover_url: candidate.cover_url ?? null,
+      verified: candidate.verified ?? false,
+    },
+    rank,
+  })
+  return data
+}
+
 /**
  * AI 폴백 후보 선택 확정(contracts §2) — 유일한 저장 시점. 이후 즐겨찾기(acrid=ai-key)가
  * 기존 흐름 그대로 동작한다. rank는 1부터(후보 목록 순위, 계측용).

@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { AlertCircle, Check, ExternalLink, Globe, Heart, Hourglass, Search, Sparkles } from 'lucide-react'
+import { AlertCircle, Check, ExternalLink, Globe, Heart, Hourglass, Search } from 'lucide-react'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAuthStore } from '@/stores/authStore'
 import { CoverArt } from './CoverArt'
-import { DeepSearchFlow } from './DeepSearchFlow'
 import { FailureView } from './FailureView'
-import { selectCandidate, textSearch } from './api'
+import { deepQuota, deepSearch, selectDeepCandidate, type DeepQuota } from './api'
 import { addRecentFind } from './recentFinds'
 import { track } from '@/features/events/track'
 import type { AcrResult } from './types'
@@ -18,12 +16,15 @@ const MIN_LEN = 2
 const MAX_LEN = 200
 
 /**
- * AI 자연어 폴백 검색(spec 002) — 허밍/지문 실패·오매칭 경로에서만 진입한다.
- * 입력→검색→후보/무후보/오류/한도 상태를 내부에서 관리하고, 후보 "선택"이
- * 유일한 저장 시점(select API)이다. ♡는 선택 확정 후에만 동작한다(곡 row 선행 필요).
+ * 웹검색 심층 탐색(spec 004) — AI 폴백의 에스컬레이션 티어. 로그인 사용자 전용이며
+ * 진입 게이트(게스트 로그인 유도)는 FallbackSearchView가 담당한다.
+ *
+ * 흐름: confirm(질의 프리필·수정·잔여 횟수·소요 안내 — 실행 확정 전 한도 소모 없음)
+ * → searching(진행·취소, 최대 35s) → candidates(미확인 배지 혼재)/empty/error/quota.
+ * 후보 "선택"이 저장 시점(deep/select)이고 ♡는 선택 확정 후에만 동작한다(002와 동일).
  */
 type Step =
-  | { name: 'input' }
+  | { name: 'confirm' }
   | { name: 'searching' }
   | { name: 'candidates'; results: AcrResult[] }
   | { name: 'empty' }
@@ -31,15 +32,13 @@ type Step =
   | { name: 'quota'; resetAt: string | null }
 
 interface Props {
-  /** 부모(SearchPage)의 즐겨찾기 토글 — 게스트 로그인 유도 포함. 선택 확정 후 호출된다 */
+  /** AI 폴백에서 마지막으로 검색한 질의 — 확인 단계에 프리필된다(FR-002) */
+  initialQuery: string
+  /** 부모(SearchPage)의 즐겨찾기 토글 — 선택 확정 후 호출된다 */
   onFavorite: (r: AcrResult, rank: number) => void
   savedAcrids: ReadonlySet<string>
-  /** 진입 전 화면(원래 결과/실패)으로 복귀 */
+  /** 진입 전 화면(AI 폴백 무결과/후보 목록)으로 복귀 — US2 AS-2 */
   onBack: () => void
-  /** 게스트가 심층 탐색 진입점을 누르면(spec 004 US1 AS-5) — 폴백 맥락 스태시 후 로그인으로 */
-  onDeepLoginRequired: (query: string) => void
-  /** 로그인 복귀 복원용 — 스태시해 둔 질의(spec 004) */
-  initialQuery?: string
 }
 
 function artistName(artists?: AcrResult['artists']) {
@@ -53,32 +52,57 @@ function resetTimeLabel(resetAt: string | null): string {
   return Number.isNaN(d.getTime()) ? '내일' : `${d.getMonth() + 1}월 ${d.getDate()}일 0시`
 }
 
-export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLoginRequired, initialQuery }: Props) {
-  const session = useAuthStore((s) => s.session)
-  const [step, setStep] = useState<Step>({ name: 'input' })
-  const [query, setQuery] = useState(initialQuery ?? '')
-  // 심층 탐색(spec 004) 진입 — 활성 시 이 화면 대신 DeepSearchFlow를 렌더, 복귀하면
-  // step 상태가 그대로라 원래 후보 목록/무결과 화면으로 돌아온다(US2 AS-2)
-  const [deepActive, setDeepActive] = useState(false)
-  // 선택 확정된 후보(ai-key) — 재선택 방지 + 체크 표시
+export function DeepSearchFlow({ initialQuery, onFavorite, savedAcrids, onBack }: Props) {
+  const [step, setStep] = useState<Step>({ name: 'confirm' })
+  const [query, setQuery] = useState(initialQuery)
+  const [quota, setQuota] = useState<DeepQuota | null>(null)
   const [selectedKeys, setSelectedKeys] = useState<ReadonlySet<string>>(new Set())
   const selectBusyRef = useRef<Set<string>>(new Set())
   const abortRef = useRef<AbortController | null>(null)
   const startedAtRef = useRef(0)
+  const [elapsedSec, setElapsedSec] = useState(0)
 
   useEffect(() => () => abortRef.current?.abort(), [])
 
   const trimmed = query.trim()
   const canSearch = trimmed.length >= MIN_LEN && trimmed.length <= MAX_LEN
 
-  const runTextSearch = useCallback(async () => {
+  // 확인 단계 진입마다 잔여 횟수 갱신(FR-002) — 소진이면 실행 대신 안내로 수렴(US3 AS-1).
+  // 조회 실패 시에는 표시만 생략한다(한도의 최종 방어선은 서버 429).
+  useEffect(() => {
+    if (step.name !== 'confirm') return
+    let alive = true
+    deepQuota()
+      .then((q) => {
+        if (!alive) return
+        setQuota(q)
+        if (q.remaining <= 0) setStep({ name: 'quota', resetAt: q.reset_at })
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [step.name])
+
+  // 진행 경과 표시 — 30초급 대기의 심리적 안전장치
+  useEffect(() => {
+    if (step.name !== 'searching') return
+    setElapsedSec(0)
+    const timer = setInterval(
+      () => setElapsedSec(Math.floor((performance.now() - startedAtRef.current) / 1000)),
+      1_000,
+    )
+    return () => clearInterval(timer)
+  }, [step.name])
+
+  const runDeepSearch = useCallback(async () => {
     if (!canSearch) return
     const controller = new AbortController()
     abortRef.current = controller
     startedAtRef.current = performance.now()
     setStep({ name: 'searching' })
     try {
-      const results = await textSearch(trimmed, controller.signal)
+      const results = await deepSearch(trimmed, controller.signal)
       if (controller.signal.aborted) return
       if (results.length === 0) {
         setStep({ name: 'empty' })
@@ -92,22 +116,19 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLogi
         setStep({ name: 'quota', resetAt: data?.details?.reset_at ?? null })
         return
       }
-      // 15s 타임아웃(ECONNABORTED)·502 등 — raw 메시지는 렌더하지 않는다(F4 규칙)
+      // 35s 하드컷(ECONNABORTED)·502 등 — raw 메시지는 렌더하지 않는다(F4 규칙)
       setStep({ name: 'error' })
     }
   }, [canSearch, trimmed])
 
-  // 검색 중 취소 — 요청을 끊고 입력으로 복귀(결과·기록에 미반영, 한도는 서버 접수 기준)
+  // 진행 중 취소 — 요청을 끊고 확인 단계로 복귀(한도는 서버 접수 시점에 이미 집계됨)
   const cancelSearch = useCallback(() => {
     abortRef.current?.abort()
-    track('ai_search_cancel', { elapsed_ms: Math.round(performance.now() - startedAtRef.current) })
-    setStep({ name: 'input' })
+    track('deep_search_cancel', { elapsed_ms: Math.round(performance.now() - startedAtRef.current) })
+    setStep({ name: 'confirm' })
   }, [])
 
-  /**
-   * 후보 선택 확정 — 유일한 저장 시점. 성공 시에만 true.
-   * 서버가 ai-key를 재계산·검증하고 upsert + (로그인 시) 검색 기록 + 계측을 수행한다.
-   */
+  /** 후보 선택 확정 — 저장 시점. 미확인 곡도 웹 근거 링크가 그대로 저장된다(FR-006). */
   const ensureSelected = useCallback(
     async (r: AcrResult, rank: number): Promise<boolean> => {
       const key = r.acrid
@@ -116,7 +137,7 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLogi
       if (selectBusyRef.current.has(key)) return false
       selectBusyRef.current.add(key)
       try {
-        await selectCandidate(r, rank + 1) // 서버 rank는 1부터
+        await selectDeepCandidate(r, rank + 1) // 서버 rank는 1부터
         setSelectedKeys((prev) => new Set(prev).add(key))
         addRecentFind(r)
         return true
@@ -142,41 +163,15 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLogi
 
   const onHeart = useCallback(
     async (r: AcrResult, rank: number) => {
-      // ♡는 곡 row가 먼저 있어야 한다(R5) — 선택 확정 후 기존 즐겨찾기 흐름으로
       if (await ensureSelected(r, rank)) onFavorite(r, rank)
     },
     [ensureSelected, onFavorite],
   )
 
-  // 심층 탐색 진입(spec 004 FR-001·FR-002) — 게스트는 로그인 유도로 위임, 로그인
-  // 사용자만 확인 단계로. deep_search_open은 실제 확인 단계 진입 시에만 계측한다.
-  const openDeep = useCallback(
-    (from: 'ai_empty' | 'ai_mismatch') => {
-      if (!session) {
-        onDeepLoginRequired(query)
-        return
-      }
-      track('deep_search_open', { from })
-      setDeepActive(true)
-    },
-    [session, query, onDeepLoginRequired],
-  )
-
-  if (deepActive) {
-    return (
-      <DeepSearchFlow
-        initialQuery={trimmed}
-        onFavorite={onFavorite}
-        savedAcrids={savedAcrids}
-        onBack={() => setDeepActive(false)}
-      />
-    )
-  }
-
   return (
     <div className="flex flex-1 flex-col">
-      {/* ── 입력 ── */}
-      {step.name === 'input' && (
+      {/* ── 확인 단계(FR-002) — 실행 확정 전에는 한도가 소모되지 않는다 ── */}
+      {step.name === 'confirm' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -185,12 +180,14 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLogi
         >
           <div>
             <h2 className="text-[26px] font-black leading-tight tracking-[-0.02em]">
-              말로 설명해서
+              웹까지 뒤져서
               <br />
               찾아볼게요
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              기억나는 가사·분위기·상황을 자유롭게 적어주세요
+              최신 곡·희귀한 곡은 웹 검색으로 확인해요
+              <br />
+              최대 30초 정도 걸릴 수 있어요
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -198,33 +195,49 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLogi
               value={query}
               onChange={(e) => setQuery(e.target.value.slice(0, MAX_LEN))}
               rows={4}
-              placeholder={"예) 여자 보컬 드라마 OST였고\n가사에 '바람'이 들어가요"}
+              placeholder={'예) 이번 달에 나온 노래인데\n후렴에 ○○○이 반복돼요'}
               className="w-full resize-none rounded-2xl border border-input bg-card p-4 text-[15px] leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            <span className="self-end text-xs tabular-nums text-muted-foreground">
-              {trimmed.length}/{MAX_LEN}
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">
+                {quota ? `오늘 남은 횟수 ${quota.remaining}/${quota.limit}회` : ' '}
+              </span>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {trimmed.length}/{MAX_LEN}
+              </span>
+            </div>
           </div>
-          <div className="mt-auto pb-2">
+          <div className="mt-auto flex flex-col gap-2.5 pb-2">
             <Button
               type="button"
-              onClick={() => void runTextSearch()}
+              onClick={() => void runDeepSearch()}
               disabled={!canSearch}
               size="lg"
               className="h-12 w-full rounded-full text-[15px] font-bold transition-transform active:scale-[0.97]"
             >
-              <Sparkles /> AI로 찾기
+              <Globe /> 더 깊이 찾기
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              size="lg"
+              className="h-11 w-full rounded-full text-sm font-semibold transition-transform active:scale-[0.97]"
+            >
+              돌아가기
             </Button>
           </div>
         </motion.div>
       )}
 
-      {/* ── 검색 중 ── */}
+      {/* ── 진행 중 — 웹검색 발동 시 20초 안팎이라 경과·취소를 상시 노출 ── */}
       {step.name === 'searching' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-1 flex-col gap-4 pt-6">
           <div>
-            <h2 className="text-[26px] font-black leading-tight tracking-[-0.02em]">AI가 찾는 중…</h2>
-            <p className="mt-1 text-sm text-muted-foreground">설명과 맞는 곡을 추려내고 있어요</p>
+            <h2 className="text-[26px] font-black leading-tight tracking-[-0.02em]">웹에서 찾는 중…</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              발매 정보까지 확인하고 있어요 · <span className="tabular-nums">{elapsedSec}초</span>
+            </p>
           </div>
           <div className="flex flex-col gap-2.5">
             {[0, 1, 2].map((i) => (
@@ -251,12 +264,14 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLogi
         </motion.div>
       )}
 
-      {/* ── 후보 목록 ── */}
+      {/* ── 후보 목록 — 미확인 후보도 제외하지 않고 배지로 구분(FR-005) ── */}
       {step.name === 'candidates' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-1 flex-col gap-4 pt-6">
           <div>
             <h2 className="text-[26px] font-black leading-tight tracking-[-0.02em]">이 중에 있나요?</h2>
-            <p className="mt-1 text-sm text-muted-foreground">곡을 누르면 찾은 곡으로 저장돼요</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              곡을 누르면 찾은 곡으로 저장돼요 · 미확인 곡은 정보가 다를 수 있어요
+            </p>
           </div>
           <ul className="flex flex-col gap-2.5">
             {step.results.map((r, i) => {
@@ -283,9 +298,18 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLogi
                         {artistName(r.artists)}
                         {r.album?.name ? ` · ${r.album.name}` : ''}
                       </span>
-                      {selected && (
-                        <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-iris/15 px-2 py-0.5 text-xs font-bold text-iris-soft">
-                          <Check className="size-3" /> 찾은 곡으로 저장됨
+                      {(r.verified === false || selected) && (
+                        <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          {r.verified === false && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                              <Globe className="size-3" /> 미확인 · 웹 검색 결과
+                            </span>
+                          )}
+                          {selected && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-iris/15 px-2 py-0.5 text-xs font-bold text-iris-soft">
+                              <Check className="size-3" /> 찾은 곡으로 저장됨
+                            </span>
+                          )}
                         </span>
                       )}
                     </span>
@@ -327,69 +351,60 @@ export function FallbackSearchView({ onFavorite, savedAcrids, onBack, onDeepLogi
             <Button
               type="button"
               variant="outline"
-              onClick={() => setStep({ name: 'input' })}
+              onClick={() => setStep({ name: 'confirm' })}
               size="lg"
               className="h-11 w-full rounded-full text-sm font-semibold transition-transform active:scale-[0.97]"
             >
               <Search /> 다시 설명해서 찾기
             </Button>
-            {/* 심층 탐색 진입점 ②(spec 004 US2) — 후보가 전부 아닐 때의 다음 단계 */}
             <Button
               type="button"
               variant="ghost"
-              onClick={() => openDeep('ai_mismatch')}
+              onClick={onBack}
               size="lg"
               className="h-11 w-full rounded-full text-sm font-semibold text-muted-foreground transition-transform hover:text-foreground active:scale-[0.97]"
             >
-              <Globe /> 찾는 곡이 없나요? 더 깊이 찾기
+              이전 결과로 돌아가기
             </Button>
           </div>
         </motion.div>
       )}
 
-      {/* ── 무후보(US3) — 오류가 아닌 안내 + 입력 유지 재시도 + 심층 탐색 진입점 ①(spec 004 US1) ── */}
+      {/* ── 무후보 — 오류가 아닌 안내, 재시도는 한도가 소모됨을 확인 단계가 보여준다 ── */}
       {step.name === 'empty' && (
         <FailureView
           icon={Search}
           tone="neutral"
-          title="후보를 찾지 못했어요"
-          body={'단서를 조금만 더 주세요.\n가사 한 소절, 발표 시기, 장르,\n어디서 들었는지가 큰 도움이 돼요'}
+          title="웹에서도 찾지 못했어요"
+          body={'단서를 조금만 더 주세요.\n가사 한 소절, 발표 시기, 어디서\n들었는지가 큰 도움이 돼요'}
           actions={[
-            { label: '다시 설명하기', onClick: () => setStep({ name: 'input' }), primary: true },
-            {
-              label: (
-                <>
-                  <Globe /> 더 깊이 찾기
-                </>
-              ),
-              onClick: () => openDeep('ai_empty'),
-            },
+            { label: '다시 설명하기', onClick: () => setStep({ name: 'confirm' }), primary: true },
             { label: '돌아가기', onClick: onBack },
           ]}
         />
       )}
 
-      {/* ── 오류(502·타임아웃) — F4 패턴 ── */}
+      {/* ── 오류(502·35s 타임아웃) — F4 패턴 ── */}
       {step.name === 'error' && (
         <FailureView
           icon={AlertCircle}
           tone="danger"
-          title="AI 검색이 잠시 원활하지 않아요"
+          title="심층 탐색이 잠시 원활하지 않아요"
           body={'입력한 설명은 그대로 있어요.\n잠시 후 다시 시도해주세요'}
           actions={[
-            { label: '재시도', onClick: () => void runTextSearch(), primary: true },
-            { label: '입력 수정', onClick: () => setStep({ name: 'input' }) },
+            { label: '다시 시도', onClick: () => setStep({ name: 'confirm' }), primary: true },
+            { label: '돌아가기', onClick: onBack },
           ]}
         />
       )}
 
-      {/* ── 일일 한도 초과(429) ── */}
+      {/* ── 일일 한도 소진(사전 감지·429 공통, US3) — 일반 AI 폴백은 영향 없다 ── */}
       {step.name === 'quota' && (
         <FailureView
           icon={Hourglass}
           tone="warning"
-          title="오늘의 AI 검색을 모두 사용했어요"
-          body={`${resetTimeLabel(step.resetAt)}에 다시 사용할 수 있어요.\n녹음 검색은 계속 이용할 수 있어요`}
+          title="오늘의 심층 탐색을 모두 사용했어요"
+          body={`${resetTimeLabel(step.resetAt)}에 다시 사용할 수 있어요.\nAI 검색과 녹음 검색은 계속 이용할 수 있어요`}
           actions={[{ label: '돌아가기', onClick: onBack, primary: true }]}
         />
       )}

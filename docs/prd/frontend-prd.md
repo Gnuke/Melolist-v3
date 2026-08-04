@@ -153,11 +153,13 @@ export interface AcrResult {
   youtube_url?: string | null       // 듣기 버튼용 (watch?v= 파생값)
   youtube_video_id?: string | null  // onError 썸네일 폴백용
   cover_url?: string | null         // 카드 이미지 (null 가능)
+  verified?: boolean                // 심층 탐색(spec 004) 전용 — false일 때만 "미확인" 배지. 기존 응답에는 키 없음
 }
 ```
 
 - 엔드포인트: `POST /api/search/fingerprint`·`/humming` (multipart `audio`), `POST /api/events`
 - **AI 자연어 폴백(spec 002, ✅07-21)**: `POST /api/search/text` `{query}`(2~200자) → `{results: AcrResult[0..5]}` / `POST /api/search/text/select` `{candidate, rank}` → 저장된 곡(MusicResponse). X-Session-Id 필수(게스트 일일 한도 3회·로그인 10회). 429 = `AI_QUOTA_EXCEEDED`(details.limit·reset_at 안내), 502 = F4 패턴 재시도. **선택 확정이 유일한 저장 시점** — ♡는 선택 후에만 동작(선행 select), 클라 계측은 `ai_fallback_open`·`ai_search_cancel` 2종
+- **웹검색 심층 탐색(spec 004, 2026-08-04)**: AI 폴백의 무결과·후보 목록 화면에서만 진입("더 깊이 찾기" — 로그인 전용, 게스트는 폴백 맥락 스태시 후 로그인 유도·복귀). `GET /api/search/deep/quota` → `{limit, used, remaining, reset_at}`(확인 단계 잔여 표시·소진 시 실행 차단) / `POST /api/search/deep` `{query}` → text와 동일 형태 + `verified`(false=미확인 배지 — 웹 근거 링크로 듣기·저장 가능) / `POST /api/search/deep/select` `{candidate(verified 포함), rank}`. **타임아웃 35s**(서버 웹 22s+메타 8s — 진행 표시·경과 초·취소 필수, 취소해도 한도는 접수 시점 집계). 429 문구는 심층 전용("심층 탐색 횟수"), 클라 계측은 `deep_search_open`·`deep_search_cancel` 2종. `DeepSearchFlow` 컴포넌트가 confirm(질의 프리필)→searching→candidates/empty/error/quota 상태 내장
 - **어드민(spec 003, ✅07-22)**: `/admin` 전용 화면(지표 대시보드·곡 카탈로그·사용자 관리)의 소비 계약은 **정본 `specs/003-admin-page-front/contracts/admin-api.md` 참조**(ADMIN 전용이라 본 절 공용 계약에 비전개). 인가는 기존 `GET /users/me`의 `role` 재사용(별도 API 없음), 비관리자·비로그인은 홈 조용 리다이렉트(R5 — 존재 비노출, 앱 내 진입점 0·URL 직접 진입 전용), 어드민 화면은 이벤트 계측 제외(FR-012 — KR3 오염 방지)
 - 오류 응답은 표준 바디 `{code, message, details}` — 화면에는 정제된 카피만, `message` 직접 렌더 금지 (F4)
 - 인증: Supabase 세션 JWT를 Axios 인터셉터로 첨부(비로그인 시 생략 — 검색·이벤트는 인증 불요)
@@ -171,7 +173,7 @@ export interface AcrResult {
 | **M2** | 홈/검색(플로우 개편 C1, 실패 UX, 결과 카드 C2·C3, 즐겨찾기 유도 C6), 이벤트 계측 |
 | M3 | 로그인 화면 연결 강화, ✅**플레이리스트 목록/상세**(07-20 — `/playlists` 4탭 진입, 생성·수정 공용 폼 시트, 상세는 공개 게스트 조회·소유자 편집(정보/삭제/곡 빼기/순서 편집 모드), 즐겨찾기 행 담기 시트(새로 만들고 바로 담기, 409 안내)), ✅즐겨찾기 목록(07-16), ✅검색 기록 화면(07-16 — `/history`, 목록 패턴은 즐겨찾기와 동일·no_match 행·허밍 일치율 배지·소유 삭제), ✅**Bottom Navigation**(07-16 — 홈·즐겨찾기·기록 3탭 → 07-20 플레이리스트 포함 4탭, 검색 플로우·로그인 제외(몰입 유지), 활성=전경색만(flame 미사용, §10 주 액션 1개 규칙). 프로필 시트의 임시 진입점은 내비로 통합·제거), 미니 플레이어·인라인 재생은 design-guideline("하단 미니 플레이어 고정 지양")에 따라 보류 |
 | M4 | 커뮤니티(탐색)·리뷰 작성/수정·댓글, 프로필/설정 |
-| M5+ | ✅**AI 자연어 폴백 검색**(07-21, spec 002 — 미매칭 F2·오매칭 결과 화면에서만 진입(홈 직접 진입 없음), `FallbackSearchView` 단일 컴포넌트가 입력→검색→후보/무후보/오류/한도 상태 내장, 후보 카드=기존 카드 재사용(score null이면 배지 미표시), 선택 확정=저장·♡ 선행 조건), 추천 피드 |
+| M5+ | ✅**AI 자연어 폴백 검색**(07-21, spec 002 — 미매칭 F2·오매칭 결과 화면에서만 진입(홈 직접 진입 없음), `FallbackSearchView` 단일 컴포넌트가 입력→검색→후보/무후보/오류/한도 상태 내장, 후보 카드=기존 카드 재사용(score null이면 배지 미표시), 선택 확정=저장·♡ 선행 조건), **웹검색 심층 탐색**(08-04, spec 004 — 폴백 무결과·후보 화면의 "더 깊이 찾기" 진입점 2곳, 로그인 전용 2회/일, `DeepSearchFlow`가 확인 단계(프리필·잔여 횟수)→진행(경과·취소)→미확인 배지 후보를 내장), 추천 피드 |
 
 ---
 

@@ -12,7 +12,12 @@ public class AiQuotaExceededException extends RuntimeException {
     private final ZonedDateTime resetAt;
 
     public AiQuotaExceededException(int limit, ZonedDateTime resetAt) {
-        super("오늘의 AI 검색 횟수를 모두 사용했어요.");
+        this(limit, resetAt, "오늘의 AI 검색 횟수를 모두 사용했어요.");
+    }
+
+    /** 심층 탐색(spec 004) 등 한도 종류별 안내 문구 분기용 — 코드(AI_QUOTA_EXCEEDED)는 공유. */
+    public AiQuotaExceededException(int limit, ZonedDateTime resetAt, String message) {
+        super(message);
         this.limit = limit;
         this.resetAt = resetAt;
     }

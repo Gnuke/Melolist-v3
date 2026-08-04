@@ -187,3 +187,98 @@ where event_type = 'ai_search_select'
   and created_at >= now() - interval '14 days'
 group by 1
 order by 1;
+
+
+-- ============================================================================
+-- spec 004 — 웹검색 심층 곡 탐색 SC 산출 (2026-08-04 추가, contracts §4)
+--   SC-001 시도율      : AI 폴백 무결과·미채택 세션 중 deep_search_open 세션 ≥ 20%
+--   SC-002 채택률      : deep_search_select ÷ deep_search_request(hit·empty) ≥ 30%
+--   SC-003 응답 p95    : deep_search_request.total_ms p95 ≤ 30,000ms
+--   SC-004 비용 캡     : 사용자·일자별 실행(outcome≠quota) 최댓값 ≤ 한도(2) — 초과 0건
+--   SC-005 미확인 비중 : sum(unverified) ÷ sum(candidates)
+-- 해석 주의: outcome=quota 는 한도 거절(수요 신호) — 시도·채택 분모에서 제외.
+-- ============================================================================
+
+
+-- ── SC-001. AI 폴백이 무결과/미채택으로 끝난 세션의 심층 탐색 시도율 ────────
+with ai_dead_end_sessions as (
+  -- AI 폴백을 시도했으나(요청 있음) 채택이 없었던 세션 = 무결과 + 후보 불만족
+  select session_id
+  from event_log
+  where created_at >= now() - interval '14 days'
+  group by session_id
+  having count(*) filter (where event_type = 'ai_search_request'
+           and properties->>'outcome' in ('hit', 'empty')) > 0
+     and count(*) filter (where event_type = 'ai_search_select') = 0
+), deep as (
+  select count(distinct session_id) as opened_sessions
+  from event_log
+  where event_type = 'deep_search_open'
+    and created_at >= now() - interval '14 days'
+    and session_id in (select session_id from ai_dead_end_sessions)
+)
+select
+  (select count(*) from ai_dead_end_sessions)  as dead_end_sessions,
+  opened_sessions,
+  round(100.0 * opened_sessions
+        / nullif((select count(*) from ai_dead_end_sessions), 0), 1) as sc001_try_pct
+from deep;
+
+
+-- ── SC-002. 채택률 + SC-003. 응답 p95 + SC-005. 미확인 비중 ────────────────
+with req as (
+  select
+    properties->>'outcome'                as outcome,
+    (properties->>'total_ms')::numeric    as total_ms,
+    (properties->>'candidates')::numeric  as candidates,
+    (properties->>'unverified')::numeric  as unverified
+  from event_log
+  where event_type = 'deep_search_request'
+    and created_at >= now() - interval '14 days'
+), sel as (
+  select count(*) as n
+  from event_log
+  where event_type = 'deep_search_select'
+    and created_at >= now() - interval '14 days'
+)
+select
+  count(*) filter (where outcome in ('hit', 'empty'))               as attempts,
+  count(*) filter (where outcome = 'hit')                           as hits,
+  count(*) filter (where outcome = 'error')                         as errors,
+  count(*) filter (where outcome = 'quota')                         as quota_rejected,
+  (select n from sel)                                               as selects,
+  round(100.0 * (select n from sel)
+        / nullif(count(*) filter (where outcome in ('hit', 'empty')), 0), 1) as sc002_select_pct,
+  round(percentile_cont(0.95) within group (order by total_ms)
+        filter (where outcome in ('hit', 'empty')))                 as sc003_p95_ms,
+  round(percentile_cont(0.95) within group (order by total_ms)
+        filter (where outcome in ('hit', 'empty'))) <= 30000        as sc003_pass,
+  round(100.0 * sum(unverified) filter (where outcome = 'hit')
+        / nullif(sum(candidates) filter (where outcome = 'hit'), 0), 1) as sc005_unverified_pct
+from req;
+
+
+-- ── SC-004. 비용 캡 검증 — 사용자·일자별 실행 수가 한도를 넘은 날이 없어야 한다 ──
+select
+  user_id,
+  (created_at at time zone 'Asia/Seoul')::date as day_kst,
+  count(*)                                     as executed
+from event_log
+where event_type = 'deep_search_request'
+  and coalesce(properties->>'outcome', '') <> 'quota'
+group by 1, 2
+having count(*) > 2   -- 한도(user-daily) 초과분만 — 0행이면 SC-004 통과
+order by 2 desc;
+
+
+-- ── 참고. 심층 채택의 확인/미확인·순위 분포 (미확인 라벨 품질 신호) ─────────
+select
+  properties->>'rank'                                          as rank,
+  count(*)                                                     as n,
+  count(*) filter (where (properties->>'verified')::boolean)   as verified_n,
+  count(*) filter (where (properties->>'resolved')::boolean)   as resolved_n
+from event_log
+where event_type = 'deep_search_select'
+  and created_at >= now() - interval '14 days'
+group by 1
+order by 1;
