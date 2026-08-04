@@ -192,7 +192,27 @@ multipart(audio) 수신
 // 400: acrid 재계산 불일치(위조) = BAD_REQUEST · 이후 즐겨찾기는 기존 POST /favorites(acrid=ai-key) 무변경
 ```
 
-**이벤트 사전 (M2 + spec 001 로그인 계측 + spec 002 AI 폴백)**
+**`GET /api/search/deep/quota` · `POST /api/search/deep` · `POST /api/search/deep/select`** — 웹검색 심층 곡 탐색(spec 004, 2026-08-04). **로그인 전용(무JWT 401)**, X-Session-Id 필수(계측 상관관계 — 쿼터 키는 JWT sub). 계약 정본: `specs/004-web-search-escalation/contracts/search-deep-api.md`
+
+```jsonc
+// GET /api/search/deep/quota — 확인 단계 UI 원천 (사용자당 2회/일, Asia/Seoul 자정 리셋)
+// 200: { "limit": 2, "used": 1, "remaining": 1, "reset_at": "2026-08-05T00:00:00+09:00" }
+
+// POST /api/search/deep — 요청 { "query": "…" } (트림 후 2~200자, text와 동일 규칙)
+// 200: text 응답과 동일 형태 + 항목마다 verified 필드(★심층 전용 — 기존 응답에는 키 없음)
+//   verified=true  → 카탈로그 대조 성공: videoId·커버는 카탈로그 값이 정본(웹 링크 무시)
+//   verified=false → "미확인" 배지: videoId는 웹 근거 값(§5.2 11자 검증 통과분, null 가능),
+//                    커버는 ytimg 파생 또는 null — 대조 실패 후보도 제외하지 않는다(신곡 보호)
+// 429: AI_QUOTA_EXCEEDED("오늘의 심층 탐색 횟수를…") + details { limit, reset_at }
+// 502: EXTERNAL_API_ERROR (웹검색 실패·서버 22s 컷) — 클라 하드컷 35s, SC-003은 p95 30s
+
+// POST /api/search/deep/select — 선택 확정: music upsert(acrid=ai-key, source=WEB —
+// 미확인 곡도 웹 링크·커버가 후보 값 그대로 저장) + search_history(DEEP/MATCHED) + deep_search_select 계측
+// 요청 { "candidate": { …deep results[i] 그대로(verified 포함)… }, "rank": 1 }
+// 200: MusicResponse · 400: acrid 위조 — text/select와 동일 규약
+```
+
+**이벤트 사전 (M2 + spec 001 로그인 계측 + spec 002 AI 폴백 + spec 004 심층 탐색)**
 
 | type | 기록 주체 | properties |
 |---|---|---|
@@ -209,6 +229,10 @@ multipart(audio) 수신
 | `ai_search_request` | **서버 전용** | `query_len`, `ai_ms`, `meta_ms`, `total_ms`, `candidates`, `outcome`(hit\|empty\|error\|quota) — **일일 한도 판정 원천**(outcome=quota는 카운트 제외) |
 | `ai_search_select` | **서버 전용** (select 처리 중 기록) | `rank`(1~5), `ai_key`, `resolved`(videoId 해석 성공 여부) — 채택률(SC-002) 원천 |
 | `ai_search_cancel` | 프론트 | `elapsed_ms` — 폴백 검색 중 취소(AbortController) |
+| `deep_search_open` | 프론트 | `from`(ai_empty\|ai_mismatch) — 심층 탐색 확인 단계 진입(spec 004 SC-001 분자, 게스트 로그인 유도 시엔 미발화) |
+| `deep_search_request` | **서버 전용** | `query_len`, `web_ms`, `meta_ms`, `total_ms`, `candidates`, `unverified`, `outcome`(hit\|empty\|error\|quota) — **심층 일일 한도 판정 원장**(outcome=quota는 카운트 제외) |
+| `deep_search_select` | **서버 전용** (select 처리 중 기록) | `rank`(1~5), `ai_key`, `resolved`(videoId 존재), `verified`(카탈로그 확인 여부) — SC-002·SC-005 원천 |
+| `deep_search_cancel` | 프론트 | `elapsed_ms` — 심층 탐색 중 취소(한도는 접수 시점 집계 유지) |
 
 ### 6.2 전체 API — 마일스톤 매핑 (경로·의미는 PRD §7 유지)
 
@@ -222,6 +246,7 @@ multipart(audio) 수신
 | playlist | CRUD + tracks + reorder | M3 |
 | community | reviews(1인1건·409)/favorites/comments/공개 탐색 | ✅M3 favorites 실저장 개통(2026-07-16) — `POST /favorites`는 `music_id` **또는 `acrid`**(검색 결과 화면엔 musicId가 없음 — upsert 비동기라 404 시 클라 1회 재시도) 수용, 저장 행(`{id, music, created_at}`)을 반환(해제 DELETE에 music.id 사용). 나머지는 M4 |
 | search | `POST /search/text`·`/text/select` (AI 자연어 폴백 — spec 002) | ✅**M5 선행 개통(2026-07-21, 운영 스모크 07-22)** — §6.2의 recommendation 예정분을 search 도메인으로 이관 확정. Spring AI+OpenAI(기본 gpt-5.4-mini+reasoning low, env 교체), 후보는 선택 시에만 저장(acrid=`ai-<hash16>`, source=AI), 게스트 3/로그인 10회 일일 한도 |
+| search | `GET /search/deep/quota`·`POST /search/deep`·`/deep/select` (웹검색 심층 탐색 — spec 004) | **2026-08-04 구현** — AI 폴백 에스컬레이션 티어(방식 B). OpenAI Responses API+web_search를 RestClient 직접 호출(Spring AI는 Chat Completions라 불가), 로그인 전용 2회/일(독립 원장 deep_search_request), 메타 대조는 필터가 아닌 verified 라벨(미확인 후보는 웹 근거 링크로 재생·저장, source=WEB·기록 Type=DEEP) |
 | admin | `GET /admin/metrics?days=`, `GET /admin/music`·`PATCH /admin/music/{id}`, `GET /admin/users`·`PATCH /admin/users/{id}/role` (+프론트 미사용 초과분: 곡 상세/DELETE·사용자 상세·모더레이션 — 후속 화면용) | ✅**어드민 개통(2026-07-22, spec 003)** — **계약 정본은 `specs/003-admin-page-front/contracts/admin-api.md`**(ADMIN 전용이라 §6.1 공유 계약에 비전개). 인가=AdminAuthInterceptor(`/api/admin/**`, profiles.role DB 매요청 판정 — 회수 즉시 반영), 모든 변경은 `admin_audit_log` 동일 트랜잭션 감사, `music.meta_locked`로 관리자 정정 보호(자동 보강이 못 덮음 — §5.1 upsert 가드) |
 | recommendation | `/recommendations/*`, `/ai/chat` | M5 |
 

@@ -90,6 +90,15 @@ melolist:
       # ai-mock 프로파일 전용 — OpenAI 실호출 없이 폴백 흐름 E2E.
       # 활성화: SPRING_PROFILES_ACTIVE=acr-mock,ai-mock · 시나리오: hit | empty | error | slow
       scenario: ${AI_MOCK_SCENARIO:hit}
+    deep:
+      # 웹검색 심층 탐색(spec 004). 발동 실측 19~21.5s → 호출 컷 22s. 메타 8s와 합쳐
+      # 서버 최악 ~30s(클라 하드컷 35s, SC-003은 p95 30s)
+      timeout-ms: 22000
+      # 발동 시 회당 ~80~110원 — 로그인 사용자당 일일 한도(Asia/Seoul 자정 리셋)로 총액 캡
+      user-daily: ${DEEP_QUOTA_USER_DAILY:2}
+      mock:
+        # ai-mock 프로파일 전용 — 시나리오: hit | unverified | empty | error | slow
+        scenario: ${DEEP_MOCK_SCENARIO:hit}
 
 management:
   endpoints:

@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { stashResults, peekStashedResults, clearStashedResults } from './resultStash'
+import {
+  stashResults,
+  peekStashedResults,
+  clearStashedResults,
+  stashFallback,
+  peekStashedFallback,
+  clearStashedFallback,
+} from './resultStash'
 import type { AcrResult } from './types'
 
 const KEY = 'melolist.search-results-stash'
@@ -95,5 +102,56 @@ describe('resultStash', () => {
     clearStashedResults()
 
     expect(peekStashedResults('humming')).toBeNull()
+  })
+})
+
+describe('fallbackStash (spec 004 — 게스트 심층 탐색 로그인 복귀)', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('폴백 맥락(진입 경로·질의·복귀 결과)을 같은 모드로 복원한다', () => {
+    stashFallback('humming', 'mismatch', '성시경 노랜데 댄스곡', { results: [song], lowScore: false })
+
+    const restored = peekStashedFallback('humming')
+
+    expect(restored).toEqual({
+      from: 'mismatch',
+      query: '성시경 노랜데 댄스곡',
+      back: { results: [song], lowScore: false },
+    })
+  })
+
+  it('back이 없는 무결과 진입도 보존한다', () => {
+    stashFallback('humming', 'no_match', '어떤 신곡', null)
+
+    expect(peekStashedFallback('humming')).toEqual({ from: 'no_match', query: '어떤 신곡', back: null })
+  })
+
+  it('다른 모드로 스태시한 폴백은 복원하지 않는다', () => {
+    stashFallback('fingerprint', 'no_match', 'q', null)
+
+    expect(peekStashedFallback('humming')).toBeNull()
+  })
+
+  it('TTL(10분)이 지난 폴백 스태시는 복원하지 않는다', () => {
+    vi.useFakeTimers()
+    stashFallback('humming', 'no_match', 'q', null)
+
+    vi.advanceTimersByTime(10 * 60_000 + 1)
+
+    expect(peekStashedFallback('humming')).toBeNull()
+  })
+
+  it('clearStashedFallback 후에는 복원되지 않는다', () => {
+    stashFallback('humming', 'no_match', 'q', null)
+
+    clearStashedFallback()
+
+    expect(peekStashedFallback('humming')).toBeNull()
   })
 })

@@ -18,7 +18,14 @@ import { FallbackSearchView } from '@/features/search/FallbackSearchView'
 import { FavoriteSheet } from '@/features/search/FavoriteSheet'
 import { QuitConfirmSheet } from '@/features/search/QuitConfirmSheet'
 import { addRecentFind } from '@/features/search/recentFinds'
-import { clearStashedResults, peekStashedResults, stashResults } from '@/features/search/resultStash'
+import {
+  clearStashedFallback,
+  clearStashedResults,
+  peekStashedFallback,
+  peekStashedResults,
+  stashFallback,
+  stashResults,
+} from '@/features/search/resultStash'
 import { hasPendingLoginReturn } from '@/features/events/loginEvents'
 import { recognize } from '@/features/search/api'
 import { addFavorite, removeFavorite } from '@/features/favorites/api'
@@ -65,11 +72,21 @@ function SearchFlow({ mode }: { mode: SearchType }) {
 
   // FR-004: ♡ 로그인 유도 → OAuth 복귀 시 리다이렉트로 소실된 결과 화면을 복원한다.
   // 플래그(pending)는 LoginReturnGate가 effect에서 소거하므로 렌더 시점엔 아직 살아 있다.
+  // spec 004: 게스트 "더 깊이 찾기" 로그인 복귀는 폴백 화면·질의까지 복원(US1 AS-5).
+  const restoredFallbackQuery = useRef<string | undefined>(undefined)
   const [phase, setPhase] = useState<Phase>(() => {
-    const stashed = hasPendingLoginReturn() ? peekStashedResults(mode) : null
-    return stashed
-      ? { name: 'results', results: stashed.results, lowScore: stashed.lowScore, restored: true }
-      : { name: 'recording' }
+    if (hasPendingLoginReturn()) {
+      const fallback = peekStashedFallback(mode)
+      if (fallback) {
+        restoredFallbackQuery.current = fallback.query
+        return { name: 'fallback', from: fallback.from, back: fallback.back }
+      }
+      const stashed = peekStashedResults(mode)
+      if (stashed) {
+        return { name: 'results', results: stashed.results, lowScore: stashed.lowScore, restored: true }
+      }
+    }
+    return { name: 'recording' }
   })
   const [sheetOpen, setSheetOpen] = useState(false)
   // 취소 확인 시트 — 어느 단계의 취소인지 (녹음 중=일시정지 후 확인 / 검색 중=요청 유지한 채 확인)
@@ -151,12 +168,13 @@ function SearchFlow({ mode }: { mode: SearchType }) {
   // useCallback 의존성용 — 훅이 반환하는 함수들은 참조가 안정적이다
   const { pause: pauseRecorder, resume: resumeRecorder, cancel: cancelRecorder } = recorder
 
-  // 화면 진입 즉시 녹음 시작 (권한 ~2s는 30초 예산에 포함) — 복원 진입이면 결과를 보여주므로 녹음하지 않는다
+  // 화면 진입 즉시 녹음 시작 (권한 ~2s는 30초 예산에 포함) — 복원 진입(결과/폴백)이면 녹음하지 않는다
   const startRef = useRef(recorder.start)
   startRef.current = recorder.start
-  const restoredRef = useRef(phase.name === 'results')
+  const restoredRef = useRef(phase.name !== 'recording')
   useEffect(() => {
     clearStashedResults() // 스태시는 1회용 — 다음 검색 진입은 새 녹음으로
+    clearStashedFallback()
     if (!restoredRef.current) void startRef.current()
   }, [])
 
@@ -211,6 +229,16 @@ function SearchFlow({ mode }: { mode: SearchType }) {
     track('ai_fallback_open', { from })
     setPhase({ name: 'fallback', from, back })
   }, [])
+
+  // spec 004: 게스트가 폴백에서 "더 깊이 찾기"를 누르면 — 폴백 맥락을 스태시하고 로그인으로.
+  // 로그인 복귀 시 위 초기화 로직이 폴백 화면·질의를 복원한다(US1 AS-5).
+  const onDeepLoginRequired = useCallback(
+    (query: string) => {
+      if (phase.name === 'fallback') stashFallback(mode, phase.from, query, phase.back)
+      navigate('/login', { state: { next: `/search/${mode}` } })
+    },
+    [phase, mode, navigate],
+  )
 
   // 폴백에서 뒤로 — 오매칭 진입이면 원래 결과 복원(US2 AS-2), 미매칭 진입이면 F2로
   const closeFallback = useCallback(() => {
@@ -537,7 +565,13 @@ function SearchFlow({ mode }: { mode: SearchType }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <FallbackSearchView onFavorite={onFavorite} savedAcrids={savedAcridSet} onBack={closeFallback} />
+            <FallbackSearchView
+              onFavorite={onFavorite}
+              savedAcrids={savedAcridSet}
+              onBack={closeFallback}
+              onDeepLoginRequired={onDeepLoginRequired}
+              initialQuery={restoredFallbackQuery.current}
+            />
           </motion.section>
         )}
 

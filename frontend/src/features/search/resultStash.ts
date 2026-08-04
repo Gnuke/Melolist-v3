@@ -46,3 +46,54 @@ export function peekStashedResults(mode: SearchType): { results: AcrResult[]; lo
 export function clearStashedResults(): void {
   sessionStorage.removeItem(KEY)
 }
+
+/**
+ * 폴백 화면 스태시(spec 004) — 게스트가 "더 깊이 찾기"를 눌러 로그인으로 떠날 때
+ * AI 폴백 맥락(진입 경로·질의·복귀용 원래 결과)을 보관, 로그인 복귀 시 폴백 화면과
+ * 질의를 그대로 복원한다(US1 AS-5).
+ */
+const FALLBACK_KEY = 'melolist.fallback-stash'
+
+interface FallbackStash {
+  mode: SearchType
+  from: 'no_match' | 'mismatch'
+  query: string
+  back: { results: AcrResult[]; lowScore: boolean } | null
+  at: number
+}
+
+export function stashFallback(
+  mode: SearchType,
+  from: 'no_match' | 'mismatch',
+  query: string,
+  back: { results: AcrResult[]; lowScore: boolean } | null,
+): void {
+  const stash: FallbackStash = { mode, from, query, back, at: Date.now() }
+  sessionStorage.setItem(FALLBACK_KEY, JSON.stringify(stash))
+}
+
+export function peekStashedFallback(
+  mode: SearchType,
+): { from: 'no_match' | 'mismatch'; query: string; back: { results: AcrResult[]; lowScore: boolean } | null } | null {
+  const raw = sessionStorage.getItem(FALLBACK_KEY)
+  if (!raw) return null
+  try {
+    const stash = JSON.parse(raw) as Partial<FallbackStash>
+    if (
+      stash.mode !== mode ||
+      typeof stash.at !== 'number' ||
+      Date.now() - stash.at > TTL_MS ||
+      (stash.from !== 'no_match' && stash.from !== 'mismatch') ||
+      typeof stash.query !== 'string'
+    ) {
+      return null
+    }
+    return { from: stash.from, query: stash.query, back: stash.back ?? null }
+  } catch {
+    return null
+  }
+}
+
+export function clearStashedFallback(): void {
+  sessionStorage.removeItem(FALLBACK_KEY)
+}

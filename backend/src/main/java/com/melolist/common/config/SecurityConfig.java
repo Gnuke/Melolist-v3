@@ -33,6 +33,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 헬스체크(Docker/CI)
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        // 심층 탐색(spec 004)은 로그인 전용 — 회당 비용이 커 게스트 제외.
+                        // 검색 경로에 permitAll 와일드카드가 생겨도 삼켜지지 않게 먼저 선언(spec 001 교훈)
+                        .requestMatchers("/api/search/deep/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/search/deep").authenticated()
                         // 게스트 허용: 음악 검색 (text/select = AI 폴백 후보 선택 확정, spec 002)
                         .requestMatchers(HttpMethod.POST, "/api/search/fingerprint", "/api/search/humming",
                                 "/api/search/text", "/api/search/text/select").permitAll()

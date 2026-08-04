@@ -17,7 +17,6 @@ import com.melolist.search.dto.SearchResponse;
 import com.melolist.search.dto.TextSelectRequest;
 import com.melolist.search.repository.SearchHistoryRepository;
 import com.melolist.user.service.UserService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -49,7 +48,6 @@ import java.util.concurrent.TimeUnit;
  * recordSilently(REQUIRES_NEW)라 본 흐름을 깨지 않는다.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TextSearchService {
 
@@ -62,13 +60,32 @@ public class TextSearchService {
     private static final ExecutorService PIPELINE_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     private final AiSongFinderClient aiSongFinderClient;
-    private final AcrMetadataClient acrMetadataClient;
     private final AiQuotaService aiQuotaService;
     private final AiProperties aiProperties;
     private final MusicService musicService;
     private final UserService userService;
     private final EventService eventService;
     private final SearchHistoryRepository searchHistoryRepository;
+    /** 3단 대조·동명이곡 차단 — DeepSearchService와 공용 부품(spec 004에서 추출). */
+    private final CandidateMetaVerifier metaVerifier;
+
+    public TextSearchService(AiSongFinderClient aiSongFinderClient,
+                             AcrMetadataClient acrMetadataClient,
+                             AiQuotaService aiQuotaService,
+                             AiProperties aiProperties,
+                             MusicService musicService,
+                             UserService userService,
+                             EventService eventService,
+                             SearchHistoryRepository searchHistoryRepository) {
+        this.aiSongFinderClient = aiSongFinderClient;
+        this.aiQuotaService = aiQuotaService;
+        this.aiProperties = aiProperties;
+        this.musicService = musicService;
+        this.userService = userService;
+        this.eventService = eventService;
+        this.searchHistoryRepository = searchHistoryRepository;
+        this.metaVerifier = new CandidateMetaVerifier(acrMetadataClient, META_LOOKUP_MODE);
+    }
 
     public SearchResponse searchByText(String rawQuery, UUID sessionId, Jwt jwt) {
         String query = rawQuery == null ? "" : rawQuery.trim();
@@ -248,7 +265,7 @@ public class TextSearchService {
     private List<MetaEnrichment> enrichInParallel(List<AiSongCandidate> candidates) {
         List<CompletableFuture<MetaEnrichment>> futures = candidates.stream()
                 .map(c -> CompletableFuture.supplyAsync(
-                        () -> lookupWithAltFallback(c),
+                        () -> metaVerifier.lookupWithAltFallback(c),
                         PIPELINE_EXECUTOR)
                         .orTimeout(aiProperties.metaDeadlineMs(), TimeUnit.MILLISECONDS))
                 .toList();
@@ -262,86 +279,6 @@ public class TextSearchService {
                     }
                 })
                 .toList();
-    }
-
-    /**
-     * 카탈로그 표기 혼재 대응 3단 대조(전부 실측 유형) — 성공 즉시 중단, null·동일 조합 생략:
-     * ① 원표기 → ② 원제목+로마자 아티스트(최다 유형 추정 — ACR 아티스트 로마자 우세,
-     * 예: 미소천사/Sung Si Kyung) → ③ 영문 제목+로마자 아티스트(예: 흔적→Trace).
-     * 전부 실패하는 후보는 최대 3회 조회라 meta_ms가 늘어나는 트레이드오프.
-     */
-    private MetaEnrichment lookupWithAltFallback(AiSongCandidate c) {
-        MetaEnrichment result = accept(c, acrMetadataClient.lookup(c.title(), c.firstArtist(), META_LOOKUP_MODE));
-        if (result.verified()) {
-            return result;
-        }
-
-        String artist = c.firstArtist();
-        String artistAlt = normalized(c.artistAlt());
-        String titleAlt = normalized(c.titleAlt());
-
-        if (artistAlt != null && (artist == null || !artistAlt.equalsIgnoreCase(artist))) {
-            result = accept(c, acrMetadataClient.lookup(c.title(), artistAlt, META_LOOKUP_MODE));
-            if (result.verified()) {
-                return result;
-            }
-        }
-        if (titleAlt != null && !titleAlt.equalsIgnoreCase(c.title())) {
-            result = accept(c, acrMetadataClient.lookup(titleAlt, artistAlt != null ? artistAlt : artist, META_LOOKUP_MODE));
-        }
-        return result;
-    }
-
-    /**
-     * fuzzy 대조가 다른 가수의 동명곡을 반환하는 오염 차단(실측: 흔적/Yoon Jong Shin 요청에
-     * 윤정아 동명곡 반환) — 반환 아티스트가 후보의 어떤 표기와도 안 맞으면 미검증 처리.
-     * 반환 아티스트가 없으면 비교 불가라 통과(과잉 필터 방지, mock 포함).
-     */
-    private MetaEnrichment accept(AiSongCandidate c, MetaEnrichment meta) {
-        if (meta.verified() && !artistMatches(c, meta)) {
-            log.info("메타 대조 동명이곡 의심 — 후보 {}/{} vs 반환 아티스트 {}",
-                    c.title(), c.joinedArtists(), meta.artists());
-            return MetaEnrichment.EMPTY;
-        }
-        return meta;
-    }
-
-    private static boolean artistMatches(AiSongCandidate c, MetaEnrichment meta) {
-        if (meta.artists() == null || meta.artists().isEmpty()) {
-            return true;
-        }
-        List<String> expected = new ArrayList<>();
-        if (c.artists() != null) {
-            expected.addAll(c.artists());
-        }
-        if (c.artistAlt() != null) {
-            expected.add(c.artistAlt());
-        }
-        if (expected.isEmpty()) {
-            return true;
-        }
-        for (String returned : meta.artists()) {
-            String r = normalizeName(returned);
-            if (r.isEmpty()) {
-                continue;
-            }
-            for (String e : expected) {
-                String n = normalizeName(e);
-                if (!n.isEmpty() && (n.equals(r) || n.contains(r) || r.contains(n))) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /** 표기 변형(대소문자·공백·하이픈·마침표) 흡수용 정규화. */
-    private static String normalizeName(String s) {
-        return s == null ? "" : s.toLowerCase().replaceAll("[\\s\\-._]", "");
-    }
-
-    private static String normalized(String s) {
-        return s == null || s.isBlank() ? null : s;
     }
 
     /** 기존 검색 결과와 동일 형태(R10) — acrid=ai-key, score/release_date는 항상 null. */

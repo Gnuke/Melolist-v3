@@ -22,5 +22,7 @@ export interface AcrResult {
   youtube_url?: string // 듣기 버튼용 (watch?v= 파생값)
   youtube_video_id?: string // onError 썸네일 폴백용
   cover_url?: string | null // 카드 이미지 (null 가능 → 플레이스홀더)
+  // 심층 탐색(spec 004) 전용 — false일 때만 "미확인" 배지 표시. 기존 검색 응답에는 키 자체가 없다
+  verified?: boolean
   [key: string]: unknown
 }

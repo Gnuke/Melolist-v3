@@ -31,7 +31,8 @@ import java.util.UUID;
 @NoArgsConstructor
 public class SearchHistory {
 
-    public enum Type { FINGERPRINT, HUMMING, TEXT }
+    /** DEEP = 웹검색 심층 탐색(spec 004) — varchar(20) STRING 매핑이라 값 추가에 DDL 불필요. */
+    public enum Type { FINGERPRINT, HUMMING, TEXT, DEEP }
 
     public enum Status { MATCHED, NO_MATCH }
 
