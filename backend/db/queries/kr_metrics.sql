@@ -194,9 +194,11 @@ order by 1;
 --   SC-001 시도율      : AI 폴백 무결과·미채택 세션 중 deep_search_open 세션 ≥ 20%
 --   SC-002 채택률      : deep_search_select ÷ deep_search_request(hit·empty) ≥ 30%
 --   SC-003 응답 p95    : deep_search_request.total_ms p95 ≤ 30,000ms
---   SC-004 비용 캡     : 사용자·일자별 실행(outcome≠quota) 최댓값 ≤ 한도(2) — 초과 0건
+--   SC-004 비용 캡     : 사용자·일자별 차감 실행(outcome∉quota·error) 최댓값 ≤ 한도(2) — 초과 0건
 --   SC-005 미확인 비중 : sum(unverified) ÷ sum(candidates)
 -- 해석 주의: outcome=quota 는 한도 거절(수요 신호) — 시도·채택 분모에서 제외.
+--   2026-08-05 개정: outcome=error(웹 호출 오류, 과금 없음)는 한도 환불 — SC-004 카운트 제외.
+--   outcome=timeout(신설, 웹검색이 이미 돌던 실패)은 과금 가능성이 있어 차감 유지.
 -- ============================================================================
 
 
@@ -245,6 +247,7 @@ select
   count(*) filter (where outcome in ('hit', 'empty'))               as attempts,
   count(*) filter (where outcome = 'hit')                           as hits,
   count(*) filter (where outcome = 'error')                         as errors,
+  count(*) filter (where outcome = 'timeout')                       as timeouts,
   count(*) filter (where outcome = 'quota')                         as quota_rejected,
   (select n from sel)                                               as selects,
   round(100.0 * (select n from sel)
@@ -265,7 +268,7 @@ select
   count(*)                                     as executed
 from event_log
 where event_type = 'deep_search_request'
-  and coalesce(properties->>'outcome', '') <> 'quota'
+  and coalesce(properties->>'outcome', '') not in ('quota', 'error')
 group by 1, 2
 having count(*) > 2   -- 한도(user-daily) 초과분만 — 0행이면 SC-004 통과
 order by 2 desc;

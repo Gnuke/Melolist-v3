@@ -230,7 +230,7 @@ multipart(audio) 수신
 | `ai_search_select` | **서버 전용** (select 처리 중 기록) | `rank`(1~5), `ai_key`, `resolved`(videoId 해석 성공 여부) — 채택률(SC-002) 원천 |
 | `ai_search_cancel` | 프론트 | `elapsed_ms` — 폴백 검색 중 취소(AbortController) |
 | `deep_search_open` | 프론트 | `from`(ai_empty\|ai_mismatch) — 심층 탐색 확인 단계 진입(spec 004 SC-001 분자, 게스트 로그인 유도 시엔 미발화) |
-| `deep_search_request` | **서버 전용** | `query_len`, `web_ms`, `meta_ms`, `total_ms`, `candidates`, `unverified`, `outcome`(hit\|empty\|error\|quota) — **심층 일일 한도 판정 원장**(outcome=quota는 카운트 제외) |
+| `deep_search_request` | **서버 전용** | `query_len`, `web_ms`, `meta_ms`, `total_ms`, `candidates`, `unverified`, `outcome`(hit\|empty\|error\|timeout\|quota) — **심층 일일 한도 판정 원장**(quota·error는 카운트 제외 — 오류는 과금 없음이라 환불, timeout은 웹검색이 이미 돌던 실패라 차감 유지. 2026-08-05 개정) |
 | `deep_search_select` | **서버 전용** (select 처리 중 기록) | `rank`(1~5), `ai_key`, `resolved`(videoId 존재), `verified`(카탈로그 확인 여부) — SC-002·SC-005 원천 |
 | `deep_search_cancel` | 프론트 | `elapsed_ms` — 심층 탐색 중 취소(한도는 접수 시점 집계 유지) |
 

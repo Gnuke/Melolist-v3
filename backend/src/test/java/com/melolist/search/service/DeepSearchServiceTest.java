@@ -216,7 +216,8 @@ class DeepSearchServiceTest {
     }
 
     @Test
-    void 호출_컷을_넘기면_502로_실패한다() {
+    void 호출_컷을_넘기면_502이며_outcome_timeout으로_기록되어_차감이_유지된다() {
+        // 타임아웃은 웹검색이 이미 돌던 실패(비용 발생 가능성)라 error와 달리 한도 차감을 유지한다
         DeepSearchService fast = newService(new DeepSearchProperties(200, 2));
         when(webSongFinderClient.findCandidates(anyString())).thenAnswer(inv -> {
             Thread.sleep(1_000);
@@ -225,6 +226,10 @@ class DeepSearchServiceTest {
 
         assertThatThrownBy(() -> fast.search("느린 웹검색", SESSION_ID, jwtOf(USER_ID)))
                 .isInstanceOf(ExternalApiException.class);
+
+        ArgumentCaptor<Map<String, Object>> props = ArgumentCaptor.forClass(Map.class);
+        verify(eventService).recordSilently(eq("deep_search_request"), eq(SESSION_ID), eq(USER_ID), props.capture());
+        assertThat(props.getValue()).containsEntry("outcome", "timeout");
     }
 
     @Test

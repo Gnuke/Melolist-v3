@@ -35,6 +35,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * 웹검색 심층 탐색(spec 004) — AI 폴백의 에스컬레이션 티어. 로그인 전용.
@@ -115,7 +116,10 @@ public class DeepSearchService {
                     .join();
         } catch (Exception e) {
             long elapsed = elapsedMs(t0);
-            recordRequest(sessionId, userId, query, elapsed, 0, elapsed, 0, 0, "error");
+            // timeout=웹검색이 이미 돌던 실패(과금 가능성)라 차감 유지, 그 외 오류 응답은
+            // 비용 미발생이라 환불된다(카운트 쿼리가 outcome=error를 제외 — 2026-08-05 개정)
+            recordRequest(sessionId, userId, query, elapsed, 0, elapsed, 0, 0,
+                    isTimeout(e) ? "timeout" : "error");
             throw asExternalApiException(e);
         }
         long webMs = elapsedMs(t0);
@@ -244,6 +248,11 @@ public class DeepSearchService {
                     }
                 })
                 .toList();
+    }
+
+    private boolean isTimeout(Exception e) {
+        Throwable cause = e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;
+        return cause instanceof TimeoutException;
     }
 
     private ExternalApiException asExternalApiException(Exception e) {
