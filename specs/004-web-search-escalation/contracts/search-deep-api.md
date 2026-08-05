@@ -99,7 +99,7 @@ ECONNABORTED → error 상태). SC-003은 p95 ≤ 30s.
 | type | 기록 주체 | properties | 비고 |
 |------|-----------|------------|------|
 | `deep_search_open` | 클라 | `{from: "ai_empty"\|"ai_mismatch"}` | 진입점 탭 시(확인 단계 진입) |
-| `deep_search_request` | 서버 | `{query_len, web_ms, meta_ms, total_ms, candidates, unverified, outcome: "hit"\|"empty"\|"error"\|"quota"}` | **쿼터 원장 겸임**. outcome=quota는 카운트 제외 |
+| `deep_search_request` | 서버 | `{query_len, web_ms, meta_ms, total_ms, candidates, unverified, outcome: "hit"\|"empty"\|"error"\|"timeout"\|"quota"}` | **쿼터 원장 겸임**. outcome=quota·error는 카운트 제외(오류는 과금 없음이라 환불 — 2026-08-05 개정), timeout은 웹검색이 이미 돌던 실패라 차감 유지 |
 | `deep_search_select` | 서버 | `{rank, ai_key, resolved, verified}` | resolved=videoId 존재, verified=카탈로그 확인 여부 |
 | `deep_search_cancel` | 클라 | `{elapsed_ms}` | AbortController 취소 시 |
 
@@ -109,8 +109,8 @@ SC 산출 (kr_metrics.sql에 절 추가):
   후보 미채택(ai_search_request(hit) − ai_search_select) 세션 수
 - SC-002 채택률 = `deep_search_select` 수 ÷ `deep_search_request(outcome∈{hit,empty})` 수
 - SC-003 p95 = `deep_search_request.total_ms` percentile
-- SC-004 한도 초과 실행 0건 = 사용자·일자별 `deep_search_request(outcome≠quota)` 카운트
-  최댓값 ≤ limit 검증 쿼리
+- SC-004 한도 초과 실행 0건 = 사용자·일자별 `deep_search_request(outcome∉{quota,error})`
+  카운트 최댓값 ≤ limit 검증 쿼리
 - SC-005 미확인 비중 = `sum(unverified) ÷ sum(candidates)`
 
 ## 5. 프론트 타입 변경 (frontend-prd §8에 반영)

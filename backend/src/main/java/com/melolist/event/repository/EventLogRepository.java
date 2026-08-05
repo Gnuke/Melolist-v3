@@ -37,4 +37,21 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
     long countByTypeAndSessionSince(@Param("type") String type,
                                     @Param("sessionId") UUID sessionId,
                                     @Param("since") Instant since);
+
+    /*
+     * 심층 탐색 한도 카운트(spec 004, 2026-08-05 개정) — quota에 더해 outcome=error
+     * (웹 호출이 오류 응답으로 끝난 실패, 과금 없음)도 소모로 치지 않는다(환불).
+     * outcome=timeout은 웹검색이 이미 돌던 실패라 과금 가능성이 있어 차감을 유지한다.
+     */
+
+    @Query(value = """
+            select count(*) from event_log
+            where event_type = :type
+              and user_id = :userId
+              and created_at >= :since
+              and coalesce(properties ->> 'outcome', '') not in ('quota', 'error')
+            """, nativeQuery = true)
+    long countBillableByTypeAndUserSince(@Param("type") String type,
+                                         @Param("userId") UUID userId,
+                                         @Param("since") Instant since);
 }

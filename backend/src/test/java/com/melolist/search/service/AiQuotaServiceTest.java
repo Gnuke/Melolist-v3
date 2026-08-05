@@ -93,24 +93,27 @@ class AiQuotaServiceTest {
         assertThatCode(() -> aiQuotaService.checkQuota(SESSION_ID, null)).doesNotThrowAnyException();
     }
 
-    // ── 심층 탐색 한도(spec 004, R6) — 로그인 사용자 전용, deep_search_request 원장 ──
+    // ── 심층 탐색 한도(spec 004, R6) — 로그인 사용자 전용, deep_search_request 원장.
+    //    카운트는 차감분 전용 쿼리(countBillable…: outcome=quota·error 제외 — 서버 오류 환불,
+    //    2026-08-05 개정)를 쓴다. 002의 quota만 제외하는 쿼리를 쓰면 안 된다. ──
 
     @Test
-    void 심층_한도는_사용자_기준_오늘_자정_이후만_센다() {
+    void 심층_한도는_사용자_기준_오늘_자정_이후_차감분만_센다() {
         ArgumentCaptor<Instant> since = ArgumentCaptor.forClass(Instant.class);
-        when(eventLogRepository.countByTypeAndUserSince(
+        when(eventLogRepository.countBillableByTypeAndUserSince(
                 eq(AiQuotaService.DEEP_COUNTED_EVENT_TYPE), eq(USER_ID), since.capture())).thenReturn(1L);
 
         assertThatCode(() -> aiQuotaService.checkDeepQuota(USER_ID)).doesNotThrowAnyException();
 
         assertThat(since.getValue())
                 .isEqualTo(ZonedDateTime.now(SEOUL).truncatedTo(ChronoUnit.DAYS).toInstant());
+        verify(eventLogRepository, never()).countByTypeAndUserSince(any(), any(), any());
         verify(eventLogRepository, never()).countByTypeAndSessionSince(any(), any(), any());
     }
 
     @Test
     void 심층_한도를_채우면_429에_심층_문구와_리셋_시각을_담는다() {
-        when(eventLogRepository.countByTypeAndUserSince(
+        when(eventLogRepository.countBillableByTypeAndUserSince(
                 eq(AiQuotaService.DEEP_COUNTED_EVENT_TYPE), eq(USER_ID), any())).thenReturn(2L);
 
         assertThatThrownBy(() -> aiQuotaService.checkDeepQuota(USER_ID))
@@ -125,7 +128,7 @@ class AiQuotaServiceTest {
 
     @Test
     void 심층_잔여_조회는_limit_used_remaining_resetAt을_계산한다() {
-        when(eventLogRepository.countByTypeAndUserSince(
+        when(eventLogRepository.countBillableByTypeAndUserSince(
                 eq(AiQuotaService.DEEP_COUNTED_EVENT_TYPE), eq(USER_ID), any())).thenReturn(1L);
 
         AiQuotaService.DeepUsage usage = aiQuotaService.deepUsage(USER_ID);
@@ -139,7 +142,7 @@ class AiQuotaServiceTest {
 
     @Test
     void 심층_잔여는_초과_사용이어도_0_밑으로_내려가지_않는다() {
-        when(eventLogRepository.countByTypeAndUserSince(
+        when(eventLogRepository.countBillableByTypeAndUserSince(
                 eq(AiQuotaService.DEEP_COUNTED_EVENT_TYPE), eq(USER_ID), any())).thenReturn(5L);
 
         assertThat(aiQuotaService.deepUsage(USER_ID).remaining()).isZero();

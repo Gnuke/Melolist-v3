@@ -21,7 +21,9 @@ import java.util.UUID;
  * outcome=quota(거절된 요청)는 카운트에서 제외 — 429 반복이 한도를 밀어내지 않는다.
  *
  * <p>심층 탐색(spec 004)은 별도 원장({@code deep_search_request})·로그인 전용·독립
- * 한도(기본 2회/일) — 같은 카운트 패턴을 공유한다.</p>
+ * 한도(기본 2회/일). 카운트는 차감분 전용 쿼리를 쓴다 — quota에 더해 outcome=error
+ * (웹 호출이 오류로 끝나 과금 없음)도 제외해 환불하고, timeout은 과금 가능성이 있어
+ * 차감을 유지한다(2026-08-05 개정).</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -68,7 +70,7 @@ public class AiQuotaService {
     public DeepUsage deepUsage(UUID userId) {
         ZonedDateTime dayStart = ZonedDateTime.now(RESET_ZONE).truncatedTo(ChronoUnit.DAYS);
         int limit = deepProperties.userDaily();
-        long used = eventLogRepository.countByTypeAndUserSince(
+        long used = eventLogRepository.countBillableByTypeAndUserSince(
                 DEEP_COUNTED_EVENT_TYPE, userId, dayStart.toInstant());
         int remaining = (int) Math.max(0, limit - used);
         return new DeepUsage(limit, (int) used, remaining, dayStart.plusDays(1));

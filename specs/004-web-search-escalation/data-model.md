@@ -42,7 +42,9 @@
 ## 4. 심층 탐색 이용 한도 (파생 값 — 저장 없음)
 
 - 원장: `event_log`에서 `type='deep_search_request' and user_id=? and created_at>=오늘
-  자정(Asia/Seoul) and outcome≠'quota'` 카운트 (기존 `countByTypeAndUserSince` 재사용).
+  자정(Asia/Seoul) and outcome∉('quota','error')` 카운트 (차감분 전용
+  `countBillableByTypeAndUserSince` — 2026-08-05 개정: 웹 호출이 오류로 끝난 실패는
+  과금 없음이라 환불, timeout은 과금 가능성이 있어 차감 유지).
 - 한도: `melolist.ai.deep.user-daily`(기본 2). 로그인 전용이라 세션 키 없음.
 - 잔여 조회: `GET /api/search/deep/quota` → `{limit, used, remaining, reset_at}` —
   확인 단계 UI 원천(FR-002).
