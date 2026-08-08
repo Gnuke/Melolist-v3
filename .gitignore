@@ -59,3 +59,6 @@ logs/
 backend/scripts/match-rate/audio/
 backend/scripts/match-rate/reports/
 backend/scripts/match-rate/manifest.json
+
+# === 포트폴리오 — 개인 문서, 공개 리포에 올리지 않음 ===
+portfolio/
