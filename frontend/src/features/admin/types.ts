@@ -5,14 +5,17 @@
 
 export type SearchMode = 'fingerprint' | 'humming'
 
-/** KR2 행 — mode = null 이면 전체 롤업. */
+/**
+ * KR2 행 — mode = null 이면 전체 롤업.
+ * *_ms 는 표본 0건(rollup은 0건이어도 전체 행을 돌려줌)·계측 키 누락 시 null.
+ */
 export interface Kr2Row {
   mode: SearchMode | null
   n: number
   matched_n: number
-  p50_ms: number
-  p95_ms: number
-  max_ms: number
+  p50_ms: number | null
+  p95_ms: number | null
+  max_ms: number | null
   pass: boolean
 }
 
@@ -20,10 +23,10 @@ export interface Kr2Row {
 export interface Kr2Breakdown {
   mode: SearchMode | null
   n: number
-  acr_p95_ms: number
-  meta_p95_ms: number
-  upsert_p95_ms: number
-  total_p95_ms: number
+  acr_p95_ms: number | null
+  meta_p95_ms: number | null
+  upsert_p95_ms: number | null
+  total_p95_ms: number | null
 }
 
 /** KR3 — completion_pct = null 이면 분모 0(방문 없음), 오류 아님. */
@@ -45,7 +48,7 @@ export interface WeeklyRow {
   week: string
   mode: SearchMode | null
   n: number
-  p95_ms: number
+  p95_ms: number | null
 }
 
 export interface Totals {
