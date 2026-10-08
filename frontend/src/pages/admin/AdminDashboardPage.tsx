@@ -24,7 +24,8 @@ const FAIL_REASON_LABEL: Record<string, string> = {
   cancelled: '취소',
 }
 
-const ms = (v: number) => `${v.toLocaleString()}ms`
+/** null = 표본 0건·계측 키 누락 — 값 없음 표시. */
+const ms = (v: number | null) => (v === null ? '—' : `${v.toLocaleString()}ms`)
 
 /**
  * US1 운영 지표 대시보드 — KR2·KR3를 목표 대비로 표시(수동 SQL 실행 대체, SC-001).
@@ -79,7 +80,10 @@ export function AdminDashboardPage() {
 }
 
 function DashboardBody({ data }: { data: Awaited<ReturnType<typeof fetchAdminMetrics>> }) {
-  const kr2Total = data.kr2.rows.find((r) => r.mode === null)
+  // rollup은 기간 내 0건이어도 전체 행(n=0, *_ms=null)을 돌려준다 — 0건 행은 빈 데이터로 취급
+  const kr2Rows = data.kr2.rows.filter((r) => r.n > 0)
+  const breakdownRows = data.kr2_breakdown.filter((r) => r.n > 0)
+  const kr2Total = kr2Rows.find((r) => r.mode === null)
   const { kr3, totals } = data
 
   return (
@@ -112,12 +116,12 @@ function DashboardBody({ data }: { data: Awaited<ReturnType<typeof fetchAdminMet
 
       {/* KR2 모드별 (FR-003) */}
       <Section title="KR2 모드별 응답 시간">
-        {data.kr2.rows.length === 0 ? (
+        {kr2Rows.length === 0 ? (
           <EmptyNote />
         ) : (
           <Table
             head={['모드', 'n', '매칭', 'p50', 'p95', 'max', '판정']}
-            rows={data.kr2.rows.map((r) => [
+            rows={kr2Rows.map((r) => [
               modeLabel(r.mode),
               r.n.toLocaleString(),
               r.matched_n.toLocaleString(),
@@ -132,12 +136,12 @@ function DashboardBody({ data }: { data: Awaited<ReturnType<typeof fetchAdminMet
 
       {/* 구간 분해 — 병목 식별 (FR-004) */}
       <Section title="구간 분해 p95" note="upsert는 응답 경로 밖 비동기 측정치예요">
-        {data.kr2_breakdown.length === 0 ? (
+        {breakdownRows.length === 0 ? (
           <EmptyNote />
         ) : (
           <Table
             head={['모드', 'n', '인식(acr)', '메타 보강', 'upsert(비동기)', '전체']}
-            rows={data.kr2_breakdown.map((r) => [
+            rows={breakdownRows.map((r) => [
               modeLabel(r.mode),
               r.n.toLocaleString(),
               ms(r.acr_p95_ms),
@@ -177,7 +181,7 @@ function DashboardBody({ data }: { data: Awaited<ReturnType<typeof fetchAdminMet
               key: `${w.week}-${w.mode}-${i}`,
               label: `${w.week} · ${modeLabel(w.mode)}`,
               sub: `${w.n.toLocaleString()}건`,
-              count: w.p95_ms,
+              count: w.p95_ms ?? 0,
             }))}
           />
         )}
