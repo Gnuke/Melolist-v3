@@ -44,8 +44,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/events").permitAll()
                         // 게스트 허용: 곡/리뷰/공개 플레이리스트 조회
                         .requestMatchers(HttpMethod.GET, "/api/music/**").permitAll()
-                        // 내 리뷰는 인증 필수 — 아래 /api/reviews/* 와일드카드보다 먼저 선언
-                        .requestMatchers(HttpMethod.GET, "/api/reviews/me").authenticated()
+                        // 내 리뷰·리뷰 유도 판정은 인증 필수 — 아래 /api/reviews/* 와일드카드보다 먼저 선언
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/me", "/api/reviews/prompt").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/reviews", "/api/reviews/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
                         // 게스트 허용: 플레이리스트 상세·댓글 조회 — 비공개 접근 제어는 서비스 계층(404)

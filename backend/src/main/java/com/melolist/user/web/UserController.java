@@ -1,16 +1,19 @@
 package com.melolist.user.web;
 
 import com.melolist.user.dto.ProfileResponse;
+import com.melolist.user.dto.ReviewVisibilityRequest;
 import com.melolist.user.dto.UpdateMeRequest;
 import com.melolist.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,5 +36,13 @@ public class UserController {
     public ProfileResponse updateMe(@Valid @RequestBody UpdateMeRequest request,
                                     @AuthenticationPrincipal Jwt jwt) {
         return userService.updateMe(jwt, request);
+    }
+
+    /** 리뷰 유도 유예(spec 005 — "나중에" = review_hide_until 서버 저장, 기기 무관). */
+    @PatchMapping("/me/review-visibility")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reviewVisibility(@Valid @RequestBody ReviewVisibilityRequest request,
+                                 @AuthenticationPrincipal Jwt jwt) {
+        userService.applyReviewVisibility(jwt, request);
     }
 }

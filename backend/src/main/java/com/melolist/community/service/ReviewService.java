@@ -4,11 +4,14 @@ import com.melolist.common.dto.PageResponse;
 import com.melolist.common.error.ConflictException;
 import com.melolist.common.error.ForbiddenException;
 import com.melolist.common.error.NotFoundException;
+import com.melolist.community.config.ReviewProperties;
 import com.melolist.community.domain.Review;
 import com.melolist.community.dto.ReviewDtos.CreateRequest;
+import com.melolist.community.dto.ReviewDtos.PromptResponse;
 import com.melolist.community.dto.ReviewDtos.ReviewResponse;
 import com.melolist.community.dto.ReviewDtos.UpdateRequest;
 import com.melolist.community.repository.ReviewRepository;
+import com.melolist.search.service.SearchHistoryService;
 import com.melolist.user.domain.Profile;
 import com.melolist.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -29,6 +33,27 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final UserService userService;
+    private final SearchHistoryService searchHistoryService;
+    private final ReviewProperties reviewProperties;
+
+    /**
+     * 리뷰 유도 노출 자격(spec 005 FR-010) — 리뷰 미작성 AND 유예 아님 AND 누적 검색
+     * 임계 이상. 서버 판정이라 기기와 무관하게 일관된다(R5). JIT 프로비저닝 겸용이라
+     * readOnly가 아니다.
+     */
+    @Transactional
+    public PromptResponse promptEligibility(Jwt jwt) {
+        Profile profile = userService.getOrProvisionProfile(jwt);
+        if (reviewRepository.existsByAuthorId(profile.getId())) {
+            return new PromptResponse(false);
+        }
+        Instant hideUntil = profile.getReviewHideUntil();
+        if (hideUntil != null && hideUntil.isAfter(Instant.now())) {
+            return new PromptResponse(false);
+        }
+        long searches = searchHistoryService.countByUser(profile.getId());
+        return new PromptResponse(searches >= reviewProperties.promptSearchThreshold());
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<ReviewResponse> getPage(Pageable pageable) {

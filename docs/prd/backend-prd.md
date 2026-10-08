@@ -212,7 +212,7 @@ multipart(audio) 수신
 // 200: MusicResponse · 400: acrid 위조 — text/select와 동일 규약
 ```
 
-**이벤트 사전 (M2 + spec 001 로그인 계측 + spec 002 AI 폴백 + spec 004 심층 탐색)**
+**이벤트 사전 (M2 + spec 001 로그인 계측 + spec 002 AI 폴백 + spec 004 심층 탐색 + spec 005 커뮤니티)**
 
 | type | 기록 주체 | properties |
 |---|---|---|
@@ -233,18 +233,23 @@ multipart(audio) 수신
 | `deep_search_request` | **서버 전용** | `query_len`, `web_ms`, `meta_ms`, `total_ms`, `candidates`, `unverified`, `outcome`(hit\|empty\|error\|timeout\|quota) — **심층 일일 한도 판정 원장**(quota·error는 카운트 제외 — 오류는 과금 없음이라 환불, timeout은 웹검색이 이미 돌던 실패라 차감 유지. 2026-08-05 개정) |
 | `deep_search_select` | **서버 전용** (select 처리 중 기록) | `rank`(1~5), `ai_key`, `resolved`(videoId 존재), `verified`(카탈로그 확인 여부) — SC-002·SC-005 원천 |
 | `deep_search_cancel` | 프론트 | `elapsed_ms` — 심층 탐색 중 취소(한도는 접수 시점 집계 유지) |
+| `community_view` | 프론트 | `segment`(playlists\|reviews) — 커뮤니티 화면 진입·세그먼트 전환(spec 005 SC-004 조회 규모 원천) |
+| `review_prompt_shown` | 프론트 | (없음) — 리뷰 유도 시트 노출(SC-005 분모) |
+| `review_prompt_later` | 프론트 | (없음) — "나중에" 선택(서버 유예 저장과 별개 계측) |
+| `review_submit` | 프론트 | `rating`(1~5), `is_edit` — 리뷰 작성·수정 확정 성공 시(**리뷰 작성률 원천**) |
+| `comment_submit` | 프론트 | `playlist_id` — 댓글 작성 확정 성공 시 |
 
 ### 6.2 전체 API — 마일스톤 매핑 (경로·의미는 PRD §7 유지)
 
 | 도메인 | 엔드포인트 | 시점 |
 |---|---|---|
-| user | `GET/PATCH /users/me`, `GET /users/{id}`, `PATCH /users/me/review-visibility` | M1(me)·M4(리뷰유예) |
+| user | `GET/PATCH /users/me`, `GET /users/{id}`, `PATCH /users/me/review-visibility` | M1(me)·✅**M4 리뷰유예 개통(2026-08-12, spec 005)** — `{action:"later"}` → `profiles.review_hide_until = now+7일`(설정 `melolist.review.prompt-defer-days`), 204. 알 수 없는 action은 400 |
 | search | `POST /search/fingerprint`·`/humming` | **M2** |
 | event | `POST /events` | **M2 (신설)** |
 | search | `GET /search/history`, `DELETE /search/history/{id}` | ✅M3 개통(2026-07-16) — GET=PageResponse(snake_case), 항목 `{id, type, status, score, music(스냅샷·no_match면 null), created_at}`, top 곡은 페이지 단위 일괄 조인(N+1 방지). DELETE는 소유자 한정(비소유=404, 존재 비노출). write는 M2부터 |
 | music | `GET /music/{id}`, `GET /music?query=` (로컬 캐시 검색) | M3 |
 | playlist | CRUD + tracks + reorder | M3 |
-| community | reviews(1인1건·409)/favorites/comments/공개 탐색 | ✅M3 favorites 실저장 개통(2026-07-16) — `POST /favorites`는 `music_id` **또는 `acrid`**(검색 결과 화면엔 musicId가 없음 — upsert 비동기라 404 시 클라 1회 재시도) 수용, 저장 행(`{id, music, created_at}`)을 반환(해제 DELETE에 music.id 사용). 나머지는 M4 |
+| community | reviews(1인1건·409)/favorites/comments/공개 탐색 | ✅M3 favorites 실저장 개통(2026-07-16) — `POST /favorites`는 `music_id` **또는 `acrid`**(검색 결과 화면엔 musicId가 없음 — upsert 비동기라 404 시 클라 1회 재시도) 수용, 저장 행(`{id, music, created_at}`)을 반환(해제 DELETE에 music.id 사용). ✅**나머지 M4 개통(2026-08-12, spec 005 — 계약 정본 `specs/005-community-feed-review/contracts/community-api.md`)**: `GET /community/playlists`(게스트, 작성자 요약 `author` 포함 — 프로필 페이지 단위 일괄 조인), reviews CRUD(내용 ≤500자)+`GET /reviews/prompt`(인증 — 유도 판정: 미작성·유예 아님·검색≥3회, SecurityConfig에서 permitAll 와일드카드보다 먼저 authenticated 선언), comments(내용 ≤300자, `parent_id`는 v1 예약 — 프론트 미사용) |
 | search | `POST /search/text`·`/text/select` (AI 자연어 폴백 — spec 002) | ✅**M5 선행 개통(2026-07-21, 운영 스모크 07-22)** — §6.2의 recommendation 예정분을 search 도메인으로 이관 확정. Spring AI+OpenAI(기본 gpt-5.4-mini+reasoning low, env 교체), 후보는 선택 시에만 저장(acrid=`ai-<hash16>`, source=AI), 게스트 3/로그인 10회 일일 한도 |
 | search | `GET /search/deep/quota`·`POST /search/deep`·`/deep/select` (웹검색 심층 탐색 — spec 004) | **2026-08-04 구현** — AI 폴백 에스컬레이션 티어(방식 B). OpenAI Responses API+web_search를 RestClient 직접 호출(Spring AI는 Chat Completions라 불가), 로그인 전용 2회/일(독립 원장 deep_search_request), 메타 대조는 필터가 아닌 verified 라벨(미확인 후보는 웹 근거 링크로 재생·저장, source=WEB·기록 Type=DEEP) |
 | admin | `GET /admin/metrics?days=`, `GET /admin/music`·`PATCH /admin/music/{id}`, `GET /admin/users`·`PATCH /admin/users/{id}/role` (+프론트 미사용 초과분: 곡 상세/DELETE·사용자 상세·모더레이션 — 후속 화면용) | ✅**어드민 개통(2026-07-22, spec 003)** — **계약 정본은 `specs/003-admin-page-front/contracts/admin-api.md`**(ADMIN 전용이라 §6.1 공유 계약에 비전개). 인가=AdminAuthInterceptor(`/api/admin/**`, profiles.role DB 매요청 판정 — 회수 즉시 반영), 모든 변경은 `admin_audit_log` 동일 트랜잭션 감사, `music.meta_locked`로 관리자 정정 보호(자동 보강이 못 덮음 — §5.1 upsert 가드) |

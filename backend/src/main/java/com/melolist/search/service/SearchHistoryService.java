@@ -33,6 +33,12 @@ public class SearchHistoryService {
     private final MusicRepository musicRepository;
     private final FavoriteRepository favoriteRepository;
 
+    /** 누적 검색 횟수 — 리뷰 유도 임계 판정용(spec 005 R5, community 도메인이 호출). */
+    @Transactional(readOnly = true)
+    public long countByUser(UUID userId) {
+        return searchHistoryRepository.countByUserId(userId);
+    }
+
     @Transactional(readOnly = true)
     public PageResponse<SearchHistoryResponse> getPage(UUID userId, Pageable pageable) {
         Page<SearchHistory> page = searchHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);

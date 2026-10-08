@@ -55,6 +55,10 @@ melolist:
   cors:
     # 프론트(React) 오리진. 콤마로 여러 개.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:https://melolist-v3.vercel.app,http://localhost:5173}
+  review:
+    # 리뷰 유도(spec 005 FR-010) — "나중에" 유예 일수·노출 임계 누적 검색 횟수(운영 조정 가능)
+    prompt-defer-days: 7
+    prompt-search-threshold: 3
   acrcloud:
     # 지문/허밍 프로젝트 리전·호스트 동일(ap-southeast-1) 확인됨(2026-07-09 키 발급)
     identify-host: ${ACRCLOUD_HOST:identify-ap-southeast-1.acrcloud.com}

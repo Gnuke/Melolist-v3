@@ -3,6 +3,7 @@ package com.melolist.community.web;
 import com.melolist.auth.CurrentUser;
 import com.melolist.common.dto.PageResponse;
 import com.melolist.community.dto.ReviewDtos.CreateRequest;
+import com.melolist.community.dto.ReviewDtos.PromptResponse;
 import com.melolist.community.dto.ReviewDtos.ReviewResponse;
 import com.melolist.community.dto.ReviewDtos.UpdateRequest;
 import com.melolist.community.service.ReviewService;
@@ -45,6 +46,15 @@ public class ReviewController {
     @GetMapping("/me")
     public ReviewResponse mine(@AuthenticationPrincipal Jwt jwt) {
         return reviewService.getMine(CurrentUser.id(jwt));
+    }
+
+    /**
+     * 리뷰 유도 노출 자격(spec 005 FR-010) — 인증 전용(SecurityConfig에서 permitAll
+     * 와일드카드보다 먼저 authenticated 선언됨). /me처럼 /{id}보다 먼저 선언한다.
+     */
+    @GetMapping("/prompt")
+    public PromptResponse prompt(@AuthenticationPrincipal Jwt jwt) {
+        return reviewService.promptEligibility(jwt);
     }
 
     @GetMapping("/{id}")

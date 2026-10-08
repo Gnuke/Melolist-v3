@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Heart, History, Home, ListMusic } from 'lucide-react'
+import { Heart, History, Home, ListMusic, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const TABS = [
@@ -7,12 +7,13 @@ const TABS = [
   { to: '/favorites', label: '즐겨찾기', icon: Heart, end: false },
   { to: '/playlists', label: '플레이리스트', icon: ListMusic, end: false },
   { to: '/history', label: '기록', icon: History, end: false },
+  { to: '/community', label: '커뮤니티', icon: Users, end: false },
 ] as const
 
 /**
- * 하단 탭 내비(M3) — 탭 화면(홈·즐겨찾기·플레이리스트·기록)에만 노출. 검색 플로우·로그인은
- * 몰입 유지를 위해 제외(router의 TabLayout 소속만 해당). 활성 표시는 전경색
- * 전환만 — flame은 뷰당 주 액션 1개 규칙(DS §10)이라 내비에 쓰지 않는다.
+ * 하단 탭 내비(M3, M4에서 커뮤니티 추가 — 5탭이 모바일 관례 상한) — 탭 화면에만 노출.
+ * 검색 플로우·로그인은 몰입 유지를 위해 제외(router의 TabLayout 소속만 해당). 활성
+ * 표시는 전경색 전환만 — flame은 뷰당 주 액션 1개 규칙(DS §10)이라 내비에 쓰지 않는다.
  */
 export function BottomNav() {
   return (
