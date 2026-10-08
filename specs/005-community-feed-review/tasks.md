@@ -122,7 +122,7 @@
 
 - [X] T036 [P] PRD 동기화(constitution 원칙 II — 같은 PR 필수): `docs/prd/backend-prd.md` §6.1 이벤트 사전 5종·§6.2 community 행 갱신(M4 개통 표기, prompt·review-visibility 신설 반영) + `docs/prd/frontend-prd.md` §8 계약·§9 로드맵 M4 행 갱신 — 정본은 `specs/005-community-feed-review/contracts/community-api.md` 참조 표기
 - [X] T037 최종 게이트 — `backend: .\gradlew.bat build`(전체 테스트) + `frontend: npm run build` + `npx vitest run` 전부 GREEN, 실패 시 원인 수정 후 재실행
-- [ ] T038 quickstart.md 전 시나리오(1~15) 로컬 E2E 최종 확인 + 검증 데이터 정리 SQL 실행(quickstart "검증 후 정리" 절) + 사용자 로컬 확인 요청
+- [X] T038 quickstart.md 전 시나리오(1~15) 로컬 E2E 최종 확인 + 검증 데이터 정리 SQL 실행(quickstart "검증 후 정리" 절) + 사용자 로컬 확인 요청
 
 ---
 
