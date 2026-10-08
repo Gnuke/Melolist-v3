@@ -7,9 +7,10 @@ import { HistoryPage } from '@/pages/HistoryPage'
 import { PlaylistsPage } from '@/pages/PlaylistsPage'
 import { PlaylistDetailPage } from '@/pages/PlaylistDetailPage'
 import { ProfilePage } from '@/pages/ProfilePage'
+import { CommunityPage } from '@/pages/CommunityPage'
 import { BottomNav } from '@/components/BottomNav'
 
-/** 탭 화면(홈·즐겨찾기·플레이리스트·기록)에만 하단 내비 — 검색 플로우·로그인은 몰입 유지로 제외. */
+/** 탭 화면(홈·즐겨찾기·플레이리스트·기록·커뮤니티)에만 하단 내비 — 검색 플로우·로그인은 몰입 유지로 제외. */
 function TabLayout() {
   return (
     <>
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: '/playlists', element: <PlaylistsPage /> },
       { path: '/playlists/:id', element: <PlaylistDetailPage /> },
       { path: '/history', element: <HistoryPage /> },
+      { path: '/community', element: <CommunityPage /> },
       { path: '/profile', element: <ProfilePage /> },
     ],
   },

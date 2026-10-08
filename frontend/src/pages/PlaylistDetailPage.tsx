@@ -33,6 +33,7 @@ import {
   type PlaylistTrack,
 } from '@/features/playlists/api'
 import { PlaylistFormSheet } from '@/features/playlists/PlaylistFormSheet'
+import { CommentsSection } from '@/features/community/CommentsSection'
 
 const listVariants: Variants = {
   hidden: {},
@@ -297,6 +298,9 @@ export function PlaylistDetailPage() {
           )}
         </>
       )}
+
+      {/* 댓글(M4, spec 005 US3) — 상세가 조회 가능한 상태(공개 또는 소유)에서만 마운트 */}
+      {detail && <CommentsSection playlistId={detail.id} />}
 
       {detail && (
         <PlaylistFormSheet

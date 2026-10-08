@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 
@@ -15,10 +16,13 @@ public final class ReviewDtos {
     private ReviewDtos() {
     }
 
+    /** 내용 상한 500자 — spec 005 FR-009(clarify 확정). */
+    public static final int CONTENT_MAX = 500;
+
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record CreateRequest(
             @NotNull @Min(1) @Max(5) Short rating,
-            @NotBlank String content
+            @NotBlank @Size(max = CONTENT_MAX) String content
     ) {
     }
 
@@ -26,8 +30,13 @@ public final class ReviewDtos {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record UpdateRequest(
             @Min(1) @Max(5) Short rating,
-            String content
+            @Size(max = CONTENT_MAX) String content
     ) {
+    }
+
+    /** 리뷰 유도 노출 자격(spec 005 FR-010) — 서버 권위 판정 결과. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public record PromptResponse(boolean eligible) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

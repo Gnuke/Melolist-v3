@@ -29,6 +29,9 @@ import {
 import { hasPendingLoginReturn } from '@/features/events/loginEvents'
 import { recognize } from '@/features/search/api'
 import { addFavorite, removeFavorite } from '@/features/favorites/api'
+import { getReviewPrompt } from '@/features/community/api'
+import { markReviewPromptShown, shouldCheckReviewPrompt } from '@/features/community/reviewPrompt'
+import { ReviewPromptSheet } from '@/features/community/ReviewPromptSheet'
 import type { AcrResult, SearchType } from '@/features/search/types'
 
 const MIN_SCORE = 50 // 허밍 저신뢰(F3) 기준: score*100 < 50
@@ -200,6 +203,28 @@ function SearchFlow({ mode }: { mode: SearchType }) {
     })
     if (!phase.lowScore && top) addRecentFind(top)
   }, [phase, mode])
+
+  // spec 005 US4: 결과 표시 시 리뷰 유도 판정(fire-and-check, 실패 무시) — 로그인·비복원·
+  // 세션 미노출일 때만 조회하고, 자격이면 결과 카드 확인을 가리지 않게 짧은 지연 후 노출
+  const [reviewPromptOpen, setReviewPromptOpen] = useState(false)
+  useEffect(() => {
+    if (phase.name !== 'results' || phase.restored) return
+    if (!shouldCheckReviewPrompt({ loggedIn: !!session, restored: false })) return
+    let cancelled = false
+    void getReviewPrompt()
+      .then(({ eligible }) => {
+        if (!eligible || cancelled) return
+        window.setTimeout(() => {
+          if (cancelled) return
+          markReviewPromptShown()
+          setReviewPromptOpen(true)
+        }, 2000)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [phase, session])
 
   // 허밍 확인 카드의 재생 URL 수명 관리
   const [confirmUrl, setConfirmUrl] = useState<string | null>(null)
@@ -667,6 +692,8 @@ function SearchFlow({ mode }: { mode: SearchType }) {
         onContinue={continueFromSheet}
         onQuit={confirmQuit}
       />
+
+      <ReviewPromptSheet open={reviewPromptOpen} onClose={() => setReviewPromptOpen(false)} />
     </div>
   )
 }

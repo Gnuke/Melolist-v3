@@ -13,4 +13,7 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
     Page<SearchHistory> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
     Optional<SearchHistory> findByIdAndUserId(Long id, UUID userId);
+
+    /** 누적 검색 횟수 — 리뷰 유도 임계 판정(spec 005 R5, 서버 권위·기기 무관). */
+    long countByUserId(UUID userId);
 }

@@ -3,22 +3,24 @@ package com.melolist.community.service;
 import com.melolist.common.error.ConflictException;
 import com.melolist.common.error.ForbiddenException;
 import com.melolist.common.error.NotFoundException;
+import com.melolist.community.config.ReviewProperties;
 import com.melolist.community.domain.Review;
 import com.melolist.community.dto.ReviewDtos.CreateRequest;
 import com.melolist.community.dto.ReviewDtos.ReviewResponse;
 import com.melolist.community.dto.ReviewDtos.UpdateRequest;
 import com.melolist.community.repository.ReviewRepository;
+import com.melolist.search.service.SearchHistoryService;
 import com.melolist.user.domain.Profile;
 import com.melolist.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,8 +45,9 @@ class ReviewServiceTest {
     private ReviewRepository reviewRepository;
     @Mock
     private UserService userService;
+    @Mock
+    private SearchHistoryService searchHistoryService;
 
-    @InjectMocks
     private ReviewService reviewService;
 
     private final Jwt jwt = mock(Jwt.class);
@@ -52,6 +55,9 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
+        // ReviewProperties는 record(불변)라 목 대신 실값 — 유예 7일·임계 3회(spec 005 기본값)
+        reviewService = new ReviewService(reviewRepository, userService, searchHistoryService,
+                new ReviewProperties(7, 3));
         author = mock(Profile.class);
         lenient().when(author.getId()).thenReturn(USER_ID);
         lenient().when(userService.getOrProvisionProfile(jwt)).thenReturn(author);
@@ -111,5 +117,41 @@ class ReviewServiceTest {
 
         assertThatThrownBy(() -> reviewService.getMine(USER_ID))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    // ── 리뷰 유도 판정(spec 005 FR-010) — 4분기 ──────────────────────────
+
+    @Test
+    void 이미_리뷰를_작성했으면_유도하지_않는다() {
+        when(reviewRepository.existsByAuthorId(USER_ID)).thenReturn(true);
+
+        assertThat(reviewService.promptEligibility(jwt).eligible()).isFalse();
+    }
+
+    @Test
+    void 유예_기간_중에는_유도하지_않는다() {
+        when(reviewRepository.existsByAuthorId(USER_ID)).thenReturn(false);
+        when(author.getReviewHideUntil()).thenReturn(Instant.now().plusSeconds(3600));
+
+        assertThat(reviewService.promptEligibility(jwt).eligible()).isFalse();
+    }
+
+    @Test
+    void 누적_검색이_임계_미만이면_유도하지_않는다() {
+        when(reviewRepository.existsByAuthorId(USER_ID)).thenReturn(false);
+        when(author.getReviewHideUntil()).thenReturn(null);
+        when(searchHistoryService.countByUser(USER_ID)).thenReturn(2L);
+
+        assertThat(reviewService.promptEligibility(jwt).eligible()).isFalse();
+    }
+
+    @Test
+    void 미작성_유예없음_검색3회_이상이면_유도한다() {
+        when(reviewRepository.existsByAuthorId(USER_ID)).thenReturn(false);
+        // 유예가 만료(과거)여도 자격이 있어야 한다 — null과 동치 취급
+        when(author.getReviewHideUntil()).thenReturn(Instant.now().minusSeconds(60));
+        when(searchHistoryService.countByUser(USER_ID)).thenReturn(3L);
+
+        assertThat(reviewService.promptEligibility(jwt).eligible()).isTrue();
     }
 }

@@ -1,7 +1,9 @@
 package com.melolist.user.service;
 
+import com.melolist.community.config.ReviewProperties;
 import com.melolist.user.domain.Profile;
 import com.melolist.user.dto.ProfileResponse;
+import com.melolist.user.dto.ReviewVisibilityRequest;
 import com.melolist.user.dto.UpdateMeRequest;
 import com.melolist.user.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,13 +11,44 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final ProfileRepository profileRepository;
+    // 유예 일수는 리뷰 도메인 정책(community.config) — 상태(review_hide_until)만 프로필 소유
+    private final ReviewProperties reviewProperties;
+
+    /**
+     * 리뷰 유도 유예(spec 005 FR-010) — "나중에" 선택 시 서버에 만료 시각을 저장해
+     * 기기와 무관하게 유예 기간 동안 재노출하지 않는다. 알 수 없는 action은 400.
+     */
+    @Transactional
+    public void applyReviewVisibility(Jwt jwt, ReviewVisibilityRequest request) {
+        if (!ReviewVisibilityRequest.ACTION_LATER.equals(request.action())) {
+            throw new IllegalArgumentException("지원하지 않는 action입니다.");
+        }
+        Profile profile = getOrProvisionProfile(jwt);
+        profile.setReviewHideUntil(Instant.now().plus(Duration.ofDays(reviewProperties.promptDeferDays())));
+    }
+
+    /** 프로필 일괄 조회 — 커뮤니티 피드 작성자 요약 등 페이지 단위 조인용(N+1 방지). */
+    @Transactional(readOnly = true)
+    public Map<UUID, Profile> getProfileMap(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return profileRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Profile::getId, Function.identity()));
+    }
 
     /**
      * 현재 JWT에 해당하는 프로필을 반환하되, 없으면 JIT 프로비저닝한다.
